@@ -45,6 +45,17 @@ export class GridMap {
     this.blocked[this.index(position)] = blocked ? 1 : 0;
   }
 
+  clone(): GridMap {
+    const copy = new GridMap(this.columns, this.rows);
+    for (let row = 0; row < this.rows; row += 1) {
+      for (let column = 0; column < this.columns; column += 1) {
+        const position = { column, row };
+        if (!this.isWalkable(position)) copy.setBlocked(position);
+      }
+    }
+    return copy;
+  }
+
   private index(position: TilePosition): number {
     return position.row * this.columns + position.column;
   }
