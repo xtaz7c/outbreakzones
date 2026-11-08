@@ -91,6 +91,10 @@ export class Simulation {
     return this.infected;
   }
 
+  isMissionDefeated(): boolean {
+    return this.officers.every((officer) => officer.isIncapacitated);
+  }
+
   spawnInfected(config: Omit<InfectedConfig, 'id'>): Infected {
     const infected = new Infected({ ...config, id: this.nextInfectedId++ });
     this.infected.push(infected);
@@ -120,7 +124,7 @@ export class Simulation {
 
   issueMoveOrder(officerId: number, destination: TilePosition): boolean {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
-    if (!officer || !this.worldGrid) return false;
+    if (!officer || !this.worldGrid || this.paused || this.isMissionDefeated()) return false;
     const navigationGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
     return officer.issueMoveOrder(destination, navigationGrid, this.tileSize);
   }
@@ -147,7 +151,7 @@ export class Simulation {
 
   update(dt: number): void {
     this.combatEvents = [];
-    if (this.paused || !isValidDt(dt)) return;
+    if (this.paused || !isValidDt(dt) || this.isMissionDefeated()) return;
 
 
     this.accumulator += Math.min(dt, MAX_FRAME_DT);
