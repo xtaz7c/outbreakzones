@@ -26,7 +26,8 @@ describe('PoliceOfficer', () => {
     expect(officer.issueMoveOrder({ column: 2, row: 0 }, map, 32)).toBe(true);
     expect(officer.state).toBe('moving');
 
-    officer.update(1, 32);
+    // São dois tiles de deslocamento (64 px) a 32 px/s.
+    officer.update(2, 32);
     expect(officer.position).toEqual({ x: 80, y: 16 });
     expect(officer.state).toBe('idle');
   });
