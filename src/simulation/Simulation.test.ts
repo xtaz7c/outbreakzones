@@ -216,4 +216,18 @@ describe('Simulation', () => {
     expect(infected.health).toBeLessThan(60);
   });
 
+  it('does not resume automatic fire for an invalid manual priority in hold-fire mode', () => {
+    sim = new Simulation({ random: () => 0 });
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    const infected = sim.spawnInfected({
+      x: 1000, y: 1072, entryTile: { column: 31, row: 33 },
+      moveSpeed: 1, detectionRange: 1,
+    });
+    sim.setOfficerTacticalPosture(officer.id, 'hold_fire');
+    sim.setTargetPriority(officer.id, 99999);
+    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    expect(infected.health).toBe(60);
+  });
+
 });
