@@ -120,7 +120,7 @@ describe('Simulation', () => {
   it('spawns infected entities and advances their AI on fixed steps', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const infected = sim.spawnInfected({
-      x: 16, y: 16, moveSpeed: 32,
+      x: 16, y: 16, moveSpeed: 32, random: () => 0.99,
     });
     expect(sim.getState().infectedCount).toBe(1);
     sim.update(FIXED_DT);
