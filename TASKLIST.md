@@ -2,13 +2,13 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** T001–T016 foram integradas à `main`. O `package-lock.json` foi regenerado e contém as dependências resolvidas; instalações limpas devem usar `npm ci`. O usuário informou que `npm run build` passou localmente; ainda falta registrar evidência de `npm ci`, `npm test` e `npm run lint` para encerrar a validação da Fase 1. A Fase 2 está em implementação na branch `feat/map-world-t017-t026`; não marcar tarefas como concluídas até executar testes e revisar o mapa no navegador.
+> **Status atual:** a implementação revisada da Fase 7 está na branch `feat/shelter-roaming-t066-t071`: a residência é um abrigo seguro e inacessível; infectados vagam aleatoriamente e perseguem policiais detectados. O sistema de dano/invasão de entradas e os metadados de HP foram removidos. Testes, lint, build e revisão visual ainda precisam ser executados.
 
 ## 1. Visão e escopo
 
 Criar um jogo independente de estratégia tática e sobrevivência, inspirado em jogos de navegador da época do Flash (especialmente *Class 3 Outbreak*), sem copiar código, arte, mapas, interface, personagens ou outros elementos protegidos.
 
-**MVP:** uma missão de defesa de uma pequena residência, jogável no navegador, na qual o jogador comanda três policiais contra ondas de infectados.
+**MVP:** uma missão tática de sobrevivência nos arredores de uma pequena residência que funciona como abrigo seguro e inacessível. O jogador comanda três policiais contra ondas de infectados; os zumbis vagam pelo ambiente e perseguem os policiais quando os detectam.
 
 ### Direção de design confirmada
 
@@ -21,7 +21,8 @@ Criar um jogo independente de estratégia tática e sobrevivência, inspirado em
 - Comandos: movimentação e prioridade de alvo.
 - Combate: disparos automáticos quando houver alvo válido.
 - Inimigos: infectados chegando em ondas.
-- Objetivo: proteger uma pequena residência.
+- Abrigo: a residência é uma zona segura, não um objetivo atacável. Policiais e infectados não entram nela.
+- Comportamento dos infectados: vagam aleatoriamente pelo ambiente; ao detectar policiais, perseguem e atacam. Se perderem o alvo, retomam a ronda.
 - Plataforma inicial: navegador.
 - Plataforma futura: Linux.
 
@@ -44,12 +45,12 @@ O MVP só será considerado funcional quando for possível:
 3. Selecionar cada policial individualmente e selecionar múltiplos policiais por arrasto.
 4. Emitir ordens de movimento com clique direito.
 5. Fazer as unidades navegarem sem atravessar paredes ou obstáculos bloqueantes.
-6. Ver infectados surgirem em pontos definidos e avançarem em direção à residência.
+6. Ver infectados surgirem fora do abrigo e vagarem pelo ambiente sem um destino obrigatório.
 7. Fazer os policiais detectarem e atacarem automaticamente inimigos válidos.
 8. Definir prioridade de alvo manualmente.
 9. Pausar a simulação, emitir ordens e retomá-la sem inconsistências.
-10. Ver portas/janelas sofrerem dano e permitirem invasão quando sua integridade acabar.
-11. Completar todas as ondas e alcançar a vitória, ou perder por uma condição de derrota definida.
+10. Ver paredes, portas e janelas bloquearem permanentemente a navegação de policiais e infectados.
+11. Completar todas as ondas e alcançar a vitória, ou perder quando os três policiais forem incapacitados.
 12. Reiniciar a missão sem recarregar a página.
 13. Executar testes, lint e build com sucesso.
 
@@ -133,13 +134,13 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T047 — P0** Definir vida, velocidade e dano do infectado básico.
 - [ ] **T048 — P0** Implementar estados idle, moving, attacking e dead.
 - [ ] **T049 — P0** Implementar detecção e escolha de alvos.
-- [ ] **T050 — P0** Implementar navegação em direção à residência.
-- [ ] **T051 — P0** Implementar escolha de ponto de entrada válido.
-- [ ] **T052 — P0** Implementar ataque contra policiais próximos.
-- [ ] **T053 — P0** Implementar ataque contra portas e janelas.
+- [ ] **T050 — P0** Implementar movimentação autônoma por destinos aleatórios caminháveis.
+- [ ] **T051 — P0** Implementar seleção e atualização periódica de destinos de ronda.
+- [ ] **T052 — P0** Implementar detecção, perseguição e ataque contra policiais ativos.
+- [ ] **T053 — P0** Garantir que paredes, portas e janelas bloqueiem os infectados; não atacar estruturas.
 - [ ] **T054 — P0** Implementar morte e remoção segura das entidades.
 
-**Progresso de implementação (branch `feat/infected-ai-t046-t054`):** criado o modelo independente `Infected` com atributos configuráveis, estados `idle/moving/attacking/dead`, navegação A* até ponto de entrada, detecção e escolha do policial ativo mais próximo, ataque com intervalo, dano/vida e morte. A `Simulation` agora instancia infectados sob demanda, atualiza sua IA no fixed timestep e remove entidades mortas com segurança. `MissionScene` renderiza marcadores provisórios e oferece `I` como comando de debug para gerar infectados em quatro bordas do mapa, cada um direcionado a uma entrada disponível. Foram mapeados cinco pontos de aproximação válidos para a missão (porta frontal e quatro janelas), com filtro de células caminháveis; o infectado usa a célula adjacente à entrada para não tentar atravessar a própria parede. Foi definido um contrato `InfectedStructureTarget` para permitir ataques a portas/janelas destrutíveis; a implementação concreta depende do modelo de entradas da Fase 7. Testes unitários e de integração foram adicionados. O usuário confirmou que o comportamento no navegador está funcionando como esperado. Ainda pendentes: registro dos resultados automatizados (`npm test`, lint e build) e validação final integrada. T046–T054 permanecem desmarcadas até completar essa verificação.
+**Progresso de implementação (branch `feat/infected-ai-t046-t054`):** o modelo independente `Infected` implementa atributos, estados, navegação A*, detecção e ataque a policiais ativos, dano/vida e morte. A implementação inicial direcionava infectados para a residência e previa ataques às entradas; esses comportamentos foram revistos na Fase 7. A nova regra é vagar aleatoriamente por células caminháveis e perseguir policiais detectados, sem atacar estruturas nem entrar no abrigo. T046–T054 permanecem desmarcadas até validação integrada.
 
 **Saída da fase:** infectados conseguem navegar, atacar e ser derrotados sem quebrar a simulação.
 
@@ -161,16 +162,18 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** policiais combatem automaticamente e o jogador consegue influenciar a escolha de alvos.
 
-### Fase 7 — Residência e defesa
+### Fase 7 — Abrigo e limites de navegação
 
-- [ ] **T066 — P0** Definir portas e janelas como pontos de entrada vulneráveis.
-- [ ] **T067 — P0** Implementar integridade individual de portas e janelas.
-- [ ] **T068 — P0** Permitir que infectados danifiquem entradas.
-- [ ] **T069 — P0** Permitir entrada de infectados quando uma abertura for rompida.
-- [ ] **T070 — P0** Definir e implementar a condição de invasão/derrota da residência.
-- [ ] **T071 — P1** Exibir integridade e estado de defesa da casa.
+- [ ] **T066 — P0** Garantir que o perímetro da residência, incluindo paredes, portas e janelas, permaneça bloqueado para todas as unidades.
+- [ ] **T067 — P0** Impedir que ordens de movimento levem policiais para o interior da residência.
+- [ ] **T068 — P0** Impedir que infectados atravessem ou danifiquem paredes, portas e janelas.
+- [ ] **T069 — P0** Implementar ronda autônoma com destinos aleatórios em áreas caminháveis.
+- [ ] **T070 — P0** Fazer infectados perseguirem e atacarem policiais detectados; retomar a ronda quando não houver alvo válido.
+- [ ] **T071 — P1** Exibir no HUD que a residência é um abrigo seguro e inacessível.
 
-**Saída da fase:** a residência é um objetivo funcional, não apenas um elemento visual.
+**Progresso de implementação (branch `feat/shelter-roaming-t066-t071`):** removido o sistema anterior de integridade, destruição e invasão de entradas. A IA dos infectados foi alterada para escolher destinos aleatórios alcançáveis no GridMap; quando detecta um policial ativo, interrompe a ronda e persegue/ataca. Ao perder o alvo, volta a vagar. A simulação não abre mais células de portas/janelas: o GridMap permanece como fonte única de colisão para policiais e infectados. O Dev Hub identifica a casa como zona segura e inacessível. Foram adicionados testes para ronda aleatória, perímetro bloqueado, perseguição e ordens policiais sem rota para o interior. T066–T071 permanecem desmarcadas até validação automatizada e revisão visual no navegador.
+
+**Regra de abrigo:** o interior da residência não faz parte da área jogável nesta missão. Nenhuma unidade pode atravessar o perímetro, e a casa não recebe dano nem gera condição de derrota.
 
 ### Fase 8 — Ondas e fluxo da missão
 
@@ -184,7 +187,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T079 — P0** Implementar pausa e retomada.
 - [ ] **T080 — P0** Garantir que movimento, IA, combate, dano, temporizadores e ondas parem durante a pausa; a interface e emissão de ordens permanecem utilizáveis.
 - [ ] **T081 — P0** Implementar condição de vitória após sobreviver a todas as ondas.
-- [ ] **T082 — P0** Implementar condições de derrota (equipe incapacitada ou residência invadida, conforme regra definida).
+- [ ] **T082 — P0** Implementar derrota quando os três policiais forem incapacitados.
 - [ ] **T083 — P0** Implementar tela de resultado e reinício limpo da missão.
 
 **Saída da fase:** ciclo completo de missão, do início ao resultado, com pausa funcional.
@@ -195,7 +198,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T085 — P0** Criar HUD da missão.
 - [ ] **T086 — P0** Exibir vida e munição de cada policial.
 - [ ] **T087 — P0** Exibir informações da unidade selecionada.
-- [ ] **T088 — P1** Exibir estado da residência.
+- [ ] **T088 — P1** Exibir a residência como abrigo seguro, sem indicador de HP ou invasão.
 - [ ] **T089 — P1** Exibir onda atual, estado da onda e inimigos restantes.
 - [ ] **T090 — P0** Implementar controle de pausa/retomada na interface.
 - [ ] **T091 — P1** Exibir feedback para ordens, destinos, seleção e alvos prioritários.
@@ -277,8 +280,8 @@ As decisões abaixo ainda precisam de balanceamento ou detalhamento. Não devem 
 - Quantidade de ondas, inimigos por onda e duração dos intervalos.
 - Valores de vida, dano, velocidade, alcance, precisão e cadência.
 - Capacidade de munição e duração da recarga.
-- Quantidade de dano necessária para romper portas/janelas.
-- Regra exata de derrota por invasão.
+- Parâmetros de ronda aleatória (raio, intervalo e distribuição dos destinos).
+- Alcance de detecção e regras para perder/retomar perseguição.
 - Resolução-base e tamanho dos sprites.
 
 Registrar alterações no GDD/README antes de implementar mudanças que afetem o escopo.

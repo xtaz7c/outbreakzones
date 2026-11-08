@@ -3,83 +3,165 @@ import { Infected } from './Infected';
 import { PoliceOfficer } from './PoliceOfficer';
 import { GridMap } from './world/GridMap';
 
-describe('Infected', () => {
-  const map = new GridMap(10, 10);
-
+describe('Infected roaming and combat AI', () => {
   it('starts alive with the configured base attributes', () => {
-    const infected = new Infected({ id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 } });
+    const infected = new Infected({ id: 1, x: 16, y: 16 });
     expect(infected.health).toBe(60);
     expect(infected.state).toBe('idle');
     expect(infected.isDead).toBe(false);
   });
 
-  it('moves along the grid toward its configured entry point', () => {
+  it('chooses a random walkable destination and wanders without a target', () => {
+    const map = new GridMap(20, 20);
     const infected = new Infected({
-      id: 1, x: 16, y: 16, entryTile: { column: 3, row: 1 }, moveSpeed: 32,
+      id: 1,
+      x: 16,
+      y: 16,
+      moveSpeed: 32,
+      random: () => 0.99,
     });
+
     infected.update(1, 32, map, []);
-    expect(infected.state).toBe('moving');
-    expect(infected.position.x).toBeGreaterThan(16);
-    expect(infected.position.y).toBeGreaterThan(16);
-  });
 
-  it('detects a nearby officer and attacks at the configured interval', () => {
-    const infected = new Infected({
-      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
-      detectionRange: 100, attackRange: 30, attackInterval: 0.5, damage: 12,
-    });
-    const officer = new PoliceOfficer({ id: 1, x: 40, y: 16 });
-    infected.update(0.5, 32, map, [officer]);
-    expect(infected.state).toBe('attacking');
-    expect(officer.health).toBe(88);
-  });
-
-  it('ignores incapacitated officers when selecting targets', () => {
-    const infected = new Infected({
-      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 }, moveSpeed: 32,
-    });
-    const officer = new PoliceOfficer({ id: 1, x: 24, y: 16 });
-    officer.takeDamage(100);
-    infected.update(0.5, 32, map, [officer]);
     expect(infected.state).toBe('moving');
     expect(infected.position).not.toEqual({ x: 16, y: 16 });
   });
 
-  it('closes the remaining distance when target shares its current tile', () => {
+  it('does not cross a solid shelter perimeter while wandering', () => {
+    const map = new GridMap(20, 20);
+    for (let column = 5; column <= 14; column += 1) {
+      map.setBlocked({ column, row: 5 });
+      map.setBlocked({ column, row: 14 });
+    }
+    for (let row = 5; row <= 14; row += 1) {
+      map.setBlocked({ column: 5, row });
+      map.setBlocked({ column: 14, row });
+    }
+
     const infected = new Infected({
-      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
-      detectionRange: 100, attackRange: 10, moveSpeed: 20,
+      id: 1,
+      x: 9 * 32 + 16,
+      y: 15 * 32 + 16,
+      moveSpeed: 64,
+      wanderRadiusTiles: 8,
+      random: () => 0,
     });
-    const officer = new PoliceOfficer({ id: 1, x: 30, y: 16 });
-    infected.update(0.25, 32, map, [officer]);
-    expect(infected.state).toBe('moving');
-    expect(infected.position.x).toBeGreaterThan(16);
-    expect(infected.position.x).toBeLessThan(30);
+
+    for (let index = 0; index < 180; index += 1) {
+      infected.update(1 / 60, 32, map, []);
+    }
+
+    const tile = {
+      column: Math.floor(infected.position.x / 32),
+      row: Math.floor(infected.position.y / 32),
+    };
+    expect(tile.column <= 5 || tile.column >= 14 || tile.row <= 5 || tile.row >= 14).toBe(true);
+    expect(map.isWalkable(tile)).toBe(true);
   });
 
-  it('attacks a supplied destructible structure target', () => {
+  it('detects a nearby officer and attacks at the configured interval', () => {
     const infected = new Infected({
-      id: 1, x: 880, y: 304, entryTile: { column: 8, row: 8 },
-      detectionRange: 10, attackInterval: 0.5, damage: 7,
+      id: 1,
+      x: 16,
+      y: 16,
+      detectionRange: 100,
+      attackRange: 30,
+      attackInterval: 0.5,
+      damage: 12,
     });
-    let health = 20;
-    const structure = {
-      position: { x: 864, y: 336 },
-      approachTile: { column: 27, row: 9 },
-      get isDestroyed() { return health <= 0; },
-      takeDamage(amount: number) {
-        const applied = Math.min(amount, health);
-        health -= applied;
-        return applied;
-      },
-    };
-    infected.update(0.5, 32, map, [], structure);
+    const officer = new PoliceOfficer({ id: 1, x: 40, y: 16 });
+
+    infected.update(0.5, 32, new GridMap(10, 10), [officer]);
+
     expect(infected.state).toBe('attacking');
-    expect(health).toBe(13);
+    expect(officer.health).toBe(88);
+  });
+
+  it('does not get stuck pursuing an officer behind a solid shelter wall', () => {
+    const map = new GridMap(10, 10);
+    for (let column = 3; column <= 6; column += 1) {
+      map.setBlocked({ column, row: 3 });
+      map.setBlocked({ column, row: 6 });
+    }
+    for (let row = 3; row <= 6; row += 1) {
+      map.setBlocked({ column: 3, row });
+      map.setBlocked({ column: 6, row });
+    }
+
+    const infected = new Infected({
+      id: 1,
+      x: 1 * 32 + 16,
+      y: 4 * 32 + 16,
+      detectionRange: 300,
+      moveSpeed: 32,
+      random: () => 0.99,
+    });
+    const officer = new PoliceOfficer({ id: 1, x: 4 * 32 + 16, y: 4 * 32 + 16 });
+
+    infected.update(0.5, 32, map, [officer]);
+
+    expect(infected.state).toBe('moving');
+    expect(infected.position).not.toEqual({ x: 1 * 32 + 16, y: 4 * 32 + 16 });
+  });
+
+  it('pursues an officer that is detected outside attack range', () => {
+    const infected = new Infected({
+      id: 1,
+      x: 16,
+      y: 16,
+      detectionRange: 200,
+      attackRange: 10,
+      moveSpeed: 32,
+      random: () => 0.5,
+    });
+    const officer = new PoliceOfficer({ id: 1, x: 120, y: 16 });
+
+    infected.update(0.5, 32, new GridMap(10, 10), [officer]);
+
+    expect(infected.state).toBe('moving');
+    expect(infected.position.x).toBeGreaterThan(16);
+  });
+
+  it('abandons a pursuit and resumes roaming when its target is incapacitated', () => {
+    const infected = new Infected({
+      id: 1,
+      x: 16,
+      y: 16,
+      detectionRange: 200,
+      attackRange: 10,
+      moveSpeed: 32,
+      random: () => 0.99,
+    });
+    const officer = new PoliceOfficer({ id: 1, x: 120, y: 16 });
+
+    infected.update(0.25, 32, new GridMap(10, 10), [officer]);
+    const pursuitPosition = infected.position;
+    officer.takeDamage(100);
+    infected.update(0.5, 32, new GridMap(10, 10), [officer]);
+
+    expect(infected.state).toBe('moving');
+    expect(infected.position).not.toEqual(pursuitPosition);
+  });
+
+  it('ignores incapacitated officers and resumes random wandering', () => {
+    const infected = new Infected({
+      id: 1,
+      x: 16,
+      y: 16,
+      moveSpeed: 32,
+      random: () => 0.99,
+    });
+    const officer = new PoliceOfficer({ id: 1, x: 24, y: 16 });
+    officer.takeDamage(100);
+
+    infected.update(0.5, 32, new GridMap(10, 10), [officer]);
+
+    expect(infected.state).toBe('moving');
+    expect(infected.position).not.toEqual({ x: 16, y: 16 });
   });
 
   it('clamps damage to remaining health and enters dead state', () => {
-    const infected = new Infected({ id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 } });
+    const infected = new Infected({ id: 1, x: 16, y: 16 });
     expect(infected.takeDamage(100)).toBe(60);
     expect(infected.health).toBe(0);
     expect(infected.state).toBe('dead');
@@ -87,8 +169,8 @@ describe('Infected', () => {
   });
 
   it('ignores invalid damage and non-positive update deltas', () => {
-    const infected = new Infected({ id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 } });
-    infected.update(0, 32, map, []);
+    const infected = new Infected({ id: 1, x: 16, y: 16 });
+    infected.update(0, 32, new GridMap(10, 10), []);
     expect(infected.takeDamage(Number.NaN)).toBe(0);
     expect(infected.health).toBe(60);
     expect(infected.state).toBe('idle');

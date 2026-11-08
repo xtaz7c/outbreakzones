@@ -1,9 +1,7 @@
 import Phaser from 'phaser';
 import { Simulation } from '../../simulation/Simulation';
-import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
-import { getAvailableEntryPoints } from '../../simulation/world/MissionEntryPoints';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -32,7 +30,6 @@ export class MissionScene extends Phaser.Scene {
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
   private debugInfectedSpawnIndex = 0;
   private selectedOfficerIds = new Set<number>();
-  private worldGrid!: GridMap;
   private tileSize = 32;
   private cameraWorldWidth = 0;
   private cameraWorldHeight = 0;
@@ -88,7 +85,7 @@ export class MissionScene extends Phaser.Scene {
     }
 
     this.tileSize = map.tileWidth;
-    this.worldGrid = buildGridFromTiledLayers(
+    const worldGrid = buildGridFromTiledLayers(
       map.width,
       map.height,
       map.tileWidth,
@@ -99,8 +96,8 @@ export class MissionScene extends Phaser.Scene {
       ],
     );
 
-    this.registry.set('worldGrid', this.worldGrid);
-    this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
+    this.registry.set('worldGrid', worldGrid);
+    this.simulation.setWorldGrid(worldGrid, this.tileSize);
     this.cameraWorldWidth = map.widthInPixels;
     this.cameraWorldHeight = map.heightInPixels;
     this.cameras.main
@@ -332,22 +329,18 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private spawnDebugInfected(): void {
-    const entries = getAvailableEntryPoints(this.worldGrid);
-    if (entries.length === 0) return;
-
     const spawnPlans = [
-      { x: 128, y: 640, entryId: 'west-window' },
-      { x: 1920, y: 640, entryId: 'east-window' },
-      { x: 1024, y: 64, entryId: 'north-window-west' },
-      { x: 1024, y: 1216, entryId: 'front-door' },
+      { x: 128, y: 640 },
+      { x: 1920, y: 640 },
+      { x: 1024, y: 64 },
+      { x: 1024, y: 1216 },
     ] as const;
     const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
     this.debugInfectedSpawnIndex += 1;
-    const entry = entries.find((candidate) => candidate.id === plan.entryId) ?? entries[0]!;
+
     this.simulation.spawnInfected({
       x: plan.x,
       y: plan.y,
-      entryTile: entry.approachTile,
     });
   }
 
@@ -448,6 +441,8 @@ export class MissionScene extends Phaser.Scene {
         `Sim time: ${state.elapsed.toFixed(2)}s`,
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
+        'Shelter: safe zone | Interior inaccessible',
+        ...(this.simulation.isMissionDefeated() ? ['MISSION DEFEATED — all officers incapacitated'] : []),
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);

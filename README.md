@@ -2,7 +2,7 @@
 
 Jogo independente de estratégia tática e sobrevivência, inspirado em jogos de navegador da época do Flash (especialmente *Class 3 Outbreak*), feito com **TypeScript + Phaser 3**.
 
-> **MVP:** uma missão de defesa de uma pequena residência, jogável no navegador, na qual o jogador comanda três policiais contra ondas de infectados.
+> **MVP:** uma missão tática nos arredores de uma pequena residência que funciona como abrigo seguro e inacessível, jogável no navegador, na qual o jogador comanda três policiais contra ondas de infectados que vagam pelo ambiente e perseguem a equipe quando a detectam.
 
 ## Status
 
