@@ -1,14 +1,14 @@
-# Testgame — Tasklist do MVP
+# Outbreak Zones — Tasklist do MVP
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** a implementação revisada da Fase 7 está na branch `feat/shelter-roaming-t066-t071`: a residência é um abrigo seguro e inacessível; infectados vagam aleatoriamente e perseguem policiais detectados. O sistema de dano/invasão de entradas e os metadados de HP foram removidos. Testes, lint, build e revisão visual ainda precisam ser executados.
+> **Status atual:** a implementação revisada da Fase 7 está na branch `feat/shelter-roaming-t066-t071`: essa branch é a base técnica anterior. O design foi atualizado: o tutorial resgata dois civis dentro de uma casa interativa; acessos dependem do estado de portas/janelas e do tipo de NPC; infectados podem atacar a casa quando atraídos por estímulos. A implementação dessas mudanças ainda está pendente. Testes, lint, build e revisão visual ainda precisam ser executados.
 
 ## 1. Visão e escopo
 
-Criar um jogo independente de estratégia tática e sobrevivência, inspirado em jogos de navegador da época do Flash (especialmente *Class 3 Outbreak*), sem copiar código, arte, mapas, interface, personagens ou outros elementos protegidos.
+Criar **Outbreak Zones**, um jogo independente de estratégia tática e sobrevivência, inspirado em jogos de navegador da época do Flash (especialmente *Class 3 Outbreak*), sem copiar código, arte, mapas, interface, personagens ou outros elementos protegidos.
 
-**MVP:** uma missão tática de sobrevivência nos arredores de uma pequena residência que funciona como abrigo seguro e inacessível. O jogador comanda três policiais contra ondas de infectados; os zumbis vagam pelo ambiente e perseguem os policiais quando os detectam.
+**MVP:** uma página inicial e um tutorial jogável no navegador. O jogador comanda três policiais para resgatar dois civis dentro de uma casa. Portas e janelas possuem estados próprios; a passagem depende do acesso e do tipo de NPC. Infectados vagam, perseguem alvos e podem atacar a casa quando atraídos por estímulos.
 
 ### Direção de design confirmada
 
@@ -162,14 +162,14 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** policiais combatem automaticamente e o jogador consegue influenciar a escolha de alvos.
 
-### Fase 7 — Abrigo e limites de navegação
+### Fase 7 — Navegação dinâmica, casa e acessos
 
-- [ ] **T066 — P0** Garantir que o perímetro da residência, incluindo paredes, portas e janelas, permaneça bloqueado para todas as unidades.
-- [ ] **T067 — P0** Impedir que ordens de movimento levem policiais para o interior da residência.
-- [ ] **T068 — P0** Impedir que infectados atravessem ou danifiquem paredes, portas e janelas.
-- [ ] **T069 — P0** Implementar ronda autônoma com destinos aleatórios em áreas caminháveis.
-- [ ] **T070 — P0** Fazer infectados perseguirem e atacarem policiais detectados; retomar a ronda quando não houver alvo válido.
-- [ ] **T071 — P1** Exibir no HUD que a residência é um abrigo seguro e inacessível.
+- [ ] **T066 — P0** Manter paredes como obstáculos sólidos para todas as unidades.
+- [ ] **T067 — P0** Modelar portas abertas, fechadas e trancadas, com interação condicionada ao tipo de NPC.
+- [ ] **T068 — P0** Modelar janelas abertas/fechadas e regras de passagem por tipo de NPC.
+- [ ] **T069 — P0** Permitir que policiais, civis e infectados atravessem edifícios por acessos válidos.
+- [ ] **T070 — P0** Implementar ronda aleatória, detecção e perseguição, retomando a ronda sem alvo válido.
+- [ ] **T071 — P1** Fazer infectados investigarem e atacarem a casa quando atraídos por estímulos configurados.
 
 **Progresso de implementação (branch `feat/shelter-roaming-t066-t071`):** removido o sistema anterior de integridade, destruição e invasão de entradas. A IA dos infectados foi alterada para escolher destinos aleatórios alcançáveis no GridMap; quando detecta um policial ativo, interrompe a ronda e persegue/ataca. Ao perder o alvo, volta a vagar. A simulação não abre mais células de portas/janelas: o GridMap permanece como fonte única de colisão para policiais e infectados. O Dev Hub identifica a casa como zona segura e inacessível. Foram adicionados testes para ronda aleatória, perímetro bloqueado, perseguição e ordens policiais sem rota para o interior. T066–T071 permanecem desmarcadas até validação automatizada e revisão visual no navegador.
 
@@ -198,27 +198,28 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T085 — P0** Criar HUD da missão.
 - [ ] **T086 — P0** Exibir vida e munição de cada policial.
 - [ ] **T087 — P0** Exibir informações da unidade selecionada.
-- [ ] **T088 — P1** Exibir a residência como abrigo seguro, sem indicador de HP ou invasão.
+- [ ] **T088 — P0** Exibir o estado dos dois civis e o progresso do resgate.
 - [ ] **T089 — P1** Exibir onda atual, estado da onda e inimigos restantes.
 - [ ] **T090 — P0** Implementar controle de pausa/retomada na interface.
 - [ ] **T091 — P1** Exibir feedback para ordens, destinos, seleção e alvos prioritários.
 - [ ] **T092 — P0** Exibir resultado de vitória ou derrota.
 - [ ] **T093 — P0** Permitir reiniciar a missão.
 - [ ] **T094 — P1** Garantir legibilidade e usabilidade em diferentes resoluções desktop.
+- [ ] **T095 — P0** Manter o HUD fixo à viewport, independente do scroll e zoom do mundo.
 
 **Saída da fase:** jogador entende o estado da missão e consegue executar todas as ações necessárias pela interface.
 
 ### Fase 10 — Arte, áudio e acabamento
 
-- [ ] **T095 — P1** Definir paleta, resolução-base e escala de pixel art.
-- [ ] **T096 — P1** Criar sprites originais provisórios dos policiais.
-- [ ] **T097 — P1** Criar sprites originais dos infectados.
-- [ ] **T098 — P1** Criar tileset e objetos originais da residência.
-- [ ] **T099 — P1** Criar animações essenciais (parado, movimento, ataque e morte).
-- [ ] **T100 — P1** Criar efeitos visuais de disparo, dano e morte.
-- [ ] **T101 — P2** Adicionar efeitos sonoros básicos.
-- [ ] **T102 — P2** Adicionar áudio ambiente ou música, se contribuir para a experiência.
-- [ ] **T103 — P1** Validar consistência de escala, contraste e legibilidade dos sprites.
+- [ ] **T096 — P1** Definir direção de arte, paleta, resolução-base e escala de pixel art.
+- [ ] **T097 — P1** Melhorar texturas/tiles do cenário (terreno, vegetação, ruas, paredes, pisos, telhado e objetos).
+- [ ] **T098 — P1** Melhorar sprites/texturas de policiais, infectados e civis, com silhuetas distintas.
+- [ ] **T099 — P1** Criar variações visuais e animações dos NPCs.
+- [ ] **T100 — P1** Criar animações de movimento, ataque, interação com acessos, resgate e morte.
+- [ ] **T101 — P1** Criar efeitos visuais de disparo, dano, impacto na casa e interação com acessos.
+- [ ] **T102 — P2** Adicionar efeitos sonoros básicos.
+- [ ] **T103 — P2** Adicionar áudio ambiente ou música, se contribuir para a experiência.
+- [ ] **T104 — P1** Validar consistência de escala, contraste e legibilidade das texturas.
 
 **Saída da fase:** identidade visual coerente e feedback suficiente para interpretar as ações.
 
@@ -238,7 +239,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** MVP acessível no navegador, reproduzível a partir das instruções e sem bugs bloqueadores conhecidos.
 
-## 4. Fora do escopo do MVP
+### Fase 12 — Civis e tutorial de resgate\n\n- [ ] **T116 — P0** Criar entidades civis com estados de aguardando, seguindo e resgatado.\n- [ ] **T117 — P0** Posicionar dois civis no interior da casa no início do tutorial.\n- [ ] **T118 — P0** Implementar interação de resgate e conclusão quando os dois civis alcançarem a zona de extração.\n- [ ] **T119 — P0** Implementar acompanhamento dos civis resgatados usando acessos válidos.\n- [ ] **T120 — P1** Apresentar instruções contextuais para controles, acessos e resgate.\n\n## 4. Fora do escopo do MVP
 
 Não implementar antes da validação do MVP, salvo decisão explícita:
 
@@ -280,7 +281,7 @@ As decisões abaixo ainda precisam de balanceamento ou detalhamento. Não devem 
 - Quantidade de ondas, inimigos por onda e duração dos intervalos.
 - Valores de vida, dano, velocidade, alcance, precisão e cadência.
 - Capacidade de munição e duração da recarga.
-- Parâmetros de ronda aleatória (raio, intervalo e distribuição dos destinos).
+- Parâmetros de ronda aleatória (raio, intervalo e distribuição dos destinos).\n- Estímulos que atraem infectados para a casa (ruído de tiros, portas, janelas, civis ou eventos).\n- Como infectados atacam a casa e se podem danificar/arrombar acessos.\n- Como cada NPC interage com portas trancadas e janelas fechadas.\n- Zona de extração para concluir o resgate dos civis.
 - Alcance de detecção e regras para perder/retomar perseguição.
 - Resolução-base e tamanho dos sprites.
 
