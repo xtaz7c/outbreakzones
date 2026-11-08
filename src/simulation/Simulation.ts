@@ -4,7 +4,7 @@
  *
  * Timestep: fixed timestep com acumulador (ADR7).
  */
-import { PoliceOfficer } from './PoliceOfficer';
+import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
 import { Infected } from './Infected';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { InfectedConfig, InfectedStructureTarget } from './Infected';
@@ -128,6 +128,16 @@ export class Simulation {
   setOfficerAttacking(officerId: number, attacking: boolean): boolean {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
     return officer ? officer.setAttacking(attacking) : false;
+  }
+
+  setOfficerTacticalPosture(officerId: number, posture: TacticalPosture): boolean {
+    const officer = this.officers.find((candidate) => candidate.id === officerId);
+    return officer ? officer.setTacticalPosture(posture) : false;
+  }
+
+  holdOfficerPosition(officerId: number): boolean {
+    const officer = this.officers.find((candidate) => candidate.id === officerId);
+    return officer ? officer.holdPosition() : false;
   }
 
   damageOfficer(officerId: number, amount: number): number {
