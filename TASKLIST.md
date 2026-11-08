@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** a Fase 7 está sendo ajustada na branch `feat/shelter-roaming-t066-t071` para refletir a regra de design atual: a residência é um abrigo seguro e inacessível; infectados vagam aleatoriamente e perseguem policiais detectados. A implementação anterior de dano e invasão de entradas foi removida. Testes, lint, build e revisão visual ainda precisam ser executados.
+> **Status atual:** a implementação revisada da Fase 7 está na branch `feat/shelter-roaming-t066-t071`: a residência é um abrigo seguro e inacessível; infectados vagam aleatoriamente e perseguem policiais detectados. O sistema de dano/invasão de entradas e os metadados de HP foram removidos. Testes, lint, build e revisão visual ainda precisam ser executados.
 
 ## 1. Visão e escopo
 
