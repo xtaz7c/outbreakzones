@@ -23,11 +23,13 @@ export interface InfectedConfig {
   readonly attackInterval?: number;
 }
 
-/** Contrato para portas/janelas destrutíveis, implementado na Fase 7. */
+/** Contract implemented by each destructible residence entrance. */
 export interface InfectedStructureTarget {
+  readonly id: string;
   readonly position: InfectedPosition;
-  /** Walkable tile adjacent to the door/window; the structure tile may be blocked. */
   readonly approachTile: TilePosition;
+  /** Walkable cell just inside the residence. */
+  readonly interiorTile: TilePosition;
   readonly isDestroyed: boolean;
   takeDamage(amount: number): number;
 }
@@ -35,7 +37,7 @@ export interface InfectedStructureTarget {
 type Target =
   | { readonly kind: 'officer'; readonly officer: PoliceOfficer; readonly position: InfectedPosition }
   | { readonly kind: 'structure'; readonly structure: InfectedStructureTarget; readonly position: InfectedPosition; readonly tile: TilePosition }
-  | { readonly kind: 'entry'; readonly position: InfectedPosition; readonly tile: TilePosition };
+  | { readonly kind: 'entry' | 'breach'; readonly position: InfectedPosition; readonly tile: TilePosition };
 
 const DEFAULTS = Object.freeze({
   maxHealth: 60,
@@ -47,9 +49,9 @@ const DEFAULTS = Object.freeze({
 });
 
 /**
- * Entidade de domínio do infectado básico.
- * A IA prioriza policiais detectados; sem policiais próximos, avança até
- * o ponto de entrada configurado. Não depende do Phaser.
+ * Entidade de domínio do infectado básico. A IA prioriza policiais detectados;
+ * caso contrário, avança até a entrada atribuída e tenta rompê-la. Quando a
+ * entrada cede, atravessa a célula aberta e registra a invasão da residência.
  */
 export class Infected {
   readonly id: number;
@@ -67,6 +69,7 @@ export class Infected {
   private waypointIndex = 0;
   private pathTargetKey = '';
   private attackTimer = 0;
+  private enteredResidence = false;
 
   constructor(config: InfectedConfig) {
     this.assertFinite(config.x, 'x');
@@ -121,6 +124,10 @@ export class Infected {
     return this.currentState === 'dead';
   }
 
+  get hasEnteredResidence(): boolean {
+    return this.enteredResidence;
+  }
+
   get position(): InfectedPosition {
     return { ...this.currentPosition };
   }
@@ -130,17 +137,17 @@ export class Infected {
     tileSize: number,
     map: GridMap,
     officers: readonly PoliceOfficer[],
-    structureTarget?: InfectedStructureTarget,
+    structureTargets: readonly InfectedStructureTarget[] = [],
   ): void {
-    if (this.isDead || !Number.isFinite(dt) || dt <= 0) return;
+    if (this.isDead || this.enteredResidence || !Number.isFinite(dt) || dt <= 0) return;
     if (!Number.isFinite(tileSize) || tileSize <= 0) {
       throw new RangeError('tileSize must be a positive finite number.');
     }
 
-    const target = this.chooseTarget(officers, structureTarget, tileSize);
+    const target = this.chooseTarget(officers, structureTargets, tileSize);
     const distance = this.distanceTo(target.position);
 
-    if (target.kind !== 'entry' && distance <= this.attackRange) {
+    if ((target.kind === 'officer' || target.kind === 'structure') && distance <= this.attackRange) {
       this.path = [];
       this.waypointIndex = 0;
       this.pathTargetKey = '';
@@ -157,9 +164,14 @@ export class Infected {
     }
 
     this.attackTimer = 0;
-    const targetTile = target.kind === 'entry' || target.kind === 'structure'
+    const targetTile = target.kind === 'entry' || target.kind === 'breach'
       ? target.tile
-      : { column: Math.floor(target.position.x / tileSize), row: Math.floor(target.position.y / tileSize) };
+      : target.kind === 'structure'
+        ? target.tile
+        : {
+            column: Math.floor(target.position.x / tileSize),
+            row: Math.floor(target.position.y / tileSize),
+          };
     const targetKey = `${targetTile.column}:${targetTile.row}`;
 
     if (targetKey !== this.pathTargetKey) {
@@ -174,9 +186,13 @@ export class Infected {
     }
 
     const followingPath = this.moveAlongPath(dt, tileSize);
-    const closingDistance = !followingPath && target.kind !== 'entry'
+    const closingDistance = !followingPath && target.kind === 'officer'
       ? this.moveWithinTargetTile(dt, target.position, tileSize)
       : false;
+
+    if (target.kind === 'breach' && this.isAtTile(target.tile, tileSize)) {
+      this.enteredResidence = true;
+    }
     this.currentState = followingPath || closingDistance ? 'moving' : 'idle';
   }
 
@@ -194,7 +210,7 @@ export class Infected {
 
   private chooseTarget(
     officers: readonly PoliceOfficer[],
-    structureTarget: InfectedStructureTarget | undefined,
+    structureTargets: readonly InfectedStructureTarget[],
     tileSize: number,
   ): Target {
     let nearest: PoliceOfficer | undefined;
@@ -210,14 +226,31 @@ export class Infected {
     if (nearest) {
       return { kind: 'officer', officer: nearest, position: nearest.position };
     }
-    if (structureTarget && !structureTarget.isDestroyed) {
+
+    const assignedEntrance = [...structureTargets].sort((a, b) =>
+      this.tileDistance(a.approachTile, this.entryTile) -
+      this.tileDistance(b.approachTile, this.entryTile),
+    )[0];
+
+    if (assignedEntrance) {
+      if (!assignedEntrance.isDestroyed) {
+        return {
+          kind: 'structure',
+          structure: assignedEntrance,
+          position: assignedEntrance.position,
+          tile: assignedEntrance.approachTile,
+        };
+      }
       return {
-        kind: 'structure',
-        structure: structureTarget,
-        position: structureTarget.position,
-        tile: structureTarget.approachTile,
+        kind: 'breach',
+        tile: assignedEntrance.interiorTile,
+        position: {
+          x: assignedEntrance.interiorTile.column * tileSize + tileSize / 2,
+          y: assignedEntrance.interiorTile.row * tileSize + tileSize / 2,
+        },
       };
     }
+
     return {
       kind: 'entry',
       tile: this.entryTile,
@@ -226,6 +259,17 @@ export class Infected {
         y: this.entryTile.row * tileSize + tileSize / 2,
       },
     };
+  }
+
+  private isAtTile(tile: TilePosition, tileSize: number): boolean {
+    return (
+      Math.floor(this.currentPosition.x / tileSize) === tile.column &&
+      Math.floor(this.currentPosition.y / tileSize) === tile.row
+    );
+  }
+
+  private tileDistance(a: TilePosition, b: TilePosition): number {
+    return Math.abs(a.column - b.column) + Math.abs(a.row - b.row);
   }
 
   private moveAlongPath(dt: number, tileSize: number): boolean {
