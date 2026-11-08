@@ -172,4 +172,61 @@ describe('Simulation', () => {
     expect(sim.getOfficers()[1]!.state).toBe('incapacitated');
   });
 
+  it('exposes five entrances with independent health', () => {
+    const residence = sim.getResidenceDefense();
+    expect(residence.getEntrances()).toHaveLength(5);
+    expect(sim.getResidenceStatus().state).toBe('secure');
+    residence.getEntrance('front-door')!.takeDamage(25);
+    expect(sim.getResidenceStatus().state).toBe('damaged');
+    expect(residence.getEntrance('west-window')!.health).toBe(90);
+  });
+
+  it('lets infected damage the entrance assigned to their spawn point', () => {
+    const map = new GridMap(64, 40);
+    map.setBlocked({ column: 32, row: 27 });
+    sim.setWorldGrid(map, 32);
+    sim.spawnInfected({
+      x: 1040,
+      y: 912,
+      entryTile: { column: 32, row: 28 },
+      detectionRange: 1,
+      attackRange: 40,
+      attackInterval: FIXED_DT,
+      damage: 20,
+    });
+
+    sim.update(FIXED_DT);
+    expect(sim.getResidenceDefense().getEntrance('front-door')!.health).toBe(160);
+    expect(sim.getResidenceStatus().state).toBe('damaged');
+  });
+
+  it('opens a breached entrance and defeats the mission when an infected enters', () => {
+    const map = new GridMap(64, 40);
+    const structureTile = { column: 32, row: 27 };
+    map.setBlocked(structureTile);
+    sim.setWorldGrid(map, 32);
+    const infected = sim.spawnInfected({
+      x: 1040,
+      y: 912,
+      entryTile: { column: 32, row: 28 },
+      detectionRange: 1,
+      moveSpeed: 55,
+    });
+    sim.getResidenceDefense().getEntrance('front-door')!.takeDamage(180);
+
+    for (let index = 0; index < 90; index += 1) sim.update(FIXED_DT);
+
+    expect(map.isWalkable(structureTile)).toBe(true);
+    expect(infected.hasEnteredResidence).toBe(true);
+    expect(sim.getResidenceStatus().state).toBe('overrun');
+    expect(sim.isMissionDefeated()).toBe(true);
+  });
+
+  it('defeats the mission when all three officers are incapacitated', () => {
+    sim.damageOfficer(1, 100);
+    sim.damageOfficer(2, 100);
+    sim.damageOfficer(3, 100);
+    expect(sim.isMissionDefeated()).toBe(true);
+  });
+
 });
