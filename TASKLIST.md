@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status inicial:** não iniciado. Esta lista registra o escopo planejado; não declara funcionalidades implementadas.
+> **Status atual:** Fases 0 e 1 concluídas na branch `feat/foundation-t001-t016`.
 
 ## 1. Visão e escopo
 
@@ -59,29 +59,29 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 ### Fase 0 — Planejamento e repositório
 
-- [ ] **T001 — P0** Confirmar o escopo fechado do MVP e seus critérios de aceitação.
-- [ ] **T002 — P0** Criar README com visão do projeto, requisitos e instruções de execução.
-- [ ] **T003 — P1** Documentar fluxo de branches, commits e pull requests.
-- [ ] **T004 — P0** Criar a estrutura inicial de diretórios.
-- [ ] **T005 — P1** Definir convenções de código, nomes e configuração TypeScript.
-- [ ] **T006 — P1** Documentar decisões de arquitetura e decisões de design relevantes.
+- [x] **T001 — P0** Confirmar o escopo fechado do MVP e seus critérios de aceitação.
+- [x] **T002 — P0** Criar README com visão do projeto, requisitos e instruções de execução.
+- [x] **T003 — P1** Documentar fluxo de branches, commits e pull requests.
+- [x] **T004 — P0** Criar a estrutura inicial de diretórios.
+- [x] **T005 — P1** Definir convenções de código, nomes e configuração TypeScript.
+- [x] **T006 — P1** Documentar decisões de arquitetura e decisões de design relevantes.
 
-**Saída da fase:** repositório documentado e pronto para receber a aplicação.
+**Saída da fase:** repositório documentado e pronto para receber a aplicação. ✅
 
 ### Fase 1 — Fundação técnica
 
-- [ ] **T007 — P0** Configurar Vite e TypeScript.
-- [ ] **T008 — P0** Instalar e configurar Phaser 3.
-- [ ] **T009 — P0** Instalar e configurar Vitest.
-- [ ] **T010 — P1** Configurar lint e formatação.
-- [ ] **T011 — P0** Criar cena de inicialização e cena principal da missão.
-- [ ] **T012 — P0** Criar fluxo de carregamento de assets e tratamento de falhas.
-- [ ] **T013 — P1** Configurar resolução lógica, escala e redimensionamento responsivo.
-- [ ] **T014 — P0** Definir atualização da simulação com delta time e comportamento estável diante de variações de FPS.
-- [ ] **T015 — P0** Separar regras/simulação da camada de renderização Phaser.
-- [ ] **T016 — P0** Configurar scripts de desenvolvimento, teste, lint e build.
+- [x] **T007 — P0** Configurar Vite e TypeScript.
+- [x] **T008 — P0** Instalar e configurar Phaser 3.
+- [x] **T009 — P0** Instalar e configurar Vitest.
+- [x] **T010 — P1** Configurar lint e formatação.
+- [x] **T011 — P0** Criar cena de inicialização e cena principal da missão.
+- [x] **T012 — P0** Criar fluxo de carregamento de assets e tratamento de falhas.
+- [x] **T013 — P1** Configurar resolução lógica, escala e redimensionamento responsivo.
+- [x] **T014 — P0** Definir atualização da simulação com delta time e comportamento estável diante de variações de FPS.
+- [x] **T015 — P0** Separar regras/simulação da camada de renderização Phaser.
+- [x] **T016 — P0** Configurar scripts de desenvolvimento, teste, lint e build.
 
-**Saída da fase:** uma cena Phaser executando no navegador e pipeline local de validação funcionando.
+**Saída da fase:** uma cena Phaser executando no navegador e pipeline local de validação funcionando. ✅
 
 ### Fase 2 — Mapa e mundo
 
