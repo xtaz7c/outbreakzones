@@ -103,13 +103,14 @@ export class CombatSystem {
     for (const officer of officers) {
       if (officer.isIncapacitated) continue;
       const origin = officer.position;
+      const availableTargets = livingTargets.filter((target) => !target.isDead);
       const priorityId = this.priorities.get(officer.id);
       const priority = priorityId === undefined
         ? undefined
         : livingTargets.find((target) => target.id === priorityId);
       const target = priority && this.isValidTarget(officer, priority, origin, map, tileSize)
         ? priority
-        : this.findNearestTarget(officer, livingTargets, origin, map, tileSize);
+        : this.findNearestTarget(officer, availableTargets, origin, map, tileSize);
 
       if (!target) {
         officer.setAttacking(false);
@@ -130,7 +131,7 @@ export class CombatSystem {
       }
 
       this.cooldowns.set(officer.id, cooldown % officer.fireInterval);
-      const hit = this.random() <= officer.accuracy;
+      const hit = this.random() < officer.accuracy;
       const damage = hit ? target.takeDamage(this.damagePerShot) : 0;
       events.push({
         officerId: officer.id,
@@ -178,6 +179,7 @@ export class CombatSystem {
     map: GridMap,
     tileSize: number,
   ): boolean {
+    if (target.isDead) return false;
     const destination = target.position;
     return (
       Math.hypot(destination.x - origin.x, destination.y - origin.y) <= officer.attackRange &&
