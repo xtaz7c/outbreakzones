@@ -189,4 +189,31 @@ describe('Simulation', () => {
     expect(sim.getOfficers()[1]!.state).toBe('incapacitated');
   });
 
+  it('holds selected officer position by cancelling its current path', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    expect(sim.issueMoveOrder(officer.id, { column: 32, row: 33 })).toBe(true);
+    expect(sim.holdOfficerPosition(officer.id)).toBe(true);
+    expect(officer.state).toBe('idle');
+    const position = officer.position;
+    sim.update(FIXED_DT * 5);
+    expect(officer.position).toEqual(position);
+  });
+
+  it('holds automatic fire but still honors a manual target priority', () => {
+    sim = new Simulation({ random: () => 0 });
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    const infected = sim.spawnInfected({
+      x: 1000, y: 1072, entryTile: { column: 31, row: 33 },
+      moveSpeed: 1, detectionRange: 1,
+    });
+    expect(sim.setOfficerTacticalPosture(officer.id, 'hold_fire')).toBe(true);
+    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    expect(infected.health).toBe(60);
+    sim.setTargetPriority(officer.id, infected.id);
+    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    expect(infected.health).toBeLessThan(60);
+  });
+
 });
