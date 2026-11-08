@@ -1,22 +1,18 @@
 import Phaser from 'phaser';
 import { Simulation } from '../../simulation/Simulation';
 import { GridMap } from '../../simulation/world/GridMap';
-import { findPath } from '../../simulation/world/Pathfinder';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
 const MAX_CAMERA_ZOOM = 2.5;
-const OFFICER_SPEED = 105;
 const SELECTION_DRAG_THRESHOLD = 8;
 
 interface TacticalOfficer {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
   readonly selectionRing: Phaser.GameObjects.Arc;
-  path: TilePosition[];
-  waypointIndex: number;
 }
 
 export class MissionScene extends Phaser.Scene {
@@ -92,6 +88,7 @@ export class MissionScene extends Phaser.Scene {
     );
 
     this.registry.set('worldGrid', this.worldGrid);
+    this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
     this.cameraWorldWidth = map.widthInPixels;
     this.cameraWorldHeight = map.heightInPixels;
     this.cameras.main
@@ -101,32 +98,20 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private createOfficers(): void {
-    const spawnTiles: TilePosition[] = [
-      { column: 29, row: 33 },
-      { column: 32, row: 33 },
-      { column: 35, row: 33 },
-    ];
-
-    this.officers = spawnTiles.map((tile, index) => {
-      const x = tile.column * this.tileSize + this.tileSize / 2;
-      const y = tile.row * this.tileSize + this.tileSize / 2;
+    this.officers = this.simulation.getOfficers().map((officer) => {
+      const position = officer.position;
       const ring = this.add.circle(0, 0, 15).setStrokeStyle(3, 0xffdf70).setVisible(false);
       const body = this.add.circle(0, 0, 10, 0x3f83d5).setStrokeStyle(2, 0xe8f2ff);
-      const label = this.add.text(0, 13, String(index + 1), {
+      const direction = this.add.triangle(0, -13, 0, -5, -4, 4, 4, 4, 0xffe0a3);
+      const label = this.add.text(0, 13, String(officer.id), {
         fontFamily: 'monospace',
         fontSize: '11px',
         color: '#ffffff',
         backgroundColor: '#172033',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(x, y, [ring, body, label]).setDepth(100);
-      return {
-        id: index + 1,
-        container,
-        selectionRing: ring,
-        path: [],
-        waypointIndex: 0,
-      };
+      const container = this.add.container(position.x, position.y, [ring, body, direction, label]).setDepth(100);
+      return { id: officer.id, container, selectionRing: ring };
     });
   }
 
@@ -236,7 +221,8 @@ export class MissionScene extends Phaser.Scene {
 
   private selectOfficer(id: number): void {
     this.selectedOfficerIds.clear();
-    this.selectedOfficerIds.add(id);
+    const officer = this.simulation.getOfficers().find((candidate) => candidate.id === id);
+    if (officer && !officer.isIncapacitated) this.selectedOfficerIds.add(id);
     this.refreshSelectionVisuals();
   }
 
@@ -247,7 +233,7 @@ export class MissionScene extends Phaser.Scene {
       .find((officer) => Phaser.Math.Distance.Between(x, y, officer.container.x, officer.container.y) <= hitRadius);
 
     if (!additive) this.selectedOfficerIds.clear();
-    if (hit) {
+    if (hit && !this.simulation.getOfficers().find((officer) => officer.id === hit.id)?.isIncapacitated) {
       if (additive && this.selectedOfficerIds.has(hit.id)) {
         this.selectedOfficerIds.delete(hit.id);
       } else {
@@ -265,7 +251,9 @@ export class MissionScene extends Phaser.Scene {
 
     if (!additive) this.selectedOfficerIds.clear();
     for (const officer of this.officers) {
+      const model = this.simulation.getOfficers().find((candidate) => candidate.id === officer.id);
       if (
+        model && !model.isIncapacitated &&
         officer.container.x >= left &&
         officer.container.x <= right &&
         officer.container.y >= top &&
@@ -292,27 +280,13 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private issueMoveOrder(worldX: number, worldY: number): void {
-    const selected = this.officers.filter((officer) => this.selectedOfficerIds.has(officer.id));
-    if (selected.length === 0) return;
-
-    const target = this.worldToTile(worldX, worldY);
-    const centerOffset = (selected.length - 1) / 2;
-
-    selected.forEach((officer, index) => {
-      const offset = index - centerOffset;
-      const goal = this.findNearestWalkable({
-        column: Math.round(target.column + offset),
-        row: target.row,
-      });
-      if (!goal) return;
-
-      const start = this.worldToTile(officer.container.x, officer.container.y);
-      const path = findPath(this.worldGrid, start, goal, { allowDiagonal: true });
-      if (path) {
-        officer.path = path;
-        officer.waypointIndex = 0;
+    if (this.isPaused) return;
+    const destination = this.worldToTile(worldX, worldY);
+    for (const officer of this.simulation.getOfficers()) {
+      if (this.selectedOfficerIds.has(officer.id)) {
+        this.simulation.issueMoveOrder(officer.id, destination);
       }
-    });
+    }
   }
 
   private findNearestWalkable(origin: TilePosition, maxRadius = 5): TilePosition | null {
@@ -335,29 +309,17 @@ export class MissionScene extends Phaser.Scene {
     };
   }
 
-  private updateOfficers(dt: number): void {
-    for (const officer of this.officers) {
-      const waypoint = officer.path[officer.waypointIndex];
-      if (!waypoint) continue;
-
-      const targetX = waypoint.column * this.tileSize + this.tileSize / 2;
-      const targetY = waypoint.row * this.tileSize + this.tileSize / 2;
-      const dx = targetX - officer.container.x;
-      const dy = targetY - officer.container.y;
-      const distance = Math.hypot(dx, dy);
-      const step = OFFICER_SPEED * dt;
-
-      if (distance <= step) {
-        officer.container.setPosition(targetX, targetY);
-        officer.waypointIndex += 1;
-        if (officer.waypointIndex >= officer.path.length) {
-          officer.path = [];
-          officer.waypointIndex = 0;
-        }
-      } else {
-        officer.container.x += (dx / distance) * step;
-        officer.container.y += (dy / distance) * step;
-      }
+  private updateOfficers(_dt: number): void {
+    for (const visual of this.officers) {
+      const officer = this.simulation.getOfficers().find((candidate) => candidate.id === visual.id);
+      if (!officer) continue;
+      const position = officer.position;
+      visual.container.setPosition(position.x, position.y);
+      visual.container.setRotation(officer.facingAngle);
+      visual.container.setAlpha(officer.isIncapacitated ? 0.35 : 1);
+      visual.selectionRing.setVisible(
+        this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
+      );
     }
   }
 
