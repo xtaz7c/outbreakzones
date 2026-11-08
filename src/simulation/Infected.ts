@@ -205,7 +205,7 @@ export class Infected {
       const sameTile = this.currentTile(tileSize).column === targetTile.column &&
         this.currentTile(tileSize).row === targetTile.row;
       if (!sameTile) return false;
-      const closing = this.moveWithinTargetTile(dt, targetPosition, tileSize);
+      const closing = this.moveWithinTargetTile(dt, targetPosition);
       this.currentState = closing ? 'moving' : 'idle';
       return true;
     }
@@ -311,7 +311,6 @@ export class Infected {
   private moveWithinTargetTile(
     dt: number,
     target: InfectedPosition,
-    tileSize: number,
   ): boolean {
     const dx = target.x - this.currentPosition.x;
     const dy = target.y - this.currentPosition.y;
