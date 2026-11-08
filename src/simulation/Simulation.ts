@@ -5,6 +5,8 @@
  * Timestep: fixed timestep com acumulador (ADR7).
  */
 import { PoliceOfficer } from './PoliceOfficer';
+import { Infected } from './Infected';
+import type { InfectedConfig, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import type { TilePosition } from './world/WorldConfig';
 
@@ -34,7 +36,9 @@ export class Simulation {
     new PoliceOfficer({ id: 2, x: 32 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
-  private infectedCount = 0;
+  private readonly infected: Infected[] = [];
+  private nextInfectedId = 1;
+  private infectedStructureTarget: InfectedStructureTarget | undefined;
   private worldGrid: GridMap | null = null;
   private tileSize = WORLD_TILE_SIZE;
 
@@ -100,7 +104,7 @@ export class Simulation {
       paused: this.paused,
       officerCount: this.officers.length,
       activeOfficerCount: this.officers.filter((officer) => !officer.isIncapacitated).length,
-      infectedCount: this.infectedCount,
+      infectedCount: this.infected.length,
     };
   }
 }
