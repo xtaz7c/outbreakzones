@@ -125,7 +125,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T044 — P0** Implementar incapacitação e cancelamento de ordens incompatíveis.
 - [ ] **T045 — P0** Instanciar os três policiais no cenário.
 
-**Saída da fase:** três policiais controláveis, com estados e atributos individuais.
+**Progresso de implementação (branch `feat/police-officers-t037-t045`):** criado o modelo independente `PoliceOfficer` com atributos individuais, estados, orientação, pathfinding, deslocamento, dano e incapacitação. A `Simulation` instancia três policiais e atualiza seus movimentos no fixed timestep; `MissionScene` renderiza os modelos e encaminha ordens de movimento, preservando formação. Testes unitários do modelo foram adicionados. Ainda pendentes: validação de `npm test`, lint, build e revisão visual no navegador; T037–T045 permanecem desmarcadas até essa validação. A animação de movimento de sprites (T042) permanece provisória: há orientação visual por indicador, sem spritesheet.
 
 ### Fase 5 — Infectados e IA
 

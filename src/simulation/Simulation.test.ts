@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FIXED_DT, Simulation } from './Simulation';
+import { GridMap } from './world/GridMap';
 
 describe('Simulation', () => {
   let sim: Simulation;
@@ -85,4 +86,42 @@ describe('Simulation', () => {
     sim.update(0);
     expect(sim.getState().elapsed).toBe(0);
   });
+
+  it('owns three independent police officer entities', () => {
+    const officers = sim.getOfficers();
+    expect(officers).toHaveLength(3);
+    expect(officers.map((officer) => officer.id)).toEqual([1, 2, 3]);
+    expect(new Set(officers.map((officer) => officer.position.x)).size).toBe(3);
+  });
+
+  it('routes movement through the world grid and advances it on fixed steps', () => {
+    const map = new GridMap(64, 40);
+    sim.setWorldGrid(map, 32);
+    const officer = sim.getOfficers()[0]!;
+
+    expect(sim.issueMoveOrder(officer.id, { column: 30, row: 33 })).toBe(true);
+    expect(officer.state).toBe('moving');
+
+    for (let index = 0; index < 40; index += 1) sim.update(FIXED_DT);
+    expect(officer.position.x).toBeGreaterThan(29 * 32 + 16);
+  });
+
+  it('does not move officers while paused and rejects new orders', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    expect(sim.issueMoveOrder(officer.id, { column: 30, row: 33 })).toBe(true);
+    sim.setPaused(true);
+    const before = officer.position;
+    sim.update(1);
+    expect(officer.position).toEqual(before);
+    expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(false);
+  });
+
+  it('tracks active officers after individual incapacitation', () => {
+    expect(sim.damageOfficer(2, 100)).toBe(100);
+    expect(sim.getState().officerCount).toBe(3);
+    expect(sim.getState().activeOfficerCount).toBe(2);
+    expect(sim.getOfficers()[1]!.state).toBe('incapacitated');
+  });
+
 });
