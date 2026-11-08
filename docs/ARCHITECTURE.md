@@ -49,16 +49,18 @@ src/
 
 ## Decisões de design relevantes (ADR resumidas)
 
-| ID   | Decisão                                      | Motivo                                      |
-|------|-----------------------------------------------|---------------------------------------------|
-| ADR1 | Simulação separada da renderização            | Testabilidade e portabilidade               |
-| ADR2 | Tempo real com pausa estratégica              | Estilo RTS tático clássico                  |
-| ADR3 | Top-down 2D pixel art                         | Clareza tática + produção viável para MVP   |
-| ADR4 | Três policiais controláveis                   | Escopo fechado e legível                    |
-| ADR5 | Pathfinding + colisões no domínio             | Comportamento previsível e testável         |
-| ADR6 | Vite + TypeScript strict                      | DX moderna e segurança de tipos             |
-| ADR7 | Fixed timestep (1/60) com acumulador          | Estabilidade em FPS variável; ver abaixo    |
-| ADR8 | Residência como abrigo inacessível (obsoleta) | Substituída pela ADR9 |\n| ADR9 | Casa interativa e acessos condicionais       | Tutorial de resgate; passagem depende do estado do acesso e do tipo de NPC |
+| ID | Decisão | Motivo |
+|---|---|---|
+| ADR1 | Simulação separada da renderização | Testabilidade e portabilidade |
+| ADR2 | Tempo real com pausa estratégica | Estilo RTS tático clássico |
+| ADR3 | Top-down 2D pixel art | Clareza tática e produção viável |
+| ADR4 | Três policiais controláveis | Escopo fechado e legível |
+| ADR5 | Pathfinding e colisões no domínio | Comportamento previsível e testável |
+| ADR6 | Vite + TypeScript strict | DX moderna e segurança de tipos |
+| ADR7 | Fixed timestep (1/60) com acumulador | Estabilidade em FPS variável |
+| ADR8 | Abrigo inacessível (obsoleta) | Substituída pela ADR9 |
+| ADR9 | Edifícios e acessos interativos | Interior/exterior e acesso por entidade |
+| ADR10 | Reparos e aprimoramentos | Recuperação e reforço com custos e limites |
 
 ### ADR7 — Fixed timestep com acumulador
 
