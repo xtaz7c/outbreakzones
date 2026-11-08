@@ -62,7 +62,7 @@ npm run build
 | Gerar infectado | I (debug) |
 | Atrair infectados para a entrada frontal | N (debug) |
 
-X, H e G são comandos táticos básicos em validação. E, B, I e N são atalhos provisórios de desenvolvimento; N direciona infectados ao acesso frontal e ainda não representa um sistema geral de ruído.
+X, H e G são comandos táticos básicos em validação. E, B, I e N são atalhos provisórios de desenvolvimento; N emite um estímulo temporário de ruído no acesso frontal (raio de 1000 px, duração de 10 s); a IA geral de percepção e ronda ainda está em desenvolvimento.
 
 ## Arquitetura (resumo)
 
