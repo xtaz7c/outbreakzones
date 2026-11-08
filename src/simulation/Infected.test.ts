@@ -78,6 +78,23 @@ describe('Infected', () => {
     expect(health).toBe(13);
   });
 
+
+  it('moves through a breached access to the interior tile', () => {
+    const infected = new Infected({
+      id: 1, x: 48, y: 48, entryTile: { column: 1, row: 1 }, moveSpeed: 32,
+    });
+    const breached = {
+      position: { x: 48, y: 48 },
+      approachTile: { column: 1, row: 1 },
+      breachTile: { column: 2, row: 1 },
+      isDestroyed: true,
+      takeDamage: () => 0,
+    };
+    infected.update(1, 32, map, [], breached);
+    expect(infected.position.x).toBeGreaterThan(48);
+    expect(infected.state).toBe('moving');
+  });
+
   it('clamps damage to remaining health and enters dead state', () => {
     const infected = new Infected({ id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 } });
     expect(infected.takeDamage(100)).toBe(60);
