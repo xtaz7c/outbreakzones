@@ -230,4 +230,14 @@ describe('Simulation', () => {
     expect(infected.health).toBe(60);
   });
 
+  it('stops simulation updates and rejects movement after all officers are incapacitated', () => {
+    for (const officer of sim.getOfficers()) sim.damageOfficer(officer.id, 100);
+    expect(sim.isMissionDefeated()).toBe(true);
+    const before = sim.getState().elapsed;
+    sim.update(FIXED_DT * 10);
+    expect(sim.getState().elapsed).toBe(before);
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    expect(sim.issueMoveOrder(1, { column: 30, row: 33 })).toBe(false);
+  });
+
 });
