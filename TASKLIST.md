@@ -170,7 +170,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T069 — P0** Modelar garagens como acessos próprios, com estados e regras de passagem específicos.
 - [ ] **T070 — P0** Permitir entrada e saída de policiais, civis e infectados por rotas válidas, considerando tipo de NPC, estado do acesso e pathfinding interior/exterior.
 - [ ] **T071 — P0** Implementar ronda aleatória, percepção por visão/ruído e perseguição; infectados podem investigar estímulos e atacar edifícios/acessos quando atraídos.
-- [ ] **T072 — P1** Persistir estados dos componentes durante a missão; não sortear novamente a cada atualização, troca de cena ou recarga da visualização.
+- [ ] **T124 — P1** Persistir estados dos componentes durante a missão; não sortear novamente a cada atualização, troca de cena ou recarga da visualização.
 
 **Geração probabilística:** cada edifício recebe um perfil de condição. O estado de cada porta, janela e garagem é sorteado de forma independente usando pesos configuráveis por cenário/tipo de edifício. Exemplo: uma casa pode ter porta trancada, janela aberta e garagem fechada; a casa vizinha pode ter porta aberta e garagem trancada. Usar seed por mapa/partida para permitir reprodução de bugs e testes determinísticos. Probabilidades devem ser dados de configuração, não condicionais espalhados pelo código.
 
