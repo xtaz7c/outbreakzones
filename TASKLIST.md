@@ -137,7 +137,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T050 — P0** Implementar movimentação autônoma por destinos aleatórios caminháveis.
 - [ ] **T051 — P0** Implementar seleção e atualização periódica de destinos de ronda.
 - [ ] **T052 — P0** Implementar detecção, perseguição e ataque contra policiais ativos.
-- [ ] **T053 — P0** Garantir que paredes, portas e janelas bloqueiem os infectados; não atacar estruturas.
+- [ ] **T053 — P0** Garantir que paredes bloqueiem a navegação e que infectados possam atacar acessos/estruturas quando atraídos por estímulos.
 - [ ] **T054 — P0** Implementar morte e remoção segura das entidades.
 
 **Progresso de implementação (branch `feat/infected-ai-t046-t054`):** o modelo independente `Infected` implementa atributos, estados, navegação A*, detecção e ataque a policiais ativos, dano/vida e morte. A implementação inicial direcionava infectados para a residência e previa ataques às entradas; esses comportamentos foram revistos na Fase 7. A nova regra é vagar aleatoriamente por células caminháveis e perseguir policiais detectados, sem atacar estruturas nem entrar no abrigo. T046–T054 permanecem desmarcadas até validação integrada.
@@ -171,7 +171,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T070 — P0** Implementar ronda aleatória, detecção e perseguição, retomando a ronda sem alvo válido.
 - [ ] **T071 — P1** Fazer infectados investigarem e atacarem a casa quando atraídos por estímulos configurados.
 
-**Progresso de implementação (branch `feat/shelter-roaming-t066-t071`):** removido o sistema anterior de integridade, destruição e invasão de entradas. A IA dos infectados foi alterada para escolher destinos aleatórios alcançáveis no GridMap; quando detecta um policial ativo, interrompe a ronda e persegue/ataca. Ao perder o alvo, volta a vagar. A simulação não abre mais células de portas/janelas: o GridMap permanece como fonte única de colisão para policiais e infectados. O Dev Hub identifica a casa como zona segura e inacessível. Foram adicionados testes para ronda aleatória, perímetro bloqueado, perseguição e ordens policiais sem rota para o interior. T066–T071 permanecem desmarcadas até validação automatizada e revisão visual no navegador.
+**Base técnica anterior (branch `feat/shelter-roaming-t066-t071`):** contém ronda aleatória, perseguição e colisões estáticas, mas implementa a antiga regra de casa inacessível. Essa lógica precisa ser substituída por acessos dinâmicos, interior navegável e reação da casa a estímulos. As tarefas T066–T071 estão reabertas para essa revisão.
 
 **Regra de abrigo:** o interior da residência não faz parte da área jogável nesta missão. Nenhuma unidade pode atravessar o perímetro, e a casa não recebe dano nem gera condição de derrota.
 
