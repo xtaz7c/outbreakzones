@@ -173,8 +173,6 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Base técnica anterior (branch `feat/shelter-roaming-t066-t071`):** contém ronda aleatória, perseguição e colisões estáticas, mas implementa a antiga regra de casa inacessível. Essa lógica precisa ser substituída por acessos dinâmicos, interior navegável e reação da casa a estímulos. As tarefas T066–T071 estão reabertas para essa revisão.
 
-**Regra de abrigo:** o interior da residência não faz parte da área jogável nesta missão. Nenhuma unidade pode atravessar o perímetro, e a casa não recebe dano nem gera condição de derrota.
-
 ### Fase 8 — Ondas e fluxo da missão
 
 - [ ] **T072 — P0** Criar WaveSystem independente da cena/renderização.
@@ -288,7 +286,11 @@ As decisões abaixo ainda precisam de balanceamento ou detalhamento. Não devem 
 - Quantidade de ondas, inimigos por onda e duração dos intervalos.
 - Valores de vida, dano, velocidade, alcance, precisão e cadência.
 - Capacidade de munição e duração da recarga.
-- Parâmetros de ronda aleatória (raio, intervalo e distribuição dos destinos).\n- Estímulos que atraem infectados para a casa (ruído de tiros, portas, janelas, civis ou eventos).\n- Como infectados atacam a casa e se podem danificar/arrombar acessos.\n- Como cada NPC interage com portas trancadas e janelas fechadas.\n- Zona de extração para concluir o resgate dos civis.
+- Parâmetros de ronda aleatória (raio, intervalo e distribuição dos destinos).
+- Estímulos que atraem infectados para a casa (ruído de tiros, portas, janelas, civis ou eventos).
+- Como infectados atacam a casa e se podem danificar/arrombar acessos.
+- Como cada NPC interage com portas trancadas e janelas fechadas.
+- Zona de extração para concluir o resgate dos civis.
 - Alcance de detecção e regras para perder/retomar perseguição.
 - Resolução-base e tamanho dos sprites.
 
