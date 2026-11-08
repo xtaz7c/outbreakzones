@@ -106,7 +106,7 @@ describe('Infected residence breach', () => {
     const infected = new Infected({
       id: 2,
       x: 80,
-      y: 80,
+      y: 48,
       entryTile: { column: 2, row: 1 },
       moveSpeed: 64,
       detectionRange: 1,
@@ -131,6 +131,6 @@ describe('Infected residence breach', () => {
     infected.update(1, 32, map, [], [entrance]);
 
     expect(infected.hasEnteredResidence).toBe(true);
-    expect(infected.position.y).toBeGreaterThan(80);
+    expect(infected.position.y).toBeGreaterThan(48);
   });
 });
