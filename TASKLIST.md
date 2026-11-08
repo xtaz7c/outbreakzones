@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** Fundação (T001–T016) implementada e revisada na branch `feat/foundation-t001-t016`. Validado: `npm test` (10/10), `npm run lint`, `tsc --noEmit`. Build Vite: OOM no sandbox de memória limitada — validar `npm run build` em máquina local.
+> **Status atual:** Implementação inicial de T001–T016 presente na branch `feat/foundation-t001-t016`, mas a fundação ainda **não está validada para integração**. O `package-lock.json` está incompleto (contém apenas o pacote raiz); portanto, `npm ci` não pode ser considerado aprovado. Não há evidência reproduzível anexada para `npm ci`, `npm test`, `npm run lint` e `npm run build`. Manter a Fase 1 em validação até corrigir o lockfile e executar os quatro comandos com sucesso.
 
 ## 1. Visão e escopo
 
@@ -70,18 +70,18 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 ### Fase 1 — Fundação técnica
 
-- [x] **T007 — P0** Configurar Vite e TypeScript.
-- [x] **T008 — P0** Instalar e configurar Phaser 3.
-- [x] **T009 — P0** Instalar e configurar Vitest.
-- [x] **T010 — P1** Configurar lint e formatação.
-- [x] **T011 — P0** Criar cena de inicialização e cena principal da missão.
-- [x] **T012 — P0** Criar fluxo de carregamento de assets e tratamento de falhas.
-- [x] **T013 — P1** Configurar resolução lógica, escala e redimensionamento responsivo.
-- [x] **T014 — P0** Definir atualização da simulação com delta time e comportamento estável diante de variações de FPS.
-- [x] **T015 — P0** Separar regras/simulação da camada de renderização Phaser.
-- [x] **T016 — P0** Configurar scripts de desenvolvimento, teste, lint e build.
+- [ ] **T007 — P0** Configurar Vite e TypeScript.
+- [ ] **T008 — P0** Instalar e configurar Phaser 3.
+- [ ] **T009 — P0** Instalar e configurar Vitest.
+- [ ] **T010 — P1** Configurar lint e formatação.
+- [ ] **T011 — P0** Criar cena de inicialização e cena principal da missão.
+- [ ] **T012 — P0** Criar fluxo de carregamento de assets e tratamento de falhas.
+- [ ] **T013 — P1** Configurar resolução lógica, escala e redimensionamento responsivo.
+- [ ] **T014 — P0** Definir atualização da simulação com delta time e comportamento estável diante de variações de FPS.
+- [ ] **T015 — P0** Separar regras/simulação da camada de renderização Phaser.
+- [ ] **T016 — P0** Configurar scripts de desenvolvimento, teste, lint e build.
 
-**Saída da fase:** uma cena Phaser executando no navegador e pipeline local de validação funcionando. ✅ (build de produção: validar localmente — OOM no sandbox)
+**Saída da fase:** pendente. A estrutura e os scripts existem, mas a instalação reproduzível e a validação completa do pipeline ainda não foram demonstradas.
 
 ### Fase 2 — Mapa e mundo
 
