@@ -7,8 +7,9 @@
 import { PoliceOfficer } from './PoliceOfficer';
 import { Infected } from './Infected';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
-import type { InfectedConfig, InfectedStructureTarget } from './Infected';
+import type { InfectedConfig } from './Infected';
 import type { GridMap } from './world/GridMap';
+import { ResidenceDefense, type ResidenceDefenseStatus } from './world/ResidenceDefense';
 import type { TilePosition } from './world/WorldConfig';
 
 export interface SimulationState {
@@ -39,9 +40,10 @@ export class Simulation {
   ];
   private readonly infected: Infected[] = [];
   private readonly combat: CombatSystem;
+  private readonly residence = new ResidenceDefense();
+  private readonly openedEntranceIds = new Set<string>();
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
-  private infectedStructureTarget: InfectedStructureTarget | undefined;
   private worldGrid: GridMap | null = null;
   private tileSize = WORLD_TILE_SIZE;
 
@@ -73,6 +75,19 @@ export class Simulation {
     return this.infected;
   }
 
+  getResidenceDefense(): ResidenceDefense {
+    return this.residence;
+  }
+
+  getResidenceStatus(): ResidenceDefenseStatus {
+    return this.residence.getStatus();
+  }
+
+  isMissionDefeated(): boolean {
+    return this.residence.getStatus().isOverrun ||
+      this.officers.every((officer) => officer.isIncapacitated);
+  }
+
   spawnInfected(config: Omit<InfectedConfig, 'id'>): Infected {
     const infected = new Infected({ ...config, id: this.nextInfectedId++ });
     this.infected.push(infected);
@@ -94,10 +109,6 @@ export class Simulation {
     return this.combat.getAmmoStatus(officerId);
   }
 
-  setInfectedStructureTarget(target: InfectedStructureTarget | undefined): void {
-    this.infectedStructureTarget = target;
-  }
-
   damageInfected(infectedId: number, amount: number): number {
     const infected = this.infected.find((candidate) => candidate.id === infectedId);
     return infected?.takeDamage(amount) ?? 0;
@@ -105,7 +116,7 @@ export class Simulation {
 
   issueMoveOrder(officerId: number, destination: TilePosition): boolean {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
-    if (!officer || !this.worldGrid || this.paused) return false;
+    if (!officer || !this.worldGrid || this.paused || this.isMissionDefeated()) return false;
     return officer.issueMoveOrder(destination, this.worldGrid, this.tileSize);
   }
 
@@ -121,8 +132,7 @@ export class Simulation {
 
   update(dt: number): void {
     this.combatEvents = [];
-    if (this.paused || !isValidDt(dt)) return;
-
+    if (this.paused || !isValidDt(dt) || this.isMissionDefeated()) return;
 
     this.accumulator += Math.min(dt, MAX_FRAME_DT);
     let steps = 0;
@@ -130,6 +140,10 @@ export class Simulation {
       this.step(FIXED_DT);
       this.accumulator -= FIXED_DT;
       steps += 1;
+      if (this.isMissionDefeated()) {
+        this.accumulator = 0;
+        break;
+      }
     }
     if (steps >= MAX_STEPS_PER_UPDATE) this.accumulator = 0;
   }
@@ -140,10 +154,28 @@ export class Simulation {
       officer.update(dt, this.tileSize);
     }
     if (this.worldGrid) {
+      const entrances = this.residence.getEntrances();
       for (const infected of this.infected) {
-        infected.update(dt, this.tileSize, this.worldGrid, this.officers, this.infectedStructureTarget);
+        infected.update(dt, this.tileSize, this.worldGrid, this.officers, entrances);
       }
-      this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, this.worldGrid, this.tileSize));
+
+      // A breached opening becomes walkable so A* can route through the wall.
+      for (const entrance of entrances) {
+        if (entrance.isDestroyed && !this.openedEntranceIds.has(entrance.id)) {
+          if (this.worldGrid.contains(entrance.structureTile)) {
+            this.worldGrid.setBlocked(entrance.structureTile, false);
+          }
+          this.openedEntranceIds.add(entrance.id);
+        }
+      }
+
+      if (this.infected.some((infected) => infected.hasEnteredResidence)) {
+        this.residence.markOverrun();
+      }
+
+      this.combatEvents.push(...this.combat.update(
+        dt, this.officers, this.infected, this.worldGrid, this.tileSize,
+      ));
     }
     for (let index = this.infected.length - 1; index >= 0; index -= 1) {
       if (this.infected[index]!.isDead) this.infected.splice(index, 1);
