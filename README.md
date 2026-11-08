@@ -10,64 +10,62 @@ Em desenvolvimento ativo. O backlog oficial está em [`TASKLIST.md`](./TASKLIST.
 
 ## Stack
 
-| Camada              | Tecnologia          |
-|---------------------|---------------------|
-| Linguagem           | TypeScript          |
-| Engine              | Phaser 3            |
-| Build               | Vite                |
-| Testes              | Vitest              |
-| Lint / Formatação   | ESLint + Prettier   |
-| Mapas (futuro)      | Tiled               |
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | TypeScript |
+| Engine | Phaser 3 |
+| Build | Vite |
+| Testes | Vitest |
+| Lint / Formatação | ESLint + Prettier |
+| Mapas (futuro) | Tiled |
 
 ## Requisitos
 
 - Node.js 20+ (recomendado)
 - npm 10+
 
-## Como rodar
+## Como instalar e executar
+
+Clone o repositório e entre na pasta do projeto. Para uma instalação reproduzível, use o lockfile:
 
 ```bash
-# Instalar dependências (use npm ci em CI / ambiente limpo)
-npm install
-
-# Servidor de desenvolvimento (hot reload)
+npm ci
 npm run dev
-
-# Build de produção
-npm run build
-
-# Preview do build
-npm run preview
-
-# Testes
-npm test
-
-# Lint
-npm run lint
-
-# Formatar
-npm run format
 ```
 
 Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`).
 
-## Controles (MVP)
+> **Importante:** `npm ci` depende de um `package-lock.json` completo e sincronizado com `package.json`. Se adicionar ou atualizar dependências, use `npm install` para atualizar o lockfile e versione os dois arquivos juntos. Não remova nem edite manualmente as entradas de dependências do lockfile.
 
-| Ação                        | Controle                          |
-|-----------------------------|-----------------------------------|
-| Selecionar unidade          | Clique esquerdo                   |
-| Seleção múltipla            | Arrastar caixa de seleção         |
-| Mover unidades              | Clique direito                    |
-| Pausar / Retomar            | Espaço                            |
-| Câmera                      | WASD / setas + scroll (zoom)      |
+## Validação
+
+Execute antes de abrir um Pull Request:
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+## Controles planejados para o MVP
+
+| Ação | Controle |
+|---|---|
+| Selecionar unidade | Clique esquerdo |
+| Seleção múltipla | Arrastar caixa de seleção |
+| Mover unidades | Clique direito |
+| Pausar / Retomar | Espaço |
+| Câmera | WASD / setas + scroll (zoom) |
+
+Os controles acima descrevem o objetivo do MVP; consulte a tasklist para acompanhar o que já está implementado.
 
 ## Arquitetura (resumo)
 
-- **Simulação** (`src/simulation/`): regras de domínio puras (unidades, combate, ondas, pathfinding). Sem dependência de Phaser.
-- **Render / Input** (`src/game/`): cenas Phaser, sprites, câmera, input e HUD.
-- A simulação avança com **fixed timestep** (1/60 s) e pode ser pausada independentemente da renderização.
+- **Simulação** (`src/simulation/`): regras de domínio puras, sem dependência de Phaser.
+- **Renderização e input** (`src/game/`): cenas Phaser, sprites, câmera, input e HUD.
+- A simulação usa fixed timestep (1/60 s) com acumulador, conforme ADR7 em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
-Documentação mais detalhada:
+Documentação:
 
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md)
