@@ -19,9 +19,9 @@ src/
 │   └── ...
 ├── simulation/             # Regras de domínio (sem Phaser)
 │   ├── core/               # Tipos, constantes, utilitários
-│   ├── entities/           # Policiais, Infectados, etc.
-│   ├── systems/            # Movimento, combate, ondas, pathfinding
-│   └── world/              # Mapa, colisões e limites do abrigo
+│   ├── entities/           # Policiais, Infectados, Civis, etc.
+│   ├── systems/            # Movimento, combate, ondas, resgate, pathfinding
+│   └── world/              # Mapa, colisões, edifícios e acessos
 └── shared/                 # Tipos e utilitários compartilhados
 ```
 
