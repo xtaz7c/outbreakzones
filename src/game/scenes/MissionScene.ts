@@ -4,6 +4,7 @@ import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
 import { getAvailableEntryPoints } from '../../simulation/world/MissionEntryPoints';
+import { BuildingSystem, type AccessKind } from '../../simulation/world/BuildingSystem';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -28,6 +29,8 @@ export class MissionScene extends Phaser.Scene {
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
   private selectionGraphics!: Phaser.GameObjects.Graphics;
   private combatGraphics!: Phaser.GameObjects.Graphics;
+  private accessGraphics!: Phaser.GameObjects.Graphics;
+  private buildingSystem!: BuildingSystem;
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
   private debugInfectedSpawnIndex = 0;
@@ -51,6 +54,8 @@ export class MissionScene extends Phaser.Scene {
     this.createCameraControls();
     this.createSelectionControls();
     this.input.keyboard?.on('keydown-I', () => this.spawnDebugInfected());
+    this.input.keyboard?.on('keydown-E', () => this.interactWithNearestAccess());
+    this.input.keyboard?.on('keydown-B', () => this.breachNearestAccess());
 
     this.input.keyboard?.on('keydown-SPACE', () => {
       this.isPaused = !this.isPaused;
@@ -69,6 +74,7 @@ export class MissionScene extends Phaser.Scene {
       this.updateOfficers(dt);
     }
     this.updateInfectedVisuals();
+    this.updateAccessVisuals();
     this.updateStatusText(dt);
   }
 
@@ -92,13 +98,26 @@ export class MissionScene extends Phaser.Scene {
       map.width,
       map.height,
       map.tileWidth,
-      [
-        map.getObjectLayer('Collision'),
-        map.getObjectLayer('Entrances'),
-        map.getObjectLayer('Obstacles'),
-      ],
+      [map.getObjectLayer('Collision'), map.getObjectLayer('Obstacles')],
     );
 
+    const entrances = map.getObjectLayer('Entrances');
+    const definitions = (entrances?.objects ?? []).flatMap((object) => {
+      const kind = object.type as AccessKind;
+      if (!['door', 'window', 'garage'].includes(kind)) return [];
+      const health = object.properties?.find((property) => property.name === 'health')?.value;
+      return [{
+        id: object.name || `access-${object.id}`,
+        kind,
+        x: object.x,
+        y: object.y,
+        width: object.width,
+        height: object.height,
+        ...(typeof health === 'number' ? { maxHealth: health } : {}),
+      }];
+    });
+    this.buildingSystem = new BuildingSystem(definitions, this.worldGrid, this.tileSize, 20261108);
+    this.simulation.setBuildingSystem(this.buildingSystem);
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
     this.cameraWorldWidth = map.widthInPixels;
@@ -159,6 +178,7 @@ export class MissionScene extends Phaser.Scene {
 
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
+    this.accessGraphics = this.add.graphics().setDepth(80);
   }
 
   private createCameraControls(): void {
@@ -324,6 +344,50 @@ export class MissionScene extends Phaser.Scene {
   }
 
 
+
+  private findNearestAccess(): { id: string; distance: number } | null {
+    const selected = this.simulation.getOfficers().filter((officer) =>
+      this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
+    if (selected.length === 0) return null;
+    let nearest: { id: string; distance: number } | null = null;
+    for (const access of this.simulation.getBuildingSnapshots()) {
+      const cell = access.cells[0];
+      if (!cell) continue;
+      const x = cell.column * this.tileSize + this.tileSize / 2;
+      const y = cell.row * this.tileSize + this.tileSize / 2;
+      for (const officer of selected) {
+        const distance = Phaser.Math.Distance.Between(x, y, officer.position.x, officer.position.y);
+        if (distance <= 88 && (!nearest || distance < nearest.distance)) nearest = { id: access.id, distance };
+      }
+    }
+    return nearest;
+  }
+
+  private interactWithNearestAccess(): void {
+    if (this.isPaused) return;
+    const nearest = this.findNearestAccess();
+    if (nearest) this.simulation.interactWithAccess(nearest.id, 'police');
+  }
+
+  private breachNearestAccess(): void {
+    if (this.isPaused) return;
+    const nearest = this.findNearestAccess();
+    if (nearest) this.simulation.damageAccess(nearest.id, 30);
+  }
+
+  private updateAccessVisuals(): void {
+    this.accessGraphics.clear();
+    const colors = { open: 0x55c878, closed: 0xe4c35b, locked: 0xe05b5b,
+      barricaded: 0xd88a42, broken: 0x777777 } as const;
+    for (const access of this.simulation.getBuildingSnapshots()) {
+      this.accessGraphics.fillStyle(colors[access.state], 0.65);
+      for (const cell of access.cells) {
+        this.accessGraphics.fillRect(cell.column * this.tileSize + 4,
+          cell.row * this.tileSize + 4, this.tileSize - 8, this.tileSize - 8);
+      }
+    }
+  }
+
   private worldToTile(x: number, y: number): TilePosition {
     return {
       column: Math.floor(x / this.tileSize),
@@ -344,6 +408,9 @@ export class MissionScene extends Phaser.Scene {
     const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
     this.debugInfectedSpawnIndex += 1;
     const entry = entries.find((candidate) => candidate.id === plan.entryId) ?? entries[0]!;
+    this.simulation.setInfectedStructureTarget(
+      this.buildingSystem.getInfectedTarget(entry.id, entry.approachTile),
+    );
     this.simulation.spawnInfected({
       x: plan.x,
       y: plan.y,
@@ -453,7 +520,7 @@ export class MissionScene extends Phaser.Scene {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
           return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''}`;
         }),
-        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: debug spawn',
+        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | E: interact | B: breach',
       ].join('\\n'),
     );
   }
