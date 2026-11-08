@@ -41,7 +41,7 @@ const DEFAULTS = Object.freeze({
   maxHealth: 60,
   moveSpeed: 55,
   damage: 8,
-  attackRange: 28,
+  attackRange: 40,
   detectionRange: 220,
   attackInterval: 1.2,
 });
