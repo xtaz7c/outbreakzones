@@ -14,8 +14,6 @@ export interface InfectedConfig {
   readonly id: number;
   readonly x: number;
   readonly y: number;
-  /** Mantido apenas como metadado do ponto de spawn; não é destino nem objetivo. */
-  readonly entryTile?: TilePosition;
   readonly maxHealth?: number;
   readonly moveSpeed?: number;
   readonly damage?: number;
