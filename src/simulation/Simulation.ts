@@ -6,7 +6,7 @@
  */
 import { PoliceOfficer } from './PoliceOfficer';
 import { Infected } from './Infected';
-import { CombatSystem, type AmmoStatus, type CombatEvent } from './CombatSystem';
+import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { InfectedConfig, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import type { TilePosition } from './world/WorldConfig';
@@ -38,12 +38,16 @@ export class Simulation {
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
   private readonly infected: Infected[] = [];
-  private readonly combat = new CombatSystem();
+  private readonly combat: CombatSystem;
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
   private infectedStructureTarget: InfectedStructureTarget | undefined;
   private worldGrid: GridMap | null = null;
   private tileSize = WORLD_TILE_SIZE;
+
+  constructor(combatOptions: CombatSystemOptions = {}) {
+    this.combat = new CombatSystem(combatOptions);
+  }
 
   setPaused(paused: boolean): void {
     this.paused = paused;
