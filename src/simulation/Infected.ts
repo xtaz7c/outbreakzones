@@ -171,8 +171,11 @@ export class Infected {
       this.pathTargetKey = targetKey;
     }
 
-    if (this.moveAlongPath(dt, tileSize)) this.currentState = 'moving';
-    else this.currentState = 'idle';
+    const followingPath = this.moveAlongPath(dt, tileSize);
+    const closingDistance = !followingPath && target.kind !== 'entry'
+      ? this.moveWithinTargetTile(dt, target.position, tileSize)
+      : false;
+    this.currentState = followingPath || closingDistance ? 'moving' : 'idle';
   }
 
   takeDamage(amount: number): number {
@@ -244,6 +247,29 @@ export class Infected {
       this.waypointIndex = 0;
       return false;
     }
+    return true;
+  }
+
+  private moveWithinTargetTile(
+    dt: number,
+    target: InfectedPosition,
+    tileSize: number,
+  ): boolean {
+    const sameTile =
+      Math.floor(this.currentPosition.x / tileSize) === Math.floor(target.x / tileSize) &&
+      Math.floor(this.currentPosition.y / tileSize) === Math.floor(target.y / tileSize);
+    if (!sameTile) return false;
+
+    const dx = target.x - this.currentPosition.x;
+    const dy = target.y - this.currentPosition.y;
+    const distance = Math.hypot(dx, dy);
+    const travel = Math.min(this.moveSpeed * dt, Math.max(0, distance - this.attackRange));
+    if (travel <= 0 || distance === 0) return false;
+    const ratio = travel / distance;
+    this.currentPosition = {
+      x: this.currentPosition.x + dx * ratio,
+      y: this.currentPosition.y + dy * ratio,
+    };
     return true;
   }
 
