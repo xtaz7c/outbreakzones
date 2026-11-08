@@ -65,6 +65,7 @@ describe('Infected', () => {
     let health = 20;
     const structure = {
       position: { x: 40, y: 16 },
+      approachTile: { column: 0, row: 0 },
       get isDestroyed() { return health <= 0; },
       takeDamage(amount: number) {
         const applied = Math.min(amount, health);
