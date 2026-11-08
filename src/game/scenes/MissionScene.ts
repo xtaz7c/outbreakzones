@@ -120,7 +120,12 @@ export class MissionScene extends Phaser.Scene {
         ...(typeof health === 'number' ? { maxHealth: health } : {}),
       }];
     });
-    this.buildingSystem = new BuildingSystem(definitions, this.worldGrid, this.tileSize, 20261108);
+    const configuredSeed = this.registry.get('missionSeed');
+    const missionSeed = typeof configuredSeed === 'number' && Number.isInteger(configuredSeed)
+      ? configuredSeed
+      : Date.now();
+    this.registry.set('missionSeed', missionSeed);
+    this.buildingSystem = new BuildingSystem(definitions, this.worldGrid, this.tileSize, missionSeed);
     this.simulation.setBuildingSystem(this.buildingSystem);
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
@@ -537,7 +542,7 @@ export class MissionScene extends Phaser.Scene {
       [
         'Testgame — Mission',
         `Paused: ${state.paused ? 'YES' : 'NO'}  (Space)`,
-        `Sim time: ${state.elapsed.toFixed(2)}s`,
+        `Sim time: ${state.elapsed.toFixed(2)}s | Seed: ${this.registry.get('missionSeed')}`,
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
