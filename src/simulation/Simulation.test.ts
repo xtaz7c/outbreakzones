@@ -138,6 +138,28 @@ describe('Simulation', () => {
     expect(sim.getState().infectedCount).toBe(0);
   });
 
+  it('runs automatic officer combat inside the fixed-step simulation', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const infected = sim.spawnInfected({
+      x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
+      moveSpeed: 1, detectionRange: 1,
+    });
+    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    expect(infected.health).toBeLessThan(60);
+    expect(sim.getCombatEvents().length).toBeGreaterThan(0);
+  });
+
+  it('does not emit combat events while paused', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.spawnInfected({
+      x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
+      moveSpeed: 1, detectionRange: 1,
+    });
+    sim.setPaused(true);
+    sim.update(1);
+    expect(sim.getCombatEvents()).toHaveLength(0);
+  });
+
   it('tracks active officers after individual incapacitation', () => {
     expect(sim.damageOfficer(2, 100)).toBe(100);
     expect(sim.getState().officerCount).toBe(3);
