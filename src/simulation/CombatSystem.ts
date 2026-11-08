@@ -132,7 +132,7 @@ export class CombatSystem {
     const livingTargets = infected.filter((target) => !target.isDead);
 
     for (const officer of officers) {
-      if (officer.isIncapacitated) continue;
+      if (officer.isIncapacitated || officer.state === 'moving') continue;
       const reloadRemaining = this.reloadTimers.get(officer.id) ?? 0;
       if (reloadRemaining > 0) {
         const nextRemaining = Math.max(0, reloadRemaining - dt);
