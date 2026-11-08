@@ -69,6 +69,7 @@ export class Infected {
   private waypointIndex = 0;
   private pathTargetKey = '';
   private attackTimer = 0;
+  private attractedStructureTarget: InfectedStructureTarget | undefined;
 
   constructor(config: InfectedConfig) {
     this.assertFinite(config.x, 'x');
@@ -212,16 +213,18 @@ export class Infected {
     if (nearest) {
       return { kind: 'officer', officer: nearest, position: nearest.position };
     }
-    if (structureTarget && !structureTarget.isDestroyed && !structureTarget.isPassable) {
+    if (structureTarget) this.attractedStructureTarget = structureTarget;
+    const attracted = this.attractedStructureTarget;
+    if (attracted && !attracted.isDestroyed && !attracted.isPassable) {
       return {
         kind: 'structure',
-        structure: structureTarget,
-        position: structureTarget.position,
-        tile: structureTarget.approachTile,
+        structure: attracted,
+        position: attracted.position,
+        tile: attracted.approachTile,
       };
     }
-    if (structureTarget && (structureTarget.isDestroyed || structureTarget.isPassable) && structureTarget.breachTile) {
-      const tile = structureTarget.breachTile;
+    if (attracted && (attracted.isDestroyed || attracted.isPassable) && attracted.breachTile) {
+      const tile = attracted.breachTile;
       return { kind: 'entry', tile, position: { x: tile.column * tileSize + tileSize / 2, y: tile.row * tileSize + tileSize / 2 } };
     }
     return {
