@@ -131,6 +131,8 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private createHud(): void {
+    // O Dev Hub pertence ao mundo: acompanha o movimento da câmera e
+    // também respeita o zoom, em vez de ficar preso à viewport.
     this.statusText = this.add
       .text(16, 16, '', {
         fontFamily: 'monospace',
@@ -139,7 +141,6 @@ export class MissionScene extends Phaser.Scene {
         backgroundColor: '#000000aa',
         padding: { x: 8, y: 6 },
       })
-      .setScrollFactor(0)
       .setDepth(1000);
 
     this.fullscreenText = this.add
