@@ -289,18 +289,6 @@ export class MissionScene extends Phaser.Scene {
     }
   }
 
-  private findNearestWalkable(origin: TilePosition, maxRadius = 5): TilePosition | null {
-    for (let radius = 0; radius <= maxRadius; radius += 1) {
-      for (let row = origin.row - radius; row <= origin.row + radius; row += 1) {
-        for (let column = origin.column - radius; column <= origin.column + radius; column += 1) {
-          if (Math.max(Math.abs(column - origin.column), Math.abs(row - origin.row)) !== radius) continue;
-          const candidate = { column, row };
-          if (this.worldGrid.isWalkable(candidate)) return candidate;
-        }
-      }
-    }
-    return null;
-  }
 
   private worldToTile(x: number, y: number): TilePosition {
     return {
