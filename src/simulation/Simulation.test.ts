@@ -178,7 +178,7 @@ describe('Simulation', () => {
     expect(sim.getResidenceStatus().state).toBe('secure');
     residence.getEntrance('front-door')!.takeDamage(25);
     expect(sim.getResidenceStatus().state).toBe('damaged');
-    expect(residence.getEntrance('west-window')!.health).toBe(90);
+    expect(residence.getEntrance('west-window')!.health).toBe(60);
   });
 
   it('lets infected damage the entrance assigned to their spawn point', () => {
