@@ -59,13 +59,13 @@ describe('Infected', () => {
 
   it('attacks a supplied destructible structure target', () => {
     const infected = new Infected({
-      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
-      detectionRange: 10, attackRange: 30, attackInterval: 0.5, damage: 7,
+      id: 1, x: 880, y: 304, entryTile: { column: 8, row: 8 },
+      detectionRange: 10, attackInterval: 0.5, damage: 7,
     });
     let health = 20;
     const structure = {
-      position: { x: 40, y: 16 },
-      approachTile: { column: 0, row: 0 },
+      position: { x: 864, y: 336 },
+      approachTile: { column: 27, row: 9 },
       get isDestroyed() { return health <= 0; },
       takeDamage(amount: number) {
         const applied = Math.min(amount, health);
