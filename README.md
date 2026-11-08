@@ -27,14 +27,13 @@ Em desenvolvimento ativo. O backlog oficial está em [`TASKLIST.md`](./TASKLIST.
 ## Como rodar
 
 ```bash
-# Instalar dependências
+# Instalar dependências (use npm ci em CI / ambiente limpo)
 npm install
 
 # Servidor de desenvolvimento (hot reload)
 npm run dev
 
 # Build de produção
-npm run
 npm run build
 
 # Preview do build
@@ -59,14 +58,14 @@ Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`).
 | Selecionar unidade          | Clique esquerdo                   |
 | Seleção múltipla            | Arrastar caixa de seleção         |
 | Mover unidades              | Clique direito                    |
-| Pausar / Retomar            | Espaço (planejado)                |
+| Pausar / Retomar            | Espaço                            |
 | Câmera                      | WASD / setas + scroll (zoom)      |
 
 ## Arquitetura (resumo)
 
 - **Simulação** (`src/simulation/`): regras de domínio puras (unidades, combate, ondas, pathfinding). Sem dependência de Phaser.
 - **Render / Input** (`src/game/`): cenas Phaser, sprites, câmera, input e HUD.
-- A simulação avança com **delta time** e pode ser pausada independentemente da renderização.
+- A simulação avança com **fixed timestep** (1/60 s) e pode ser pausada independentemente da renderização.
 
 Documentação mais detalhada:
 

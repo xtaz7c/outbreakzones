@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Simulation } from './Simulation';
+import { FIXED_DT, Simulation } from './Simulation';
 
 describe('Simulation', () => {
   let sim: Simulation;
@@ -16,10 +16,19 @@ describe('Simulation', () => {
     expect(state.paused).toBe(false);
   });
 
-  it('advances elapsed time when not paused', () => {
-    sim.update(0.016);
-    sim.update(0.016);
-    expect(sim.getState().elapsed).toBeCloseTo(0.032, 5);
+  it('advances elapsed time when not paused (fixed timestep)', () => {
+    sim.update(FIXED_DT);
+    sim.update(FIXED_DT);
+    expect(sim.getState().elapsed).toBeCloseTo(FIXED_DT * 2, 5);
+  });
+
+  it('accumulates partial frames before stepping', () => {
+    sim.update(FIXED_DT * 0.4);
+    expect(sim.getState().elapsed).toBe(0);
+    sim.update(FIXED_DT * 0.4);
+    expect(sim.getState().elapsed).toBe(0);
+    sim.update(FIXED_DT * 0.3);
+    expect(sim.getState().elapsed).toBeCloseTo(FIXED_DT, 5);
   });
 
   it('does not advance while paused', () => {
@@ -29,8 +38,51 @@ describe('Simulation', () => {
     expect(sim.getState().paused).toBe(true);
   });
 
-  it('clamps large delta to avoid instability', () => {
-    sim.update(10); // 10 segundos de uma vez
-    expect(sim.getState().elapsed).toBeLessThanOrEqual(0.05);
+  it('resumes correctly after pause', () => {
+    sim.update(FIXED_DT);
+    expect(sim.getState().elapsed).toBeCloseTo(FIXED_DT, 5);
+
+    sim.setPaused(true);
+    sim.update(FIXED_DT * 5);
+    expect(sim.getState().elapsed).toBeCloseTo(FIXED_DT, 5);
+
+    sim.setPaused(false);
+    sim.update(FIXED_DT);
+    expect(sim.getState().elapsed).toBeCloseTo(FIXED_DT * 2, 5);
+  });
+
+  it('ignores negative delta', () => {
+    sim.update(FIXED_DT);
+    const before = sim.getState().elapsed;
+    sim.update(-1);
+    expect(sim.getState().elapsed).toBe(before);
+  });
+
+  it('ignores NaN delta', () => {
+    sim.update(FIXED_DT);
+    const before = sim.getState().elapsed;
+    sim.update(Number.NaN);
+    expect(sim.getState().elapsed).toBe(before);
+  });
+
+  it('ignores Infinity delta', () => {
+    sim.update(FIXED_DT);
+    const before = sim.getState().elapsed;
+    sim.update(Number.POSITIVE_INFINITY);
+    expect(sim.getState().elapsed).toBe(before);
+    sim.update(Number.NEGATIVE_INFINITY);
+    expect(sim.getState().elapsed).toBe(before);
+  });
+
+  it('clamps very large frame dt to avoid spiral of death', () => {
+    sim.update(10);
+    const elapsed = sim.getState().elapsed;
+    expect(elapsed).toBeLessThanOrEqual(12 * FIXED_DT + 1e-9);
+    expect(elapsed).toBeGreaterThan(0);
+  });
+
+  it('accepts zero delta without advancing', () => {
+    sim.update(0);
+    expect(sim.getState().elapsed).toBe(0);
   });
 });
