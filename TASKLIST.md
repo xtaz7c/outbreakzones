@@ -111,7 +111,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T035 — P0** Implementar ordem de movimentação com clique direito.
 - [ ] **T036 — P1** Implementar destino/posicionamento em formação para ordens em grupo, evitando sobreposição de unidades.
 
-**Saída da fase:** em andamento na branch `feat/camera-controls-t027-t030`. Foram implementados deslocamento por WASD/setas, zoom pela roda do mouse, limites de câmera e alternância de tela cheia por tecla F ou botão no HUD. T027–T030 aguardam validação no navegador. Seleção e ordens de movimento ainda não foram implementadas.
+**Saída da fase:** câmera, zoom, limites do mundo, deslocamento WASD/setas e tela cheia implementados na branch `feat/camera-controls-t027-t030`. Na branch `feat/rts-selection-orders-t031-t036` foram adicionados marcadores provisórios dos três policiais, seleção individual, seleção por arrasto, atalhos 1–3, seleção aditiva com Shift, ordens de movimento pelo botão direito, pathfinding A* e destinos em linha para grupos. T027–T036 aguardam execução de testes/lint/build e validação manual no navegador. Os marcadores e o movimento são provisórios e serão substituídos/integrados ao modelo PoliceOfficer na Fase 4.
 
 ### Fase 4 — Policiais
 
