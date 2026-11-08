@@ -57,9 +57,10 @@ src/
 | ADR4 | Três policiais controláveis                   | Escopo fechado e legível                    |
 | ADR5 | Pathfinding + colisões no domínio             | Comportamento previsível e testável         |
 | ADR6 | Vite + TypeScript strict                      | DX moderna e segurança de tipos             |
-| ADR7 | Fixed timestep (1/60) com acumulador          | Estabilidade em FPS variável; ver abaixo    |\n| ADR8 | Residência como abrigo inacessível            | Evita invasão; paredes, portas e janelas são bloqueios sólidos |
+| ADR7 | Fixed timestep (1/60) com acumulador          | Estabilidade em FPS variável; ver abaixo    |
+| ADR8 | Residência como abrigo inacessível            | Evita invasão; paredes, portas e janelas são bloqueios sólidos |
 
-### ADR8 — Residência como abrigo inacessível\n\n**Contexto:** a residência não é um objetivo atacável nem uma estrutura que o jogador precise defender.\n\n**Decisão:** o interior da casa fica fora da área navegável da missão. Policiais e infectados usam o mesmo GridMap; paredes, portas e janelas permanecem bloqueios sólidos. Infectados não atacam estruturas nem tentam entrar no abrigo.\n\n**Comportamento dos infectados:** sem policiais detectados, escolhem destinos aleatórios caminháveis e vagam pelo ambiente. Ao detectar um policial ativo, interrompem a ronda e perseguem/atacam. Quando não há mais alvo válido, retomam a ronda aleatória.\n\n**Condição de derrota:** a missão termina em derrota somente quando os três policiais são incapacitados; a residência não possui HP, integridade ou estado de invasão.\n\n### ADR7 — Fixed timestep com acumulador
+### ADR7 — Fixed timestep com acumulador
 
 **Contexto:** taxas de FPS variam entre máquinas e ao longo do tempo. Um `dt` variável puro pode tornar combate, movimento e ondas inconsistentes.
 
@@ -73,6 +74,16 @@ src/
 **Alternativa considerada:** variável + clamp simples. Mais simples, porém menos previsível para sistemas futuros (combate, pathfinding).
 
 **Consequências:** comportamento de simulação mais estável entre 30–144 FPS; ligeiramente mais código na camada de domínio (aceitável).
+
+### ADR8 — Residência como abrigo inacessível
+
+**Contexto:** a residência não é um objetivo atacável nem uma estrutura que o jogador precise defender.
+
+**Decisão:** o interior da casa fica fora da área navegável da missão. Policiais e infectados usam o mesmo GridMap; paredes, portas e janelas permanecem bloqueios sólidos. Infectados não atacam estruturas nem tentam entrar no abrigo.
+
+**Comportamento dos infectados:** sem policiais detectados, escolhem destinos aleatórios caminháveis e vagam pelo ambiente. Ao detectar um policial ativo, interrompem a ronda e perseguem/atacam. Quando não há mais alvo válido, retomam a ronda aleatória.
+
+**Condição de derrota:** a missão termina em derrota somente quando os três policiais são incapacitados; a residência não possui HP, integridade ou estado de invasão.
 
 ## Próximos passos de arquitetura
 
