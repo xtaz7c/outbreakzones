@@ -1,4 +1,4 @@
-# Arquitetura — Testgame
+# Arquitetura — Outbreak Zones
 
 ## Objetivos
 
@@ -58,7 +58,7 @@ src/
 | ADR5 | Pathfinding + colisões no domínio             | Comportamento previsível e testável         |
 | ADR6 | Vite + TypeScript strict                      | DX moderna e segurança de tipos             |
 | ADR7 | Fixed timestep (1/60) com acumulador          | Estabilidade em FPS variável; ver abaixo    |
-| ADR8 | Residência como abrigo inacessível            | Evita invasão; paredes, portas e janelas são bloqueios sólidos |
+| ADR8 | Residência como abrigo inacessível (obsoleta) | Substituída pela ADR9 |\n| ADR9 | Casa interativa e acessos condicionais       | Tutorial de resgate; passagem depende do estado do acesso e do tipo de NPC |
 
 ### ADR7 — Fixed timestep com acumulador
 
