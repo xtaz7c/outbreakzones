@@ -14,12 +14,13 @@ export interface TiledObjectLayer {
 /**
  * Constrói a grade de navegação a partir dos retângulos de colisão do Tiled.
  * Coordenadas e dimensões dos objetos são expressas em pixels do mapa.
+ * Camadas null são aceitas porque Phaser retorna null quando uma camada não existe.
  */
 export function buildGridFromTiledLayers(
   columns: number,
   rows: number,
   tileSize: number,
-  layers: readonly (TiledObjectLayer | undefined)[],
+  layers: readonly (TiledObjectLayer | null | undefined)[],
 ): GridMap {
   if (!Number.isFinite(tileSize) || tileSize <= 0) {
     throw new RangeError('Tile size must be a positive finite number.');
