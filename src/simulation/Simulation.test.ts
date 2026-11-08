@@ -86,6 +86,7 @@ describe('Simulation', () => {
     sim.update(0);
     expect(sim.getState().elapsed).toBe(0);
   });
+
   it('owns three independent police officer entities', () => {
     const officers = sim.getOfficers();
     expect(officers).toHaveLength(3);
@@ -94,8 +95,7 @@ describe('Simulation', () => {
   });
 
   it('routes movement through the world grid and advances it on fixed steps', () => {
-    const mapClass = GridMap;
-    const map = new mapClass(64, 40);
+    const map = new GridMap(64, 40);
     sim.setWorldGrid(map, 32);
     const officer = sim.getOfficers()[0]!;
 
@@ -107,7 +107,6 @@ describe('Simulation', () => {
   });
 
   it('does not move officers while paused and rejects new orders', () => {
-    const mapClass = GridMap;
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const officer = sim.getOfficers()[0]!;
     expect(sim.issueMoveOrder(officer.id, { column: 30, row: 33 })).toBe(true);
