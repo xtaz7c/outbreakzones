@@ -126,10 +126,7 @@ export class Infected {
     }
 
     const target = this.findOfficerTarget(officers);
-    if (target) {
-      this.updatePursuit(dt, tileSize, map, target);
-      return;
-    }
+    if (target && this.updatePursuit(dt, tileSize, map, target)) return;
 
     this.attackTimer = 0;
     this.updateWandering(dt, tileSize, map);
@@ -166,7 +163,7 @@ export class Infected {
     tileSize: number,
     map: GridMap,
     officer: PoliceOfficer,
-  ): void {
+  ): boolean {
     const targetPosition = officer.position;
     const distance = this.distanceTo(targetPosition);
     const targetTile = {
@@ -186,19 +183,36 @@ export class Infected {
         officer.takeDamage(this.damage);
         if (officer.isIncapacitated) break;
       }
-      return;
+      return true;
     }
 
     this.attackTimer = 0;
     if (targetKey !== this.pathTargetKey) {
       const start = this.currentTile(tileSize);
-      this.path = findPath(map, start, targetTile, { allowDiagonal: true }) ?? [];
+      const nextPath = findPath(map, start, targetTile, { allowDiagonal: true });
+      if (nextPath === null) {
+        this.path = [];
+        this.waypointIndex = 0;
+        this.pathTargetKey = '';
+        return false;
+      }
+      this.path = nextPath;
       this.waypointIndex = 0;
       this.pathTargetKey = targetKey;
     }
 
+    if (this.path.length === 0) {
+      const sameTile = this.currentTile(tileSize).column === targetTile.column &&
+        this.currentTile(tileSize).row === targetTile.row;
+      if (!sameTile) return false;
+      const closing = this.moveWithinTargetTile(dt, targetPosition, tileSize);
+      this.currentState = closing ? 'moving' : 'idle';
+      return true;
+    }
+
     const moving = this.moveAlongPath(dt, tileSize);
     this.currentState = moving ? 'moving' : 'idle';
+    return true;
   }
 
   private updateWandering(dt: number, tileSize: number, map: GridMap): void {
@@ -291,6 +305,24 @@ export class Infected {
       this.waypointIndex = 0;
       return false;
     }
+    return true;
+  }
+
+  private moveWithinTargetTile(
+    dt: number,
+    target: InfectedPosition,
+    tileSize: number,
+  ): boolean {
+    const dx = target.x - this.currentPosition.x;
+    const dy = target.y - this.currentPosition.y;
+    const distance = Math.hypot(dx, dy);
+    const travel = Math.min(this.moveSpeed * dt, Math.max(0, distance - this.attackRange));
+    if (travel <= 0 || distance === 0) return false;
+    const ratio = travel / distance;
+    this.currentPosition = {
+      x: this.currentPosition.x + dx * ratio,
+      y: this.currentPosition.y + dy * ratio,
+    };
     return true;
   }
 
