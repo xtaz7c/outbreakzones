@@ -95,9 +95,13 @@ export class PoliceOfficer {
     return Math.max(0, this.path.length - this.waypointIndex);
   }
 
+  setFacingAngle(angle: number): void {
+    if (Number.isFinite(angle)) this.currentFacingAngle = angle;
+  }
+
   /** Calcula e aceita uma nova ordem somente se existir uma rota válida. */
   issueMoveOrder(destination: TilePosition, map: GridMap, tileSize: number): boolean {
-    if (this.isIncapacitated || this.currentState === 'attacking') return false;
+    if (this.isIncapacitated) return false;
     this.assertPositiveFinite(tileSize, 'tileSize');
 
     const start = {

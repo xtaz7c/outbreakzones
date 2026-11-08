@@ -6,6 +6,7 @@
  */
 import { PoliceOfficer } from './PoliceOfficer';
 import { Infected } from './Infected';
+import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { InfectedConfig, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import type { TilePosition } from './world/WorldConfig';
@@ -37,10 +38,16 @@ export class Simulation {
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
   private readonly infected: Infected[] = [];
+  private readonly combat: CombatSystem;
+  private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
   private infectedStructureTarget: InfectedStructureTarget | undefined;
   private worldGrid: GridMap | null = null;
   private tileSize = WORLD_TILE_SIZE;
+
+  constructor(combatOptions: CombatSystemOptions = {}) {
+    this.combat = new CombatSystem(combatOptions);
+  }
 
   setPaused(paused: boolean): void {
     this.paused = paused;
@@ -72,6 +79,21 @@ export class Simulation {
     return infected;
   }
 
+  setTargetPriority(officerId: number, infectedId: number | null): void {
+    this.combat.setTargetPriority(officerId, infectedId);
+    if (infectedId !== null) {
+      this.officers.find((officer) => officer.id === officerId)?.setAttacking(true);
+    }
+  }
+
+  getCombatEvents(): readonly CombatEvent[] {
+    return this.combatEvents;
+  }
+
+  getOfficerAmmoStatus(officerId: number): AmmoStatus {
+    return this.combat.getAmmoStatus(officerId);
+  }
+
   setInfectedStructureTarget(target: InfectedStructureTarget | undefined): void {
     this.infectedStructureTarget = target;
   }
@@ -98,7 +120,9 @@ export class Simulation {
   }
 
   update(dt: number): void {
+    this.combatEvents = [];
     if (this.paused || !isValidDt(dt)) return;
+
 
     this.accumulator += Math.min(dt, MAX_FRAME_DT);
     let steps = 0;
@@ -119,6 +143,7 @@ export class Simulation {
       for (const infected of this.infected) {
         infected.update(dt, this.tileSize, this.worldGrid, this.officers, this.infectedStructureTarget);
       }
+      this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, this.worldGrid, this.tileSize));
     }
     for (let index = this.infected.length - 1; index >= 0; index -= 1) {
       if (this.infected[index]!.isDead) this.infected.splice(index, 1);
