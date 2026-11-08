@@ -144,9 +144,13 @@ describe('Simulation', () => {
       x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
       moveSpeed: 1, detectionRange: 1,
     });
-    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    let observedShot = false;
+    for (let index = 0; index < 60; index += 1) {
+      sim.update(FIXED_DT);
+      observedShot ||= sim.getCombatEvents().length > 0;
+    }
     expect(infected.health).toBeLessThan(60);
-    expect(sim.getCombatEvents().length).toBeGreaterThan(0);
+    expect(observedShot).toBe(true);
   });
 
   it('does not emit combat events while paused', () => {
