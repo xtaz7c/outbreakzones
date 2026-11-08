@@ -163,9 +163,10 @@ export class BuildingSystem {
   damage(id: string, amount: number): number {
     return this.byId.get(id)?.takeDamage(amount) ?? 0;
   }
-  getInfectedTarget(id: string, approachTile: TilePosition): {
+  getInfectedTarget(id: string, approachTile: TilePosition, breachTile?: TilePosition): {
     readonly position: { readonly x: number; readonly y: number };
     readonly approachTile: TilePosition;
+    readonly breachTile?: TilePosition;
     readonly isDestroyed: boolean;
     takeDamage(amount: number): number;
   } | undefined {
@@ -176,6 +177,7 @@ export class BuildingSystem {
     return {
       position: { x: cell.column * this.tileSize + this.tileSize / 2, y: cell.row * this.tileSize + this.tileSize / 2 },
       approachTile,
+      ...(breachTile ? { breachTile } : {}),
       get isDestroyed() { return access.isDestroyed; },
       takeDamage: (amount) => access.takeDamage(amount),
     };
