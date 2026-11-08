@@ -6,7 +6,7 @@
  */
 import { PoliceOfficer } from './PoliceOfficer';
 import { Infected } from './Infected';
-import { CombatSystem, type CombatEvent } from './CombatSystem';
+import { CombatSystem, type AmmoStatus, type CombatEvent } from './CombatSystem';
 import type { InfectedConfig, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import type { TilePosition } from './world/WorldConfig';
@@ -83,6 +83,10 @@ export class Simulation {
     return this.combatEvents;
   }
 
+  getOfficerAmmoStatus(officerId: number): AmmoStatus {
+    return this.combat.getAmmoStatus(officerId);
+  }
+
   setInfectedStructureTarget(target: InfectedStructureTarget | undefined): void {
     this.infectedStructureTarget = target;
   }
@@ -109,9 +113,10 @@ export class Simulation {
   }
 
   update(dt: number): void {
+    this.combatEvents = [];
     if (this.paused || !isValidDt(dt)) return;
 
-    this.combatEvents = [];
+
     this.accumulator += Math.min(dt, MAX_FRAME_DT);
     let steps = 0;
     while (this.accumulator >= FIXED_DT && steps < MAX_STEPS_PER_UPDATE) {
