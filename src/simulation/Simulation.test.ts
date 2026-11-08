@@ -139,6 +139,7 @@ describe('Simulation', () => {
   });
 
   it('runs automatic officer combat inside the fixed-step simulation', () => {
+    sim = new Simulation({ random: () => 0 });
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const infected = sim.spawnInfected({
       x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
