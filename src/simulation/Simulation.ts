@@ -42,7 +42,7 @@ export class Simulation {
   private readonly combat: CombatSystem;
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
-  private infectedStructureTarget: InfectedStructureTarget | undefined;
+  private noiseAttraction: { target: InfectedStructureTarget; radius: number; remaining: number } | null = null;
   private worldGrid: GridMap | null = null;
   private buildingSystem: BuildingSystem | null = null;
   private tileSize = WORLD_TILE_SIZE;
@@ -113,8 +113,10 @@ export class Simulation {
     return this.combat.getAmmoStatus(officerId);
   }
 
-  setInfectedStructureTarget(target: InfectedStructureTarget | undefined): void {
-    this.infectedStructureTarget = target;
+  emitNoiseAtStructure(target: InfectedStructureTarget, radius = 1000, duration = 10): void {
+    if (!Number.isFinite(radius) || radius <= 0) throw new RangeError('Noise radius must be positive.');
+    if (!Number.isFinite(duration) || duration <= 0) throw new RangeError('Noise duration must be positive.');
+    this.noiseAttraction = { target, radius, remaining: duration };
   }
 
   damageInfected(infectedId: number, amount: number): number {
@@ -176,8 +178,17 @@ export class Simulation {
     if (this.worldGrid) {
       const infectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
       const policeGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
+      if (this.noiseAttraction) {
+        this.noiseAttraction.remaining -= dt;
+        if (this.noiseAttraction.remaining <= 0) this.noiseAttraction = null;
+      }
       for (const infected of this.infected) {
-        infected.update(dt, this.tileSize, infectedGrid, this.officers, this.infectedStructureTarget);
+        const attraction = this.noiseAttraction;
+        const heardNoise = attraction && Math.hypot(
+          infected.position.x - attraction.target.position.x,
+          infected.position.y - attraction.target.position.y,
+        ) <= attraction.radius;
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, heardNoise ? attraction.target : undefined);
       }
       this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize));
     }
