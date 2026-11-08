@@ -15,12 +15,12 @@ describe('BuildingSystem', () => {
       .toEqual(second.getSnapshots().map((item) => item.state));
   });
 
-  it('updates navigation cells when a closed access is opened', () => {
+  it('updates actor navigation when a closed access is opened', () => {
     const grid = new GridMap(8, 8);
     const system = new BuildingSystem([{ ...definitions[0]!, weights: { open: 0, closed: 1 } }], grid, 32, 1);
-    expect(grid.isWalkable({ column: 1, row: 1 })).toBe(false);
+    expect(system.getNavigationGrid('police').isWalkable({ column: 1, row: 1 })).toBe(false);
     expect(system.interact('front', 'police')).toBe(true);
-    expect(grid.isWalkable({ column: 1, row: 1 })).toBe(true);
+    expect(system.getNavigationGrid('police').isWalkable({ column: 1, row: 1 })).toBe(true);
   });
 
   it('does not allow civilians through windows', () => {
