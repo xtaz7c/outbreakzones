@@ -106,7 +106,7 @@ describe('Simulation', () => {
     expect(officer.position.x).toBeGreaterThan(29 * 32 + 16);
   });
 
-  it('does not move officers while paused and rejects new orders', () => {
+  it('does not move officers while paused but accepts queued orders', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const officer = sim.getOfficers()[0]!;
     expect(sim.issueMoveOrder(officer.id, { column: 30, row: 33 })).toBe(true);
@@ -114,7 +114,11 @@ describe('Simulation', () => {
     const before = officer.position;
     sim.update(1);
     expect(officer.position).toEqual(before);
-    expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(false);
+    expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(true);
+    expect(officer.state).toBe('moving');
+    sim.setPaused(false);
+    sim.update(FIXED_DT);
+    expect(officer.position).not.toEqual(before);
   });
 
   it('spawns infected entities and advances their AI on fixed steps', () => {
