@@ -95,6 +95,27 @@ describe('Infected roaming and combat AI', () => {
     expect(infected.position.x).toBeGreaterThan(16);
   });
 
+  it('abandons a pursuit and resumes roaming when its target is incapacitated', () => {
+    const infected = new Infected({
+      id: 1,
+      x: 16,
+      y: 16,
+      detectionRange: 200,
+      attackRange: 10,
+      moveSpeed: 32,
+      random: () => 0.99,
+    });
+    const officer = new PoliceOfficer({ id: 1, x: 120, y: 16 });
+
+    infected.update(0.25, 32, new GridMap(10, 10), [officer]);
+    const pursuitPosition = infected.position;
+    officer.takeDamage(100);
+    infected.update(0.5, 32, new GridMap(10, 10), [officer]);
+
+    expect(infected.state).toBe('moving');
+    expect(infected.position).not.toEqual(pursuitPosition);
+  });
+
   it('ignores incapacitated officers and resumes random wandering', () => {
     const infected = new Infected({
       id: 1,
