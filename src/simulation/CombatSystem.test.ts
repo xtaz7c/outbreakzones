@@ -83,6 +83,16 @@ describe('CombatSystem', () => {
     expect(combat.update(2, [officer], [outOfRange], map, 32)).toHaveLength(0);
   });
 
+  it('preserves an explicit movement order while an infected is nearby', () => {
+    const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, attackRange: 180 });
+    const infected = new Infected({ id: 1, x: 64, y: 16, entryTile: { column: 10, row: 6 } });
+    expect(officer.issueMoveOrder({ column: 2, row: 0 }, map, 32)).toBe(true);
+    const combat = new CombatSystem({ random: () => 0 });
+    expect(combat.update(0.5, [officer], [infected], map, 32)).toHaveLength(0);
+    expect(officer.state).toBe('moving');
+    expect(infected.health).toBe(60);
+  });
+
   it('uses limited magazines and completes timed reloads', () => {
     const officer = new PoliceOfficer({
       id: 1, x: 16, y: 16, attackRange: 180, fireInterval: 0.1,
