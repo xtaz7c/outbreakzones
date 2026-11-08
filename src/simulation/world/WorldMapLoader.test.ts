@@ -24,6 +24,17 @@ describe('buildGridFromTiledLayers', () => {
     expect(grid.isWalkable({ column: 3, row: 2 })).toBe(false);
   });
 
+  it('accepts null or undefined layers returned for missing Tiled layers', () => {
+    const grid = buildGridFromTiledLayers(4, 4, 32, [
+      null,
+      undefined,
+      { objects: [{ x: 32, y: 32, width: 32, height: 32 }] },
+    ]);
+
+    expect(grid.isWalkable({ column: 0, row: 0 })).toBe(true);
+    expect(grid.isWalkable({ column: 1, row: 1 })).toBe(false);
+  });
+
   it('ignores invalid and zero-area objects', () => {
     const grid = buildGridFromTiledLayers(4, 4, 32, [
       {
