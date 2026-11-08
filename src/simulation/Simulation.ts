@@ -77,6 +77,9 @@ export class Simulation {
 
   setTargetPriority(officerId: number, infectedId: number | null): void {
     this.combat.setTargetPriority(officerId, infectedId);
+    if (infectedId !== null) {
+      this.officers.find((officer) => officer.id === officerId)?.setAttacking(true);
+    }
   }
 
   getCombatEvents(): readonly CombatEvent[] {
