@@ -105,7 +105,7 @@ export class MissionScene extends Phaser.Scene {
     const definitions = (entrances?.objects ?? []).flatMap((object) => {
       const kind = object.type as AccessKind;
       if (!['door', 'window', 'garage'].includes(kind)) return [];
-      const health = object.properties?.find((property) => property.name === 'health')?.value;
+      const health = object.properties?.health;
       return [{
         id: object.name || `access-${object.id}`,
         kind,
