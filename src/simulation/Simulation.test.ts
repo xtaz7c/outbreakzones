@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FIXED_DT, Simulation } from './Simulation';
 import { GridMap } from './world/GridMap';
+import { BuildingSystem } from './world/BuildingSystem';
 
 describe('Simulation', () => {
   let sim: Simulation;
@@ -238,6 +239,31 @@ describe('Simulation', () => {
     expect(sim.getState().elapsed).toBe(before);
     sim.setWorldGrid(new GridMap(64, 40), 32);
     expect(sim.issueMoveOrder(1, { column: 30, row: 33 })).toBe(false);
+  });
+
+  it('attracts nearby infected to a noisy access and remembers it after the noise fades', () => {
+    const grid = new GridMap(64, 40);
+    const buildings = new BuildingSystem([
+      { id: 'front', kind: 'door', x: 960, y: 864, width: 128, height: 32,
+        maxHealth: 20, weights: { open: 0, closed: 1 } },
+    ], grid, 32, 42);
+    sim.setWorldGrid(grid, 32);
+    sim.setBuildingSystem(buildings);
+    const infected = sim.spawnInfected({
+      x: 976, y: 848, entryTile: { column: 30, row: 26 },
+      detectionRange: 1, attackRange: 40, attackInterval: 0.25, damage: 5,
+    });
+    const target = buildings.getInfectedTarget(
+      'front', { column: 30, row: 26 }, { column: 30, row: 28 },
+    );
+    expect(target).toBeDefined();
+    sim.emitNoiseAtStructure(target!, 100, 0.1);
+    for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
+    expect(buildings.getAccess('front')?.health).toBeLessThan(20);
+    const healthAfterNoise = buildings.getAccess('front')!.health;
+    for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
+    expect(buildings.getAccess('front')!.health).toBeLessThan(healthAfterNoise);
+    expect(infected.state).toBe('attacking');
   });
 
 });
