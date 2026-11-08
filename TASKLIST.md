@@ -162,16 +162,19 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** policiais combatem automaticamente e o jogador consegue influenciar a escolha de alvos.
 
-### Fase 7 — Navegação dinâmica, casa e acessos
+### Fase 7 — Edifícios, acessos e comportamento de infectados
 
-- [ ] **T066 — P0** Manter paredes como obstáculos sólidos para todas as unidades.
-- [ ] **T067 — P0** Modelar portas abertas, fechadas e trancadas, com interação condicionada ao tipo de NPC.
-- [ ] **T068 — P0** Modelar janelas abertas/fechadas e regras de passagem por tipo de NPC.
-- [ ] **T069 — P0** Permitir que policiais, civis e infectados atravessem edifícios por acessos válidos.
-- [ ] **T070 — P0** Implementar ronda aleatória, detecção e perseguição, retomando a ronda sem alvo válido.
-- [ ] **T071 — P1** Fazer infectados investigarem e atacarem a casa quando atraídos por estímulos configurados.
+- [ ] **T066 — P0** Modelar edifícios como estruturas compostas por paredes e componentes de acesso independentes.
+- [ ] **T067 — P0** Gerar estado inicial probabilístico e independente para cada porta: aberta, fechada ou trancada.
+- [ ] **T068 — P0** Gerar estado inicial probabilístico para janelas: aberta, fechada ou bloqueada/quebrada, conforme o cenário.
+- [ ] **T069 — P0** Modelar garagens como acessos próprios, com estados e regras de passagem específicos.
+- [ ] **T070 — P0** Permitir entrada e saída de policiais, civis e infectados por rotas válidas, considerando tipo de NPC, estado do acesso e pathfinding interior/exterior.
+- [ ] **T071 — P0** Implementar ronda aleatória, percepção por visão/ruído e perseguição; infectados podem investigar estímulos e atacar edifícios/acessos quando atraídos.
+- [ ] **T072 — P1** Persistir estados dos componentes durante a missão; não sortear novamente a cada atualização, troca de cena ou recarga da visualização.
 
-**Base técnica anterior (branch `feat/shelter-roaming-t066-t071`):** contém ronda aleatória, perseguição e colisões estáticas, mas implementa a antiga regra de casa inacessível. Essa lógica precisa ser substituída por acessos dinâmicos, interior navegável e reação da casa a estímulos. As tarefas T066–T071 estão reabertas para essa revisão.
+**Geração probabilística:** cada edifício recebe um perfil de condição. O estado de cada porta, janela e garagem é sorteado de forma independente usando pesos configuráveis por cenário/tipo de edifício. Exemplo: uma casa pode ter porta trancada, janela aberta e garagem fechada; a casa vizinha pode ter porta aberta e garagem trancada. Usar seed por mapa/partida para permitir reprodução de bugs e testes determinísticos. Probabilidades devem ser dados de configuração, não condicionais espalhados pelo código.
+
+**Base técnica anterior:** a branch `feat/shelter-roaming-t066-t071` usa colisões estáticas e a regra antiga de casa inacessível. Essa lógica deve ser substituída por edifícios com interior e acessos dinâmicos.
 
 ### Fase 8 — Ondas e fluxo da missão
 
@@ -243,6 +246,9 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T118 — P0** Implementar interação de resgate e conclusão quando os dois civis alcançarem a zona de extração.
 - [ ] **T119 — P0** Implementar acompanhamento dos civis resgatados usando acessos válidos.
 - [ ] **T120 — P1** Apresentar instruções contextuais para controles, acessos e resgate.
+- [ ] **T121 — P1** Implementar reparo de portas, janelas, garagem e demais componentes danificados.
+- [ ] **T122 — P1** Implementar aprimoramentos de componentes/edifícios (ex.: reforço, barricada ou melhoria de fechadura), com efeitos claros e limites por nível.
+- [ ] **T123 — P1** Definir custos, materiais, tempo de execução e requisitos de reparo/aprimoramento; impedir melhorias gratuitas ou ilimitadas.
 
 ## 4. Fora do escopo do MVP
 
@@ -288,8 +294,10 @@ As decisões abaixo ainda precisam de balanceamento ou detalhamento. Não devem 
 - Capacidade de munição e duração da recarga.
 - Parâmetros de ronda aleatória (raio, intervalo e distribuição dos destinos).
 - Estímulos que atraem infectados para a casa (ruído de tiros, portas, janelas, civis ou eventos).
-- Como infectados atacam a casa e se podem danificar/arrombar acessos.
-- Como cada NPC interage com portas trancadas e janelas fechadas.
+- Probabilidades/ponderações iniciais por tipo de edifício, região e cenário, inclusive estados de garagem.
+- Como infectados atacam a casa, quais componentes podem danificar e se conseguem arrombar acessos.
+- Quem pode reparar/aprimorar componentes, com quais recursos, ferramentas, custos, tempos e limites.
+- Como cada NPC interage com portas trancadas, janelas fechadas e garagens.
 - Zona de extração para concluir o resgate dos civis.
 - Alcance de detecção e regras para perder/retomar perseguição.
 - Resolução-base e tamanho dos sprites.
