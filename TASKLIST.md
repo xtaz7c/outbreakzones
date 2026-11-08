@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** o protótipo evoluiu até o sistema de combate na branch `feat/combat-system-t055-t065`; testes, lint, build e validação integrada dessa etapa ainda precisam ser confirmados localmente. A Fase 7 está em implementação na branch `feat/residence-defense-t066-t071`: cinco entradas vulneráveis, integridade independente, abertura de células rompidas, invasão e estado de derrota. Não marcar tarefas como concluídas antes da validação automatizada e visual.
+> **Status atual:** a Fase 7 está sendo ajustada na branch `feat/residence-defense-t066-t071` para refletir a regra de design atual: a residência é um abrigo seguro e inacessível; infectados vagam aleatoriamente e perseguem policiais detectados. A implementação anterior de dano e invasão de entradas foi removida. Testes, lint, build e revisão visual ainda precisam ser executados.
 
 ## 1. Visão e escopo
 
