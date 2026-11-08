@@ -245,7 +245,7 @@ describe('Simulation', () => {
     const grid = new GridMap(64, 40);
     const buildings = new BuildingSystem([
       { id: 'front', kind: 'door', x: 960, y: 864, width: 128, height: 32,
-        maxHealth: 20, weights: { open: 0, closed: 1 } },
+        maxHealth: 50, weights: { open: 0, closed: 1 } },
     ], grid, 32, 42);
     sim.setWorldGrid(grid, 32);
     sim.setBuildingSystem(buildings);
@@ -259,7 +259,7 @@ describe('Simulation', () => {
     expect(target).toBeDefined();
     sim.emitNoiseAtStructure(target!, 100, 0.1);
     for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
-    expect(buildings.getAccess('front')?.health).toBeLessThan(20);
+    expect(buildings.getAccess('front')?.health).toBeLessThan(50);
     const healthAfterNoise = buildings.getAccess('front')!.health;
     for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
     expect(buildings.getAccess('front')!.health).toBeLessThan(healthAfterNoise);
