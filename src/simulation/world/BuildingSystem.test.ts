@@ -38,6 +38,40 @@ describe('BuildingSystem', () => {
     expect(system.getAccess('front')?.isPassable).toBe(true);
   });
 
+
+  it('keeps a broken access permanently passable', () => {
+    const system = new BuildingSystem([
+      { ...definitions[0]!, maxHealth: 10, weights: { open: 0, closed: 1 } },
+    ], new GridMap(8, 8), 32, 9);
+    system.damage('front', 10);
+    expect(system.getAccess('front')?.state).toBe('broken');
+    expect(system.interact('front', 'police')).toBe(false);
+    expect(system.getAccess('front')?.state).toBe('broken');
+  });
+
+  it('allows police through an open window but blocks civilians', () => {
+    const system = new BuildingSystem([
+      { ...definitions[1]!, weights: { open: 1, closed: 0 } },
+    ], new GridMap(8, 8), 32, 9);
+    expect(system.getNavigationGrid('police').isWalkable({ column: 2, row: 1 })).toBe(true);
+    expect(system.getNavigationGrid('civil').isWalkable({ column: 2, row: 1 })).toBe(false);
+  });
+
+  it('requires a key to unlock a locked door', () => {
+    const system = new BuildingSystem([
+      { ...definitions[0]!, weights: { open: 0, closed: 0, locked: 1 } },
+    ], new GridMap(8, 8), 32, 9);
+    expect(system.interact('front', 'police')).toBe(false);
+    expect(system.interact('front', 'police', true)).toBe(true);
+    expect(system.getAccess('front')?.state).toBe('open');
+  });
+
+  it('rejects invalid access geometry', () => {
+    expect(() => new BuildingSystem([
+      { ...definitions[0]!, width: 0 },
+    ], new GridMap(8, 8), 32, 9)).toThrow(RangeError);
+  });
+
   it('rejects duplicate identifiers', () => {
     expect(() => new BuildingSystem([definitions[0]!, definitions[0]!], new GridMap(8, 8), 32, 1)).toThrow();
   });
