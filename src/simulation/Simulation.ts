@@ -6,6 +6,7 @@
  */
 import { PoliceOfficer } from './PoliceOfficer';
 import { Infected } from './Infected';
+import { CombatSystem, type CombatEvent } from './CombatSystem';
 import type { InfectedConfig, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import type { TilePosition } from './world/WorldConfig';
@@ -37,6 +38,8 @@ export class Simulation {
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
   private readonly infected: Infected[] = [];
+  private readonly combat = new CombatSystem();
+  private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
   private infectedStructureTarget: InfectedStructureTarget | undefined;
   private worldGrid: GridMap | null = null;
@@ -72,6 +75,14 @@ export class Simulation {
     return infected;
   }
 
+  setTargetPriority(officerId: number, infectedId: number | null): void {
+    this.combat.setTargetPriority(officerId, infectedId);
+  }
+
+  getCombatEvents(): readonly CombatEvent[] {
+    return this.combatEvents;
+  }
+
   setInfectedStructureTarget(target: InfectedStructureTarget | undefined): void {
     this.infectedStructureTarget = target;
   }
@@ -100,6 +111,7 @@ export class Simulation {
   update(dt: number): void {
     if (this.paused || !isValidDt(dt)) return;
 
+    this.combatEvents = [];
     this.accumulator += Math.min(dt, MAX_FRAME_DT);
     let steps = 0;
     while (this.accumulator >= FIXED_DT && steps < MAX_STEPS_PER_UPDATE) {
@@ -119,6 +131,7 @@ export class Simulation {
       for (const infected of this.infected) {
         infected.update(dt, this.tileSize, this.worldGrid, this.officers, this.infectedStructureTarget);
       }
+      this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, this.worldGrid, this.tileSize));
     }
     for (let index = this.infected.length - 1; index >= 0; index -= 1) {
       if (this.infected[index]!.isDead) this.infected.splice(index, 1);
