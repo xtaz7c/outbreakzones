@@ -7,8 +7,9 @@
 import { PoliceOfficer } from './PoliceOfficer';
 import { Infected } from './Infected';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
-import type { InfectedConfig } from './Infected';
+import type { InfectedConfig, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
+import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
 import type { TilePosition } from './world/WorldConfig';
 
 export interface SimulationState {
@@ -41,7 +42,9 @@ export class Simulation {
   private readonly combat: CombatSystem;
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
+  private infectedStructureTarget: InfectedStructureTarget | undefined;
   private worldGrid: GridMap | null = null;
+  private buildingSystem: BuildingSystem | null = null;
   private tileSize = WORLD_TILE_SIZE;
 
   constructor(combatOptions: CombatSystemOptions = {}) {
@@ -64,16 +67,28 @@ export class Simulation {
     this.tileSize = tileSize;
   }
 
+  setBuildingSystem(system: BuildingSystem): void {
+    this.buildingSystem = system;
+  }
+
+  getBuildingSnapshots(): AccessSnapshot[] {
+    return this.buildingSystem?.getSnapshots() ?? [];
+  }
+
+  interactWithAccess(accessId: string, actor: ActorKind, hasKey = false): boolean {
+    return this.buildingSystem?.interact(accessId, actor, hasKey) ?? false;
+  }
+
+  damageAccess(accessId: string, amount: number): number {
+    return this.buildingSystem?.damage(accessId, amount) ?? 0;
+  }
+
   getOfficers(): readonly PoliceOfficer[] {
     return this.officers;
   }
 
   getInfected(): readonly Infected[] {
     return this.infected;
-  }
-
-  isMissionDefeated(): boolean {
-    return this.officers.every((officer) => officer.isIncapacitated);
   }
 
   spawnInfected(config: Omit<InfectedConfig, 'id'>): Infected {
@@ -84,9 +99,6 @@ export class Simulation {
 
   setTargetPriority(officerId: number, infectedId: number | null): void {
     this.combat.setTargetPriority(officerId, infectedId);
-    if (infectedId !== null) {
-      this.officers.find((officer) => officer.id === officerId)?.setAttacking(true);
-    }
   }
 
   getCombatEvents(): readonly CombatEvent[] {
@@ -97,6 +109,10 @@ export class Simulation {
     return this.combat.getAmmoStatus(officerId);
   }
 
+  setInfectedStructureTarget(target: InfectedStructureTarget | undefined): void {
+    this.infectedStructureTarget = target;
+  }
+
   damageInfected(infectedId: number, amount: number): number {
     const infected = this.infected.find((candidate) => candidate.id === infectedId);
     return infected?.takeDamage(amount) ?? 0;
@@ -104,8 +120,9 @@ export class Simulation {
 
   issueMoveOrder(officerId: number, destination: TilePosition): boolean {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
-    if (!officer || !this.worldGrid || this.paused || this.isMissionDefeated()) return false;
-    return officer.issueMoveOrder(destination, this.worldGrid, this.tileSize);
+    if (!officer || !this.worldGrid) return false;
+    const navigationGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
+    return officer.issueMoveOrder(destination, navigationGrid, this.tileSize);
   }
 
   setOfficerAttacking(officerId: number, attacking: boolean): boolean {
@@ -120,7 +137,8 @@ export class Simulation {
 
   update(dt: number): void {
     this.combatEvents = [];
-    if (this.paused || !isValidDt(dt) || this.isMissionDefeated()) return;
+    if (this.paused || !isValidDt(dt)) return;
+
 
     this.accumulator += Math.min(dt, MAX_FRAME_DT);
     let steps = 0;
@@ -128,10 +146,6 @@ export class Simulation {
       this.step(FIXED_DT);
       this.accumulator -= FIXED_DT;
       steps += 1;
-      if (this.isMissionDefeated()) {
-        this.accumulator = 0;
-        break;
-      }
     }
     if (steps >= MAX_STEPS_PER_UPDATE) this.accumulator = 0;
   }
@@ -142,15 +156,12 @@ export class Simulation {
       officer.update(dt, this.tileSize);
     }
     if (this.worldGrid) {
-      // Walls, doors and windows remain blocked in the navigation grid.
-      // Both police and infected use this same grid, so neither can enter the shelter.
+      const infectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
+      const policeGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
       for (const infected of this.infected) {
-        infected.update(dt, this.tileSize, this.worldGrid, this.officers);
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, this.infectedStructureTarget);
       }
-
-      this.combatEvents.push(...this.combat.update(
-        dt, this.officers, this.infected, this.worldGrid, this.tileSize,
-      ));
+      this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize));
     }
     for (let index = this.infected.length - 1; index >= 0; index -= 1) {
       if (this.infected[index]!.isDead) this.infected.splice(index, 1);
