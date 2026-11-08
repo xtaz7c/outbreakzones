@@ -24,7 +24,6 @@ export class MissionScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private fullscreenText!: Phaser.GameObjects.Text;
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
-  private selectionKeys!: Record<string, Phaser.Input.Keyboard.Key>;
   private selectionGraphics!: Phaser.GameObjects.Graphics;
   private officers: TacticalOfficer[] = [];
   private selectedOfficerIds = new Set<number>();
@@ -193,7 +192,6 @@ export class MissionScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) return;
 
-    this.selectionKeys = keyboard.addKeys('ONE,TWO,THREE') as Record<string, Phaser.Input.Keyboard.Key>;
     keyboard.on('keydown-ONE', () => this.selectOfficer(1));
     keyboard.on('keydown-TWO', () => this.selectOfficer(2));
     keyboard.on('keydown-THREE', () => this.selectOfficer(3));
@@ -228,9 +226,9 @@ export class MissionScene extends Phaser.Scene {
 
       const distance = Phaser.Math.Distance.Between(start.screenX, start.screenY, pointer.x, pointer.y);
       if (distance >= SELECTION_DRAG_THRESHOLD) {
-        this.selectBox(start.x, start.y, pointer.worldX, pointer.worldY, pointer.shiftKey);
+        this.selectBox(start.x, start.y, pointer.worldX, pointer.worldY, (pointer.event as MouseEvent).shiftKey);
       } else {
-        this.selectAt(pointer.worldX, pointer.worldY, pointer.shiftKey);
+        this.selectAt(pointer.worldX, pointer.worldY, (pointer.event as MouseEvent).shiftKey);
       }
     });
   }
