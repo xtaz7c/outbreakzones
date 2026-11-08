@@ -9,7 +9,6 @@ import { Infected } from './Infected';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { InfectedConfig } from './Infected';
 import type { GridMap } from './world/GridMap';
-import { ResidenceDefense, type ResidenceDefenseStatus } from './world/ResidenceDefense';
 import type { TilePosition } from './world/WorldConfig';
 
 export interface SimulationState {
@@ -40,8 +39,6 @@ export class Simulation {
   ];
   private readonly infected: Infected[] = [];
   private readonly combat: CombatSystem;
-  private readonly residence = new ResidenceDefense();
-  private readonly openedEntranceIds = new Set<string>();
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
   private worldGrid: GridMap | null = null;
@@ -75,17 +72,8 @@ export class Simulation {
     return this.infected;
   }
 
-  getResidenceDefense(): ResidenceDefense {
-    return this.residence;
-  }
-
-  getResidenceStatus(): ResidenceDefenseStatus {
-    return this.residence.getStatus();
-  }
-
   isMissionDefeated(): boolean {
-    return this.residence.getStatus().isOverrun ||
-      this.officers.every((officer) => officer.isIncapacitated);
+    return this.officers.every((officer) => officer.isIncapacitated);
   }
 
   spawnInfected(config: Omit<InfectedConfig, 'id'>): Infected {
@@ -154,34 +142,10 @@ export class Simulation {
       officer.update(dt, this.tileSize);
     }
     if (this.worldGrid) {
-      const entrances = this.residence.getEntrances();
-
-      // Open any entrance breached since the previous fixed step before pathfinding.
-      for (const entrance of entrances) {
-        if (entrance.isDestroyed && !this.openedEntranceIds.has(entrance.id)) {
-          if (this.worldGrid.contains(entrance.structureTile)) {
-            this.worldGrid.setBlocked(entrance.structureTile, false);
-          }
-          this.openedEntranceIds.add(entrance.id);
-        }
-      }
-
+      // Walls, doors and windows remain blocked in the navigation grid.
+      // Both police and infected use this same grid, so neither can enter the shelter.
       for (const infected of this.infected) {
-        infected.update(dt, this.tileSize, this.worldGrid, this.officers, entrances);
-      }
-
-      // An entrance may have been destroyed during this step; open it for the next path update.
-      for (const entrance of entrances) {
-        if (entrance.isDestroyed && !this.openedEntranceIds.has(entrance.id)) {
-          if (this.worldGrid.contains(entrance.structureTile)) {
-            this.worldGrid.setBlocked(entrance.structureTile, false);
-          }
-          this.openedEntranceIds.add(entrance.id);
-        }
-      }
-
-      if (this.infected.some((infected) => infected.hasEnteredResidence)) {
-        this.residence.markOverrun();
+        infected.update(dt, this.tileSize, this.worldGrid, this.officers);
       }
 
       this.combatEvents.push(...this.combat.update(
