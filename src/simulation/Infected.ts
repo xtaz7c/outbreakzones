@@ -28,6 +28,7 @@ export interface InfectedStructureTarget {
   readonly position: InfectedPosition;
   /** Walkable tile adjacent to the door/window; the structure tile may be blocked. */
   readonly approachTile: TilePosition;
+  readonly breachTile?: TilePosition;
   readonly isDestroyed: boolean;
   takeDamage(amount: number): number;
 }
@@ -217,6 +218,10 @@ export class Infected {
         position: structureTarget.position,
         tile: structureTarget.approachTile,
       };
+    }
+    if (structureTarget?.isDestroyed && structureTarget.breachTile) {
+      const tile = structureTarget.breachTile;
+      return { kind: 'entry', tile, position: { x: tile.column * tileSize + tileSize / 2, y: tile.row * tileSize + tileSize / 2 } };
     }
     return {
       kind: 'entry',
