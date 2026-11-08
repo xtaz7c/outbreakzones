@@ -508,7 +508,9 @@ export class MissionScene extends Phaser.Scene {
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
         `Residence: ${defense.state.toUpperCase()} | HP ${defense.health}/${defense.maxHealth} | Breached ${defense.breachedCount}/${defense.entranceCount}`,
-        ...(defense.isOverrun ? ['MISSION DEFEATED — residence overrun'] : []),
+        ...(this.simulation.isMissionDefeated()
+          ? [defense.isOverrun ? 'MISSION DEFEATED — residence overrun' : 'MISSION DEFEATED — all officers incapacitated']
+          : []),
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
