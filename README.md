@@ -45,7 +45,7 @@ npm run lint
 npm run build
 ```
 
-## Controles planejados para o MVP
+## Controles atuais e comandos provisórios
 
 | Ação | Controle |
 |---|---|
@@ -54,8 +54,15 @@ npm run build
 | Mover unidades | Clique direito |
 | Pausar / Retomar | Espaço |
 | Câmera | WASD / setas + scroll (zoom) |
+| Manter posição das unidades selecionadas | X |
+| Segurar fogo das unidades selecionadas | H |
+| Retomar engajamento automático | G |
+| Interagir com acesso próximo | E (provisório) |
+| Danificar acesso próximo | B (debug) |
+| Gerar infectado | I (debug) |
+| Atrair infectados para a entrada frontal | N (debug) |
 
-Os controles acima descrevem o objetivo do MVP; consulte a tasklist para acompanhar o que já está implementado.
+X, H e G são comandos táticos básicos em validação. E, B, I e N são atalhos provisórios de desenvolvimento; N direciona infectados ao acesso frontal e ainda não representa um sistema geral de ruído.
 
 ## Arquitetura (resumo)
 
