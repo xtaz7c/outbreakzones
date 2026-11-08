@@ -155,11 +155,22 @@ export class Simulation {
     }
     if (this.worldGrid) {
       const entrances = this.residence.getEntrances();
+
+      // Open any entrance breached since the previous fixed step before pathfinding.
+      for (const entrance of entrances) {
+        if (entrance.isDestroyed && !this.openedEntranceIds.has(entrance.id)) {
+          if (this.worldGrid.contains(entrance.structureTile)) {
+            this.worldGrid.setBlocked(entrance.structureTile, false);
+          }
+          this.openedEntranceIds.add(entrance.id);
+        }
+      }
+
       for (const infected of this.infected) {
         infected.update(dt, this.tileSize, this.worldGrid, this.officers, entrances);
       }
 
-      // A breached opening becomes walkable so A* can route through the wall.
+      // An entrance may have been destroyed during this step; open it for the next path update.
       for (const entrance of entrances) {
         if (entrance.isDestroyed && !this.openedEntranceIds.has(entrance.id)) {
           if (this.worldGrid.contains(entrance.structureTile)) {
