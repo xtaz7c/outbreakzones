@@ -152,16 +152,17 @@ export class CombatSystem {
       const origin = officer.position;
       const availableTargets = livingTargets.filter((target) => !target.isDead);
       const priorityId = this.priorities.get(officer.id);
-      if (officer.tacticalPosture === 'hold_fire' && priorityId === undefined) {
-        officer.setAttacking(false);
-        continue;
-      }
       const priority = priorityId === undefined
         ? undefined
         : livingTargets.find((target) => target.id === priorityId);
-      const target = priority && this.isValidTarget(officer, priority, origin, map, tileSize)
+      const validPriority = priority && this.isValidTarget(officer, priority, origin, map, tileSize)
         ? priority
-        : this.findNearestTarget(officer, availableTargets, origin, map, tileSize);
+        : undefined;
+      if (officer.tacticalPosture === 'hold_fire' && !validPriority) {
+        officer.setAttacking(false);
+        continue;
+      }
+      const target = validPriority ?? this.findNearestTarget(officer, availableTargets, origin, map, tileSize);
 
       if (!target) {
         officer.setAttacking(false);
