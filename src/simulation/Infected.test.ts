@@ -77,6 +77,33 @@ describe('Infected roaming and combat AI', () => {
     expect(officer.health).toBe(88);
   });
 
+  it('does not get stuck pursuing an officer behind a solid shelter wall', () => {
+    const map = new GridMap(10, 10);
+    for (let column = 3; column <= 6; column += 1) {
+      map.setBlocked({ column, row: 3 });
+      map.setBlocked({ column, row: 6 });
+    }
+    for (let row = 3; row <= 6; row += 1) {
+      map.setBlocked({ column: 3, row });
+      map.setBlocked({ column: 6, row });
+    }
+
+    const infected = new Infected({
+      id: 1,
+      x: 1 * 32 + 16,
+      y: 4 * 32 + 16,
+      detectionRange: 300,
+      moveSpeed: 32,
+      random: () => 0.99,
+    });
+    const officer = new PoliceOfficer({ id: 1, x: 4 * 32 + 16, y: 4 * 32 + 16 });
+
+    infected.update(0.5, 32, map, [officer]);
+
+    expect(infected.state).toBe('moving');
+    expect(infected.position).not.toEqual({ x: 1 * 32 + 16, y: 4 * 32 + 16 });
+  });
+
   it('pursues an officer that is detected outside attack range', () => {
     const infected = new Infected({
       id: 1,
