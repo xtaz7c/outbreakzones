@@ -5,8 +5,8 @@ describe('ResidenceDefense', () => {
   it('creates five independent vulnerable entrances', () => {
     const residence = new ResidenceDefense();
     expect(residence.getEntrances()).toHaveLength(5);
-    expect(residence.getEntrance('front-door')?.maxHealth).toBe(180);
-    expect(residence.getEntrance('west-window')?.maxHealth).toBe(90);
+    expect(residence.getEntrance('front-door')?.maxHealth).toBe(120);
+    expect(residence.getEntrance('west-window')?.maxHealth).toBe(60);
     expect(residence.getStatus().state).toBe('secure');
   });
 
