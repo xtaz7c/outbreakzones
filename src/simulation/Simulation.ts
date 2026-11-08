@@ -160,6 +160,10 @@ export class Simulation {
       this.step(FIXED_DT);
       this.accumulator -= FIXED_DT;
       steps += 1;
+      if (this.isMissionDefeated()) {
+        this.accumulator = 0;
+        break;
+      }
     }
     if (steps >= MAX_STEPS_PER_UPDATE) this.accumulator = 0;
   }
