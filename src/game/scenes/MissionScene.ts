@@ -3,6 +3,7 @@ import { Simulation } from '../../simulation/Simulation';
 import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
+import { getAvailableEntryPoints } from '../../simulation/world/MissionEntryPoints';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -15,6 +16,11 @@ interface TacticalOfficer {
   readonly selectionRing: Phaser.GameObjects.Arc;
 }
 
+interface TacticalInfected {
+  readonly id: number;
+  readonly container: Phaser.GameObjects.Container;
+}
+
 export class MissionScene extends Phaser.Scene {
   private simulation!: Simulation;
   private statusText!: Phaser.GameObjects.Text;
@@ -22,6 +28,8 @@ export class MissionScene extends Phaser.Scene {
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
   private selectionGraphics!: Phaser.GameObjects.Graphics;
   private officers: TacticalOfficer[] = [];
+  private readonly infectedVisuals = new Map<number, TacticalInfected>();
+  private debugInfectedSpawnIndex = 0;
   private selectedOfficerIds = new Set<number>();
   private worldGrid!: GridMap;
   private tileSize = 32;
@@ -41,6 +49,7 @@ export class MissionScene extends Phaser.Scene {
     this.createHud();
     this.createCameraControls();
     this.createSelectionControls();
+    this.input.keyboard?.on('keydown-I', () => this.spawnDebugInfected());
 
     this.input.keyboard?.on('keydown-SPACE', () => {
       this.isPaused = !this.isPaused;
@@ -57,6 +66,7 @@ export class MissionScene extends Phaser.Scene {
     if (!this.isPaused) {
       this.updateOfficers(dt);
     }
+    this.updateInfectedVisuals();
     this.updateStatusText(dt);
   }
 
@@ -306,6 +316,49 @@ export class MissionScene extends Phaser.Scene {
     };
   }
 
+  private spawnDebugInfected(): void {
+    const entries = getAvailableEntryPoints(this.worldGrid);
+    if (entries.length === 0) return;
+
+    const spawnPlans = [
+      { x: 128, y: 640, entryId: 'west-window' },
+      { x: 1920, y: 640, entryId: 'east-window' },
+      { x: 1024, y: 64, entryId: 'north-window-west' },
+      { x: 1024, y: 1216, entryId: 'front-door' },
+    ] as const;
+    const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
+    this.debugInfectedSpawnIndex += 1;
+    const entry = entries.find((candidate) => candidate.id === plan.entryId) ?? entries[0]!;
+    this.simulation.spawnInfected({
+      x: plan.x,
+      y: plan.y,
+      entryTile: entry.approachTile,
+    });
+  }
+
+  private updateInfectedVisuals(): void {
+    const activeIds = new Set<number>();
+    for (const infected of this.simulation.getInfected()) {
+      activeIds.add(infected.id);
+      let visual = this.infectedVisuals.get(infected.id);
+      if (!visual) {
+        const body = this.add.circle(0, 0, 11, 0xb83b3b).setStrokeStyle(2, 0x2a1010);
+        const core = this.add.circle(0, 0, 4, 0x451818);
+        const container = this.add.container(infected.position.x, infected.position.y, [body, core])
+          .setDepth(110);
+        visual = { id: infected.id, container };
+        this.infectedVisuals.set(infected.id, visual);
+      }
+      visual.container.setPosition(infected.position.x, infected.position.y);
+    }
+
+    for (const [id, visual] of this.infectedVisuals) {
+      if (activeIds.has(id)) continue;
+      visual.container.destroy();
+      this.infectedVisuals.delete(id);
+    }
+  }
+
   private updateOfficers(_dt: number): void {
     for (const visual of this.officers) {
       const officer = this.simulation.getOfficers().find((candidate) => candidate.id === visual.id);
@@ -366,7 +419,7 @@ export class MissionScene extends Phaser.Scene {
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move`,
-        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen',
+        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: debug spawn',
       ].join('\\n'),
     );
   }
