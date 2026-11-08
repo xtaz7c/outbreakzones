@@ -27,6 +27,7 @@ export class MissionScene extends Phaser.Scene {
   private fullscreenText!: Phaser.GameObjects.Text;
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
   private selectionGraphics!: Phaser.GameObjects.Graphics;
+  private combatGraphics!: Phaser.GameObjects.Graphics;
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
   private debugInfectedSpawnIndex = 0;
@@ -62,6 +63,7 @@ export class MissionScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     const dt = Math.min(delta / 1000, 0.05);
     this.simulation.update(dt);
+    this.updateCombatFeedback();
     this.updateCamera(dt);
     if (!this.isPaused) {
       this.updateOfficers(dt);
@@ -156,6 +158,7 @@ export class MissionScene extends Phaser.Scene {
     this.scale.on('leavefullscreen', () => this.fullscreenText.setText('Fullscreen [F]'));
 
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
+    this.combatGraphics = this.add.graphics().setDepth(120);
   }
 
   private createCameraControls(): void {
@@ -297,6 +300,18 @@ export class MissionScene extends Phaser.Scene {
     const selected = this.simulation.getOfficers().filter(
       (officer) => this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
     );
+    const prioritizedTarget = [...this.simulation.getInfected()]
+      .reverse()
+      .find((infected) => Phaser.Math.Distance.Between(
+        worldX, worldY, infected.position.x, infected.position.y,
+      ) <= 24);
+    if (prioritizedTarget) {
+      for (const officer of selected) {
+        this.simulation.setTargetPriority(officer.id, prioritizedTarget.id);
+      }
+      return;
+    }
+    for (const officer of selected) this.simulation.setTargetPriority(officer.id, null);
     const target = this.worldToTile(worldX, worldY);
     const centerOffset = (selected.length - 1) / 2;
     selected.forEach((officer, index) => {
@@ -359,6 +374,21 @@ export class MissionScene extends Phaser.Scene {
     }
   }
 
+  private updateCombatFeedback(): void {
+    this.combatGraphics.clear();
+    for (const event of this.simulation.getCombatEvents()) {
+      this.combatGraphics.lineStyle(event.hit ? 2 : 1, event.hit ? 0xffd166 : 0x9aa0a6, 0.9);
+      this.combatGraphics.beginPath();
+      this.combatGraphics.moveTo(event.from.x, event.from.y);
+      this.combatGraphics.lineTo(event.to.x, event.to.y);
+      this.combatGraphics.strokePath();
+      if (event.hit) {
+        this.combatGraphics.fillStyle(0xffe08a, 0.95);
+        this.combatGraphics.fillCircle(event.to.x, event.to.y, 3);
+      }
+    }
+  }
+
   private updateOfficers(_dt: number): void {
     for (const visual of this.officers) {
       const officer = this.simulation.getOfficers().find((candidate) => candidate.id === visual.id);
@@ -418,7 +448,11 @@ export class MissionScene extends Phaser.Scene {
         `Sim time: ${state.elapsed.toFixed(2)}s`,
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
-        `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move`,
+        `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
+        ...this.simulation.getOfficers().map((officer) => {
+          const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
+          return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''}`;
+        }),
         'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: debug spawn',
       ].join('\\n'),
     );
