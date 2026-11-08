@@ -5,6 +5,8 @@
  * Timestep: fixed timestep com acumulador (ADR7).
  */
 import { PoliceOfficer } from './PoliceOfficer';
+import { Infected } from './Infected';
+import type { InfectedConfig, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import type { TilePosition } from './world/WorldConfig';
 
@@ -34,7 +36,9 @@ export class Simulation {
     new PoliceOfficer({ id: 2, x: 32 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
-  private infectedCount = 0;
+  private readonly infected: Infected[] = [];
+  private nextInfectedId = 1;
+  private infectedStructureTarget: InfectedStructureTarget | undefined;
   private worldGrid: GridMap | null = null;
   private tileSize = WORLD_TILE_SIZE;
 
@@ -56,6 +60,25 @@ export class Simulation {
 
   getOfficers(): readonly PoliceOfficer[] {
     return this.officers;
+  }
+
+  getInfected(): readonly Infected[] {
+    return this.infected;
+  }
+
+  spawnInfected(config: Omit<InfectedConfig, 'id'>): Infected {
+    const infected = new Infected({ ...config, id: this.nextInfectedId++ });
+    this.infected.push(infected);
+    return infected;
+  }
+
+  setInfectedStructureTarget(target: InfectedStructureTarget | undefined): void {
+    this.infectedStructureTarget = target;
+  }
+
+  damageInfected(infectedId: number, amount: number): number {
+    const infected = this.infected.find((candidate) => candidate.id === infectedId);
+    return infected?.takeDamage(amount) ?? 0;
   }
 
   issueMoveOrder(officerId: number, destination: TilePosition): boolean {
@@ -92,6 +115,14 @@ export class Simulation {
     for (const officer of this.officers) {
       officer.update(dt, this.tileSize);
     }
+    if (this.worldGrid) {
+      for (const infected of this.infected) {
+        infected.update(dt, this.tileSize, this.worldGrid, this.officers, this.infectedStructureTarget);
+      }
+    }
+    for (let index = this.infected.length - 1; index >= 0; index -= 1) {
+      if (this.infected[index]!.isDead) this.infected.splice(index, 1);
+    }
   }
 
   getState(): SimulationState {
@@ -100,7 +131,7 @@ export class Simulation {
       paused: this.paused,
       officerCount: this.officers.length,
       activeOfficerCount: this.officers.filter((officer) => !officer.isIncapacitated).length,
-      infectedCount: this.infectedCount,
+      infectedCount: this.infected.length,
     };
   }
 }

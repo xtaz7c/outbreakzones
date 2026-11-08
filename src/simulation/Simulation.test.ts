@@ -117,6 +117,27 @@ describe('Simulation', () => {
     expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(false);
   });
 
+  it('spawns infected entities and advances their AI on fixed steps', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const infected = sim.spawnInfected({
+      x: 16, y: 16, entryTile: { column: 4, row: 1 }, moveSpeed: 32,
+    });
+    expect(sim.getState().infectedCount).toBe(1);
+    sim.update(FIXED_DT);
+    expect(infected.state).toBe('moving');
+    expect(infected.position.x).toBeGreaterThan(16);
+  });
+
+  it('removes dead infected entities safely during simulation updates', () => {
+    const infected = sim.spawnInfected({
+      x: 16, y: 16, entryTile: { column: 4, row: 1 },
+    });
+    infected.takeDamage(100);
+    sim.update(FIXED_DT);
+    expect(sim.getInfected()).toHaveLength(0);
+    expect(sim.getState().infectedCount).toBe(0);
+  });
+
   it('tracks active officers after individual incapacitation', () => {
     expect(sim.damageOfficer(2, 100)).toBe(100);
     expect(sim.getState().officerCount).toBe(3);
