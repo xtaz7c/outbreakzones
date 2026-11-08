@@ -202,6 +202,12 @@ export class Infected {
   }
 
   private updateWandering(dt: number, tileSize: number, map: GridMap): void {
+    if (this.pathTargetKey.startsWith('officer:')) {
+      this.path = [];
+      this.waypointIndex = 0;
+      this.pathTargetKey = '';
+      this.wanderTimer = 0;
+    }
     this.wanderTimer -= dt;
 
     if (this.path.length === 0 || this.waypointIndex >= this.path.length) {
