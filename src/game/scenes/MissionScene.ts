@@ -267,7 +267,10 @@ export class MissionScene extends Phaser.Scene {
 
   private refreshSelectionVisuals(): void {
     for (const officer of this.officers) {
-      officer.selectionRing.setVisible(this.selectedOfficerIds.has(officer.id));
+      officer.selectionRing.setVisible(
+        this.selectedOfficerIds.has(officer.id) &&
+        !this.simulation.getOfficers().find((candidate) => candidate.id === officer.id)?.isIncapacitated,
+      );
     }
   }
 
@@ -281,12 +284,18 @@ export class MissionScene extends Phaser.Scene {
 
   private issueMoveOrder(worldX: number, worldY: number): void {
     if (this.isPaused) return;
-    const destination = this.worldToTile(worldX, worldY);
-    for (const officer of this.simulation.getOfficers()) {
-      if (this.selectedOfficerIds.has(officer.id)) {
-        this.simulation.issueMoveOrder(officer.id, destination);
-      }
-    }
+    const selected = this.simulation.getOfficers().filter(
+      (officer) => this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
+    );
+    const target = this.worldToTile(worldX, worldY);
+    const centerOffset = (selected.length - 1) / 2;
+    selected.forEach((officer, index) => {
+      const destination = {
+        column: Math.round(target.column + index - centerOffset),
+        row: target.row,
+      };
+      this.simulation.issueMoveOrder(officer.id, destination);
+    });
   }
 
 
@@ -303,7 +312,7 @@ export class MissionScene extends Phaser.Scene {
       if (!officer) continue;
       const position = officer.position;
       visual.container.setPosition(position.x, position.y);
-      visual.container.setRotation(officer.facingAngle);
+      visual.container.setRotation(officer.facingAngle + Math.PI / 2);
       visual.container.setAlpha(officer.isIncapacitated ? 0.35 : 1);
       visual.selectionRing.setVisible(
         this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
