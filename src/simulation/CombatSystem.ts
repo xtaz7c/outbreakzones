@@ -152,6 +152,10 @@ export class CombatSystem {
       const origin = officer.position;
       const availableTargets = livingTargets.filter((target) => !target.isDead);
       const priorityId = this.priorities.get(officer.id);
+      if (officer.tacticalPosture === 'hold_fire' && priorityId === undefined) {
+        officer.setAttacking(false);
+        continue;
+      }
       const priority = priorityId === undefined
         ? undefined
         : livingTargets.find((target) => target.id === priorityId);
