@@ -194,8 +194,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 ### Fase 9 — Interface e experiência
 
-- [ ] **T084 — P1** Criar menu inicial e entrada para iniciar a missão.
-- [ ] **T085 — P0** Criar HUD da missão.
+- [ ] **T084 — P0** Criar página inicial de Outbreak Zones, exibida antes de carregar/iniciar a missão.
+- [ ] **T085 — P0** Criar HUD da missão fixo à viewport, independente do scroll, zoom e posição do mundo.
 - [ ] **T086 — P0** Exibir vida e munição de cada policial.
 - [ ] **T087 — P0** Exibir informações da unidade selecionada.
 - [ ] **T088 — P0** Exibir o estado dos dois civis e o progresso do resgate.
@@ -205,7 +205,6 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T092 — P0** Exibir resultado de vitória ou derrota.
 - [ ] **T093 — P0** Permitir reiniciar a missão.
 - [ ] **T094 — P1** Garantir legibilidade e usabilidade em diferentes resoluções desktop.
-- [ ] **T095 — P0** Manter o HUD fixo à viewport, independente do scroll e zoom do mundo.
 
 **Saída da fase:** jogador entende o estado da missão e consegue executar todas as ações necessárias pela interface.
 
@@ -225,7 +224,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 ### Fase 11 — Testes, estabilidade e entrega web
 
-- [ ] **T104 — P0** Testar seleção individual e múltipla.
+- [ ] **T115 — P0** Testar seleção individual e múltipla.
 - [ ] **T105 — P0** Testar pathfinding, colisões e bloqueios.
 - [ ] **T106 — P0** Testar linha de visão, aquisição de alvo e combate.
 - [ ] **T107 — P0** Testar pausa em todos os sistemas de simulação.
@@ -239,7 +238,15 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** MVP acessível no navegador, reproduzível a partir das instruções e sem bugs bloqueadores conhecidos.
 
-### Fase 12 — Civis e tutorial de resgate\n\n- [ ] **T116 — P0** Criar entidades civis com estados de aguardando, seguindo e resgatado.\n- [ ] **T117 — P0** Posicionar dois civis no interior da casa no início do tutorial.\n- [ ] **T118 — P0** Implementar interação de resgate e conclusão quando os dois civis alcançarem a zona de extração.\n- [ ] **T119 — P0** Implementar acompanhamento dos civis resgatados usando acessos válidos.\n- [ ] **T120 — P1** Apresentar instruções contextuais para controles, acessos e resgate.\n\n## 4. Fora do escopo do MVP
+### Fase 12 — Civis e tutorial de resgate
+
+- [ ] **T116 — P0** Criar entidades civis com estados de aguardando, seguindo e resgatado.
+- [ ] **T117 — P0** Posicionar dois civis no interior da casa no início do tutorial.
+- [ ] **T118 — P0** Implementar interação de resgate e conclusão quando os dois civis alcançarem a zona de extração.
+- [ ] **T119 — P0** Implementar acompanhamento dos civis resgatados usando acessos válidos.
+- [ ] **T120 — P1** Apresentar instruções contextuais para controles, acessos e resgate.
+
+## 4. Fora do escopo do MVP
 
 Não implementar antes da validação do MVP, salvo decisão explícita:
 
