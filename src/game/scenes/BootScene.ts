@@ -55,9 +55,9 @@ export class BootScene extends Phaser.Scene {
       }
     });
 
-    // Nenhum asset real ainda. Quando existirem, carregue-os aqui.
-    // Exemplo (descomente para testar o fluxo de erro):
-    // this.load.image('missing', 'assets/does-not-exist.png');
+    // Mapa e tileset originais da primeira missão.
+    this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
+    this.load.image('mission-tiles', '/tiles/mission-tiles.svg');
   }
 
   create(): void {

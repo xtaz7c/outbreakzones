@@ -26,16 +26,14 @@ Em desenvolvimento ativo. O backlog oficial está em [`TASKLIST.md`](./TASKLIST.
 
 ## Como instalar e executar
 
-Clone o repositório e entre na pasta do projeto. **Atenção:** o `package-lock.json` desta branch está incompleto no momento; primeiro regenere-o com `npm install`:
+Clone o repositório, entre na pasta do projeto e instale as dependências a partir do lockfile versionado:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`).
-
-Depois de gerar e versionar um lockfile completo e sincronizado com `package.json`, instalações limpas devem usar `npm ci`. Sempre versione `package.json` e `package-lock.json` juntos; não edite manualmente as entradas de dependências do lockfile.
+Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`). Sempre versione `package.json` e `package-lock.json` juntos; não edite manualmente as entradas de dependências do lockfile.
 
 ## Validação
 

@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** Implementação inicial de T001–T016 presente na branch `feat/foundation-t001-t016`, mas a fundação ainda **não está validada para integração**. O `package-lock.json` está incompleto (contém apenas o pacote raiz); portanto, `npm ci` não pode ser considerado aprovado. Não há evidência reproduzível anexada para `npm ci`, `npm test`, `npm run lint` e `npm run build`. Manter a Fase 1 em validação até corrigir o lockfile e executar os quatro comandos com sucesso.
+> **Status atual:** T001–T016 foram integradas à `main`. O `package-lock.json` foi regenerado e contém as dependências resolvidas; instalações limpas devem usar `npm ci`. O usuário informou que `npm run build` passou localmente; ainda falta registrar evidência de `npm ci`, `npm test` e `npm run lint` para encerrar a validação da Fase 1. A Fase 2 está em implementação na branch `feat/map-world-t017-t026`; não marcar tarefas como concluídas até executar testes e revisar o mapa no navegador.
 
 ## 1. Visão e escopo
 
@@ -81,7 +81,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T015 — P0** Separar regras/simulação da camada de renderização Phaser.
 - [ ] **T016 — P0** Configurar scripts de desenvolvimento, teste, lint e build.
 
-**Saída da fase:** pendente. A estrutura e os scripts existem, mas a instalação reproduzível e a validação completa do pipeline ainda não foram demonstradas.
+**Saída da fase:** implementação integrada; validação final pendente de `npm ci`, `npm test` e `npm run lint`. O usuário confirmou que `npm run build` passou localmente.
 
 ### Fase 2 — Mapa e mundo
 
@@ -96,7 +96,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T025 — P0** Definir células/áreas navegáveis e bloqueadas.
 - [ ] **T026 — P0** Implementar pathfinding e desvio de obstáculos.
 
-**Saída da fase:** mapa carregado, com colisões e navegação verificáveis.
+**Saída da fase:** mapa renderizado e validado visualmente pelo usuário; `npm test` passou com 32 testes, `npm run lint` passou e `npm run build` passou. T017–T026 ainda aguardam revisão final e integração por PR. A validação visual revelou a necessidade de controles de câmera, que estão sendo implementados na Fase 3.
 
 ### Fase 3 — Câmera e controles RTS
 
@@ -111,7 +111,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T035 — P0** Implementar ordem de movimentação com clique direito.
 - [ ] **T036 — P1** Implementar destino/posicionamento em formação para ordens em grupo, evitando sobreposição de unidades.
 
-**Saída da fase:** o jogador consegue navegar pela câmera, selecionar a equipe e dar ordens de movimento.
+**Saída da fase:** em andamento na branch `feat/camera-controls-t027-t030`. Foram implementados deslocamento por WASD/setas, zoom pela roda do mouse, limites de câmera e alternância de tela cheia por tecla F ou botão no HUD. T027–T030 aguardam validação no navegador. Seleção e ordens de movimento ainda não foram implementadas.
 
 ### Fase 4 — Policiais
 
