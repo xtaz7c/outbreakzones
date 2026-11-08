@@ -1,5 +1,5 @@
-import { PoliceOfficer } from './PoliceOfficer';
-import { GridMap } from './world/GridMap';
+import type { PoliceOfficer } from './PoliceOfficer';
+import type { GridMap } from './world/GridMap';
 import { findPath } from './world/Pathfinder';
 import type { TilePosition } from './world/WorldConfig';
 
