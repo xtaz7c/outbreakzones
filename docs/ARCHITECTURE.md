@@ -1,4 +1,4 @@
-# Arquitetura — Testgame
+# Arquitetura — Outbreak Zones
 
 ## Objetivos
 
@@ -19,9 +19,9 @@ src/
 │   └── ...
 ├── simulation/             # Regras de domínio (sem Phaser)
 │   ├── core/               # Tipos, constantes, utilitários
-│   ├── entities/           # Policiais, Infectados, etc.
-│   ├── systems/            # Movimento, combate, ondas, pathfinding
-│   └── world/              # Mapa, colisões e limites do abrigo
+│   ├── entities/           # Policiais, Infectados, Civis, etc.
+│   ├── systems/            # Movimento, combate, ondas, resgate, pathfinding
+│   └── world/              # Mapa, colisões, edifícios e acessos
 └── shared/                 # Tipos e utilitários compartilhados
 ```
 
@@ -49,16 +49,18 @@ src/
 
 ## Decisões de design relevantes (ADR resumidas)
 
-| ID   | Decisão                                      | Motivo                                      |
-|------|-----------------------------------------------|---------------------------------------------|
-| ADR1 | Simulação separada da renderização            | Testabilidade e portabilidade               |
-| ADR2 | Tempo real com pausa estratégica              | Estilo RTS tático clássico                  |
-| ADR3 | Top-down 2D pixel art                         | Clareza tática + produção viável para MVP   |
-| ADR4 | Três policiais controláveis                   | Escopo fechado e legível                    |
-| ADR5 | Pathfinding + colisões no domínio             | Comportamento previsível e testável         |
-| ADR6 | Vite + TypeScript strict                      | DX moderna e segurança de tipos             |
-| ADR7 | Fixed timestep (1/60) com acumulador          | Estabilidade em FPS variável; ver abaixo    |
-| ADR8 | Residência como abrigo inacessível            | Evita invasão; paredes, portas e janelas são bloqueios sólidos |
+| ID | Decisão | Motivo |
+|---|---|---|
+| ADR1 | Simulação separada da renderização | Testabilidade e portabilidade |
+| ADR2 | Tempo real com pausa estratégica | Estilo RTS tático clássico |
+| ADR3 | Top-down 2D pixel art | Clareza tática e produção viável |
+| ADR4 | Três policiais controláveis | Escopo fechado e legível |
+| ADR5 | Pathfinding e colisões no domínio | Comportamento previsível e testável |
+| ADR6 | Vite + TypeScript strict | DX moderna e segurança de tipos |
+| ADR7 | Fixed timestep (1/60) com acumulador | Estabilidade em FPS variável |
+| ADR8 | Abrigo inacessível (obsoleta) | Substituída pela ADR9 |
+| ADR9 | Edifícios e acessos interativos | Interior/exterior e acesso por entidade |
+| ADR10 | Reparos e aprimoramentos | Recuperação e reforço com custos e limites |
 
 ### ADR7 — Fixed timestep com acumulador
 
@@ -75,15 +77,29 @@ src/
 
 **Consequências:** comportamento de simulação mais estável entre 30–144 FPS; ligeiramente mais código na camada de domínio (aceitável).
 
-### ADR8 — Residência como abrigo inacessível
+### ADR8 — Residência como abrigo inacessível (obsoleta)
 
-**Contexto:** a residência não é um objetivo atacável nem uma estrutura que o jogador precise defender.
+**Status:** decisão substituída pela ADR9; não representa mais o design atual.
 
-**Decisão:** o interior da casa fica fora da área navegável da missão. Policiais e infectados usam o mesmo GridMap; paredes, portas e janelas permanecem bloqueios sólidos. Infectados não atacam estruturas nem tentam entrar no abrigo.
+### ADR9 — Edifícios interativos e acessos condicionais
 
-**Comportamento dos infectados:** sem policiais detectados, escolhem destinos aleatórios caminháveis e vagam pelo ambiente. Ao detectar um policial ativo, interrompem a ronda e perseguem/atacam. Quando não há mais alvo válido, retomam a ronda aleatória.
+**Contexto:** o tutorial inicial exige resgatar dois civis de uma casa. Casas e outros edifícios não são zonas universalmente seguras nem obstáculos estáticos.
 
-**Condição de derrota:** a missão termina em derrota somente quando os três policiais são incapacitados; a residência não possui HP, integridade ou estado de invasão.
+**Decisão:** paredes são obstáculos sólidos; portas, janelas e garagens são componentes independentes com estado próprio. NPCs podem entrar/sair por acessos válidos conforme tipo, estado e regras de interação. Infectados vagam, perseguem alvos e podem investigar estímulos e atacar edifícios/acessos.
+
+**Estados iniciais:** cada componente recebe estado por sorteio ponderado, com probabilidades configuráveis por cenário e tipo de edifício. O sorteio usa seed persistente por mapa/partida; não é refeito durante a simulação. Isso permite variação entre edifícios e reprodução determinística em testes.
+
+**Consequências:** o pathfinding deve suportar transições interior/exterior e custos/restrições específicos por entidade. O modelo de edifício precisa separar geometria estrutural de portas, janelas e garagens.
+
+### ADR10 — Reparos e aprimoramentos de estruturas
+
+**Contexto:** componentes podem sofrer dano e o jogador precisa ter opções para recuperar ou preparar edifícios.
+
+**Decisão:** portas, janelas, garagens e, se aplicável, partes estruturais podem ser reparadas. Componentes elegíveis também podem receber aprimoramentos por níveis, como reforço, barricada ou fechadura melhorada. Reparos restauram condição/durabilidade; aprimoramentos alteram propriedades de forma persistente durante a missão.
+
+**Regras:** ações exigem recursos/materiais e tempo de execução, têm requisitos e limites por componente e podem ser interrompidas. O custo e o efeito devem ser explícitos na interface. Não permitir reparo ou aprimoramento ilimitado/gratuito.
+
+**Decisões ainda abertas:** inventário e fontes de materiais, custos, duração, unidades habilitadas para construir/reparar, níveis máximos, quais componentes podem ser aprimorados e se infectados podem destruir totalmente um acesso.
 
 ## Próximos passos de arquitetura
 
