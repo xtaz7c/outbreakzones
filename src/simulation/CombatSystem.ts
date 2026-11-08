@@ -14,7 +14,16 @@ export interface CombatEvent {
 
 export interface CombatSystemOptions {
   readonly damagePerShot?: number;
+  readonly magazineSize?: number;
+  readonly reloadDuration?: number;
   readonly random?: () => number;
+}
+
+export interface AmmoStatus {
+  readonly current: number;
+  readonly capacity: number;
+  readonly reloading: boolean;
+  readonly reloadRemaining: number;
 }
 
 /** Supercover/Bresenham visibility check over blocked world-grid cells. */
@@ -68,15 +77,27 @@ export function hasLineOfSight(
  */
 export class CombatSystem {
   readonly damagePerShot: number;
+  readonly magazineSize: number;
+  readonly reloadDuration: number;
   private readonly random: () => number;
   private readonly cooldowns = new Map<number, number>();
+  private readonly ammunition = new Map<number, number>();
+  private readonly reloadTimers = new Map<number, number>();
   private readonly priorities = new Map<number, number>();
 
   constructor(options: CombatSystemOptions = {}) {
     this.damagePerShot = options.damagePerShot ?? 25;
+    this.magazineSize = options.magazineSize ?? 12;
+    this.reloadDuration = options.reloadDuration ?? 2.5;
     this.random = options.random ?? Math.random;
     if (!Number.isFinite(this.damagePerShot) || this.damagePerShot <= 0) {
       throw new RangeError('damagePerShot must be a positive finite number.');
+    }
+    if (!Number.isInteger(this.magazineSize) || this.magazineSize <= 0) {
+      throw new RangeError('magazineSize must be a positive integer.');
+    }
+    if (!Number.isFinite(this.reloadDuration) || this.reloadDuration <= 0) {
+      throw new RangeError('reloadDuration must be a positive finite number.');
     }
   }
 
@@ -87,6 +108,16 @@ export class CombatSystem {
 
   getTargetPriority(officerId: number): number | null {
     return this.priorities.get(officerId) ?? null;
+  }
+
+  getAmmoStatus(officerId: number): AmmoStatus {
+    const reloadRemaining = this.reloadTimers.get(officerId) ?? 0;
+    return {
+      current: this.ammunition.get(officerId) ?? this.magazineSize,
+      capacity: this.magazineSize,
+      reloading: reloadRemaining > 0,
+      reloadRemaining,
+    };
   }
 
   update(
@@ -102,6 +133,22 @@ export class CombatSystem {
 
     for (const officer of officers) {
       if (officer.isIncapacitated) continue;
+      const reloadRemaining = this.reloadTimers.get(officer.id) ?? 0;
+      if (reloadRemaining > 0) {
+        const nextRemaining = Math.max(0, reloadRemaining - dt);
+        if (nextRemaining === 0) {
+          this.reloadTimers.delete(officer.id);
+          this.ammunition.set(officer.id, this.magazineSize);
+        } else {
+          this.reloadTimers.set(officer.id, nextRemaining);
+        }
+        continue;
+      }
+      const currentAmmo = this.ammunition.get(officer.id) ?? this.magazineSize;
+      if (currentAmmo <= 0) {
+        this.reloadTimers.set(officer.id, this.reloadDuration);
+        continue;
+      }
       const origin = officer.position;
       const availableTargets = livingTargets.filter((target) => !target.isDead);
       const priorityId = this.priorities.get(officer.id);
@@ -131,6 +178,7 @@ export class CombatSystem {
       }
 
       this.cooldowns.set(officer.id, cooldown % officer.fireInterval);
+      this.ammunition.set(officer.id, currentAmmo - 1);
       const hit = this.random() < officer.accuracy;
       const damage = hit ? target.takeDamage(this.damagePerShot) : 0;
       events.push({
