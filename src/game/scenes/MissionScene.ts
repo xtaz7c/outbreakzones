@@ -373,9 +373,8 @@ export class MissionScene extends Phaser.Scene {
   private emitNoiseAtHouse(): void {
     const entry = MISSION_ENTRY_POINTS.find((point) => point.id === 'front-door');
     if (!entry) return;
-    this.simulation.setInfectedStructureTarget(
-      this.buildingSystem.getInfectedTarget(entry.id, entry.approachTile, entry.breachTile),
-    );
+    const target = this.buildingSystem.getInfectedTarget(entry.id, entry.approachTile, entry.breachTile);
+    if (target) this.simulation.emitNoiseAtStructure(target, 1000, 10);
   }
 
   private findNearestAccess(): { id: string; distance: number } | null {
