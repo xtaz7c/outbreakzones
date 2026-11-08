@@ -184,11 +184,11 @@ export class Simulation {
       }
       for (const infected of this.infected) {
         const attraction = this.noiseAttraction;
-        const heardNoise = attraction && Math.hypot(
+        const attractedTarget = attraction && Math.hypot(
           infected.position.x - attraction.target.position.x,
           infected.position.y - attraction.target.position.y,
-        ) <= attraction.radius;
-        infected.update(dt, this.tileSize, infectedGrid, this.officers, heardNoise ? attraction.target : undefined);
+        ) <= attraction.radius ? attraction.target : undefined;
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, attractedTarget);
       }
       this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize));
     }
