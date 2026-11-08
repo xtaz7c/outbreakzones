@@ -99,9 +99,6 @@ export class Simulation {
 
   setTargetPriority(officerId: number, infectedId: number | null): void {
     this.combat.setTargetPriority(officerId, infectedId);
-    if (infectedId !== null) {
-      this.officers.find((officer) => officer.id === officerId)?.setAttacking(true);
-    }
   }
 
   getCombatEvents(): readonly CombatEvent[] {
@@ -123,7 +120,7 @@ export class Simulation {
 
   issueMoveOrder(officerId: number, destination: TilePosition): boolean {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
-    if (!officer || !this.worldGrid || this.paused) return false;
+    if (!officer || !this.worldGrid) return false;
     const navigationGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
     return officer.issueMoveOrder(destination, navigationGrid, this.tileSize);
   }
