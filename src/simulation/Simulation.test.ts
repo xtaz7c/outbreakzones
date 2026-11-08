@@ -200,6 +200,23 @@ describe('Simulation', () => {
     expect(sim.getResidenceStatus().state).toBe('damaged');
   });
 
+  it('does not let infected damage entrances while the simulation is paused', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.spawnInfected({
+      x: 1040,
+      y: 912,
+      entryTile: { column: 32, row: 28 },
+      detectionRange: 1,
+      attackRange: 40,
+      attackInterval: FIXED_DT,
+      damage: 20,
+    });
+    sim.setPaused(true);
+    sim.update(FIXED_DT);
+
+    expect(sim.getResidenceDefense().getEntrance('front-door')!.health).toBe(180);
+  });
+
   it('opens a breached entrance and defeats the mission when an infected enters', () => {
     const map = new GridMap(64, 40);
     const structureTile = { column: 32, row: 27 };
