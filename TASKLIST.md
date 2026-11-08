@@ -296,3 +296,6 @@ Uma tarefa só pode ser marcada como concluída quando:
 - [ ] Lint e build passam.
 - [ ] Documentação foi atualizada quando necessário.
 - [ ] O resultado foi revisado no navegador, quando envolve gameplay ou interface.
+
+
+**Ajuste adicional de interface:** o painel Dev Hub foi convertido para coordenadas do mundo (sem `setScrollFactor(0)`), acompanhando o deslocamento e o zoom da câmera. Os controles de tela cheia e a caixa de seleção continuam fixos à viewport por serem elementos de interface.
