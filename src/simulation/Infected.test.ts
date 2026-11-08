@@ -45,6 +45,18 @@ describe('Infected', () => {
     expect(infected.position).not.toEqual({ x: 16, y: 16 });
   });
 
+  it('closes the remaining distance when target shares its current tile', () => {
+    const infected = new Infected({
+      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      detectionRange: 100, attackRange: 10, moveSpeed: 20,
+    });
+    const officer = new PoliceOfficer({ id: 1, x: 30, y: 16 });
+    infected.update(0.25, 32, map, [officer]);
+    expect(infected.state).toBe('moving');
+    expect(infected.position.x).toBeGreaterThan(16);
+    expect(infected.position.x).toBeLessThan(30);
+  });
+
   it('attacks a supplied destructible structure target', () => {
     const infected = new Infected({
       id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
