@@ -1,7 +1,6 @@
 import type { PoliceOfficer } from './PoliceOfficer';
 import type { Infected } from './Infected';
 import type { GridMap } from './world/GridMap';
-import type { TilePosition } from './world/WorldConfig';
 
 export interface CombatEvent {
   readonly officerId: number;
@@ -132,7 +131,7 @@ export class CombatSystem {
     const livingTargets = infected.filter((target) => !target.isDead);
 
     for (const officer of officers) {
-      if (officer.isIncapacitated || officer.state === 'moving') continue;
+      if (officer.isIncapacitated) continue;
       const reloadRemaining = this.reloadTimers.get(officer.id) ?? 0;
       if (reloadRemaining > 0) {
         const nextRemaining = Math.max(0, reloadRemaining - dt);
@@ -149,6 +148,7 @@ export class CombatSystem {
         this.reloadTimers.set(officer.id, this.reloadDuration);
         continue;
       }
+      if (officer.state === 'moving') continue;
       const origin = officer.position;
       const availableTargets = livingTargets.filter((target) => !target.isDead);
       const priorityId = this.priorities.get(officer.id);
