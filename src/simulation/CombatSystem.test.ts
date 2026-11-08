@@ -83,6 +83,28 @@ describe('CombatSystem', () => {
     expect(combat.update(2, [officer], [outOfRange], map, 32)).toHaveLength(0);
   });
 
+  it('uses limited magazines and completes timed reloads', () => {
+    const officer = new PoliceOfficer({
+      id: 1, x: 16, y: 16, attackRange: 180, fireInterval: 0.1,
+    });
+    const infected = new Infected({ id: 1, x: 64, y: 16, entryTile: { column: 10, row: 6 } });
+    const combat = new CombatSystem({
+      random: () => 0,
+      magazineSize: 1,
+      reloadDuration: 1,
+    });
+
+    expect(combat.update(0.1, [officer], [infected], map, 32)).toHaveLength(1);
+    expect(combat.getAmmoStatus(1)).toMatchObject({ current: 0, capacity: 1, reloading: false });
+
+    combat.update(0.1, [officer], [infected], map, 32);
+    expect(combat.getAmmoStatus(1).reloading).toBe(true);
+    combat.update(0.5, [officer], [infected], map, 32);
+    expect(combat.getAmmoStatus(1).current).toBe(0);
+    combat.update(0.5, [officer], [infected], map, 32);
+    expect(combat.getAmmoStatus(1)).toMatchObject({ current: 1, capacity: 1, reloading: false });
+  });
+
   it('clears a priority when its target dies', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16 });
     const infected = new Infected({ id: 1, x: 64, y: 16, entryTile: { column: 10, row: 6 } });
