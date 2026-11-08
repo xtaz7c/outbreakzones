@@ -129,7 +129,6 @@ describe('Simulation', () => {
   });
 
   it('removes dead infected entities safely during simulation updates', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
     const infected = sim.spawnInfected({
       x: 16, y: 16, entryTile: { column: 4, row: 1 },
     });
