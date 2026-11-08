@@ -3,7 +3,7 @@ import { Simulation } from '../../simulation/Simulation';
 import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
-import { getAvailableEntryPoints } from '../../simulation/world/MissionEntryPoints';
+import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/world/MissionEntryPoints';
 import { BuildingSystem, type AccessKind } from '../../simulation/world/BuildingSystem';
 
 const CAMERA_SPEED = 600;
@@ -54,6 +54,7 @@ export class MissionScene extends Phaser.Scene {
     this.createCameraControls();
     this.createSelectionControls();
     this.input.keyboard?.on('keydown-I', () => this.spawnDebugInfected());
+    this.input.keyboard?.on('keydown-N', () => this.emitNoiseAtHouse());
     this.input.keyboard?.on('keydown-E', () => this.interactWithNearestAccess());
     this.input.keyboard?.on('keydown-B', () => this.breachNearestAccess());
 
@@ -344,6 +345,15 @@ export class MissionScene extends Phaser.Scene {
 
 
 
+
+  private emitNoiseAtHouse(): void {
+    const entry = MISSION_ENTRY_POINTS.find((point) => point.id === 'front-door');
+    if (!entry) return;
+    this.simulation.setInfectedStructureTarget(
+      this.buildingSystem.getInfectedTarget(entry.id, entry.approachTile, entry.breachTile),
+    );
+  }
+
   private findNearestAccess(): { id: string; distance: number } | null {
     const selected = this.simulation.getOfficers().filter((officer) =>
       this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
@@ -407,9 +417,6 @@ export class MissionScene extends Phaser.Scene {
     const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
     this.debugInfectedSpawnIndex += 1;
     const entry = entries.find((candidate) => candidate.id === plan.entryId) ?? entries[0]!;
-    this.simulation.setInfectedStructureTarget(
-      this.buildingSystem.getInfectedTarget(entry.id, entry.approachTile),
-    );
     this.simulation.spawnInfected({
       x: plan.x,
       y: plan.y,
@@ -519,7 +526,7 @@ export class MissionScene extends Phaser.Scene {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
           return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''}`;
         }),
-        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | E: interact | B: breach',
+        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: interact | B: breach',
       ].join('\\n'),
     );
   }
