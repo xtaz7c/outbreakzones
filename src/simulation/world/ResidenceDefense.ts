@@ -101,7 +101,7 @@ export class ResidenceDefense {
       structureTile: point.structureTile,
       approachTile: point.approachTile,
       interiorTile: point.interiorTile,
-      maxHealth: point.kind === 'door' ? 180 : 90,
+      maxHealth: point.kind === 'door' ? 120 : 60,
     }));
   }
 
