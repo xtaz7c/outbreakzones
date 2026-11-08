@@ -3,7 +3,6 @@ import { Simulation } from '../../simulation/Simulation';
 import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
-import { getAvailableEntryPoints } from '../../simulation/world/MissionEntryPoints';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -21,12 +20,6 @@ interface TacticalInfected {
   readonly container: Phaser.GameObjects.Container;
 }
 
-interface TacticalEntrance {
-  readonly id: string;
-  readonly container: Phaser.GameObjects.Container;
-  readonly body: Phaser.GameObjects.Rectangle;
-}
-
 export class MissionScene extends Phaser.Scene {
   private simulation!: Simulation;
   private statusText!: Phaser.GameObjects.Text;
@@ -36,8 +29,6 @@ export class MissionScene extends Phaser.Scene {
   private combatGraphics!: Phaser.GameObjects.Graphics;
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
-  private entranceVisuals: TacticalEntrance[] = [];
-  private entranceGraphics!: Phaser.GameObjects.Graphics;
   private debugInfectedSpawnIndex = 0;
   private selectedOfficerIds = new Set<number>();
   private worldGrid!: GridMap;
@@ -54,7 +45,6 @@ export class MissionScene extends Phaser.Scene {
   create(): void {
     this.simulation = new Simulation();
     this.createWorld();
-    this.createResidenceVisuals();
     this.createOfficers();
     this.createHud();
     this.createCameraControls();
@@ -78,7 +68,6 @@ export class MissionScene extends Phaser.Scene {
       this.updateOfficers(dt);
     }
     this.updateInfectedVisuals();
-    this.updateResidenceVisuals();
     this.updateStatusText(dt);
   }
 
@@ -117,54 +106,6 @@ export class MissionScene extends Phaser.Scene {
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
       .setZoom(1)
       .centerOn(this.cameraWorldWidth / 2, this.cameraWorldHeight / 2);
-  }
-
-  private createResidenceVisuals(): void {
-    this.entranceVisuals = this.simulation.getResidenceDefense().getEntrances().map((entrance) => {
-      const width = entrance.kind === 'door' ? 22 : 18;
-      const height = entrance.kind === 'door' ? 18 : 10;
-      const color = entrance.kind === 'door' ? 0x9b6335 : 0x70c8d8;
-      const body = this.add.rectangle(0, 0, width, height, color)
-        .setStrokeStyle(2, 0xf1e8d5);
-      const label = this.add.text(0, height, entrance.kind === 'door' ? 'D' : 'W', {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        color: '#ffffff',
-        backgroundColor: '#172033',
-        padding: { x: 2, y: 1 },
-      }).setOrigin(0.5, 0);
-      const container = this.add.container(entrance.position.x, entrance.position.y, [body, label])
-        .setDepth(85);
-      return { id: entrance.id, container, body };
-    });
-    this.entranceGraphics = this.add.graphics().setDepth(86);
-  }
-
-  private updateResidenceVisuals(): void {
-    const residence = this.simulation.getResidenceDefense();
-    this.entranceGraphics.clear();
-
-    for (const visual of this.entranceVisuals) {
-      const entrance = residence.getEntrance(visual.id);
-      if (!entrance) continue;
-      const color = entrance.isDestroyed
-        ? 0x9b3030
-        : entrance.state === 'damaged'
-          ? 0xe5a33c
-          : 0x57b879;
-      visual.body.setFillStyle(entrance.isDestroyed ? 0x4a3030 : entrance.kind === 'door' ? 0x9b6335 : 0x70c8d8);
-      visual.body.setStrokeStyle(2, color);
-
-      const barX = entrance.position.x - 16;
-      const barY = entrance.position.y + 15;
-      const ratio = entrance.health / entrance.maxHealth;
-      this.entranceGraphics.fillStyle(0x101010, 0.9);
-      this.entranceGraphics.fillRect(barX, barY, 32, 4);
-      if (ratio > 0) {
-        this.entranceGraphics.fillStyle(color, 1);
-        this.entranceGraphics.fillRect(barX, barY, 32 * ratio, 4);
-      }
-    }
   }
 
   private createOfficers(): void {
@@ -390,22 +331,18 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private spawnDebugInfected(): void {
-    const entries = getAvailableEntryPoints(this.worldGrid);
-    if (entries.length === 0) return;
-
     const spawnPlans = [
-      { x: 128, y: 640, entryId: 'west-window' },
-      { x: 1920, y: 640, entryId: 'east-window' },
-      { x: 1024, y: 64, entryId: 'north-window-west' },
-      { x: 1024, y: 1216, entryId: 'front-door' },
+      { x: 128, y: 640 },
+      { x: 1920, y: 640 },
+      { x: 1024, y: 64 },
+      { x: 1024, y: 1216 },
     ] as const;
     const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
     this.debugInfectedSpawnIndex += 1;
-    const entry = entries.find((candidate) => candidate.id === plan.entryId) ?? entries[0]!;
+
     this.simulation.spawnInfected({
       x: plan.x,
       y: plan.y,
-      entryTile: entry.approachTile,
     });
   }
 
@@ -498,7 +435,6 @@ export class MissionScene extends Phaser.Scene {
 
   private updateStatusText(dt: number): void {
     const state = this.simulation.getState();
-    const defense = this.simulation.getResidenceStatus();
     const fps = dt > 0 ? (1 / dt).toFixed(0) : '—';
     this.statusText.setText(
       [
@@ -507,10 +443,8 @@ export class MissionScene extends Phaser.Scene {
         `Sim time: ${state.elapsed.toFixed(2)}s`,
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
-        `Residence: ${defense.state.toUpperCase()} | HP ${defense.health}/${defense.maxHealth} | Breached ${defense.breachedCount}/${defense.entranceCount}`,
-        ...(this.simulation.isMissionDefeated()
-          ? [defense.isOverrun ? 'MISSION DEFEATED — residence overrun' : 'MISSION DEFEATED — all officers incapacitated']
-          : []),
+        'Shelter: safe zone | Interior inaccessible',
+        ...(this.simulation.isMissionDefeated() ? ['MISSION DEFEATED — all officers incapacitated'] : []),
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
