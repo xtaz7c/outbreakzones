@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** T001–T016 foram integradas à `main`. O `package-lock.json` foi regenerado e contém as dependências resolvidas; instalações limpas devem usar `npm ci`. O usuário informou que `npm run build` passou localmente; ainda falta registrar evidência de `npm ci`, `npm test` e `npm run lint` para encerrar a validação da Fase 1. A Fase 2 está em implementação na branch `feat/map-world-t017-t026`; não marcar tarefas como concluídas até executar testes e revisar o mapa no navegador.
+> **Status atual:** o protótipo evoluiu até o sistema de combate na branch `feat/combat-system-t055-t065`; testes, lint, build e validação integrada dessa etapa ainda precisam ser confirmados localmente. A Fase 7 está em implementação na branch `feat/residence-defense-t066-t071`: cinco entradas vulneráveis, integridade independente, abertura de células rompidas, invasão e estado de derrota. Não marcar tarefas como concluídas antes da validação automatizada e visual.
 
 ## 1. Visão e escopo
 
@@ -169,6 +169,10 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T069 — P0** Permitir entrada de infectados quando uma abertura for rompida.
 - [ ] **T070 — P0** Definir e implementar a condição de invasão/derrota da residência.
 - [ ] **T071 — P1** Exibir integridade e estado de defesa da casa.
+
+**Progresso de implementação (branch `feat/residence-defense-t066-t071`):** modeladas cinco entradas (uma porta e quatro janelas) com integridade independente; portas começam com 180 HP e janelas com 90 HP (valores provisórios). Infectados são associados à entrada mais próxima do ponto de surgimento, atacam sua estrutura e, após rompê-la, passam a navegar pela célula aberta até uma célula interna. A simulação abre a célula de colisão correspondente, registra invasão quando um infectado alcança o interior e considera derrota imediata se isso ocorrer ou se os três policiais forem incapacitados. O Dev Hub exibe estado, integridade agregada e quantidade de entradas rompidas; cada porta/janela possui indicador visual de integridade. Foram adicionados testes de domínio e integração. T066–T071 permanecem desmarcadas até validação de testes/lint/build e revisão no navegador.
+
+**Regra provisória de derrota:** a residência é considerada invadida quando o primeiro infectado atravessa uma entrada rompida e alcança a célula interna correspondente. Os valores de integridade ainda exigem balanceamento.
 
 **Saída da fase:** a residência é um objetivo funcional, não apenas um elemento visual.
 
