@@ -316,7 +316,6 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private issueMoveOrder(worldX: number, worldY: number): void {
-    if (this.isPaused) return;
     const selected = this.simulation.getOfficers().filter(
       (officer) => this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
     );
