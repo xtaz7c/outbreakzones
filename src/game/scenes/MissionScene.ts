@@ -4,7 +4,6 @@ import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
 import { getAvailableEntryPoints } from '../../simulation/world/MissionEntryPoints';
-import type { ResidenceEntrance } from '../../simulation/world/ResidenceDefense';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
