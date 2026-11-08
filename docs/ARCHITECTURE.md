@@ -1,4 +1,4 @@
-# Arquitetura — Testgame
+# Arquitetura — Outbreak Zones
 
 ## Objetivos
 
@@ -73,6 +73,23 @@ src/
 **Alternativa considerada:** variável + clamp simples. Mais simples, porém menos previsível para sistemas futuros (combate, pathfinding).
 
 **Consequências:** comportamento de simulação mais estável entre 30–144 FPS; ligeiramente mais código na camada de domínio (aceitável).
+
+
+### ADR8 — Edifícios compostos por acessos independentes
+
+**Contexto:** uma residência não pode ser tratada como um bloco inviolável. Policiais, civis e infectados precisam usar acessos válidos, enquanto paredes e obstáculos permanecem sólidos.
+
+**Decisão:** paredes/obstáculos pertencem à grade estática; portas, janelas e garagens são componentes independentes controlados por `BuildingSystem`. Cada acesso possui estado e integridade próprios. A navegação gera uma grade específica por tipo de unidade: civis não atravessam janelas; policiais e infectados podem atravessar janelas abertas ou destruídas.
+
+**Consequências:** abrir, fechar ou destruir um acesso altera as rotas possíveis sem reconstruir o mapa. O sistema de simulação continua independente do Phaser.
+
+### ADR9 — Geração determinística dos acessos
+
+**Contexto:** estados iniciais aleatórios não podem mudar entre testes ou recargas da mesma missão.
+
+**Decisão:** cada missão fornece uma seed inteira ao `BuildingSystem`. Um gerador pseudoaleatório determinístico escolhe independentemente o estado de cada acesso a partir de pesos configuráveis por tipo de acesso. A seed e a ordem das definições reproduzem a mesma configuração inicial.
+
+**Consequências:** cenários podem ajustar as probabilidades sem alterar regras de navegação; testes podem reproduzir casos específicos.
 
 ## Próximos passos de arquitetura
 
