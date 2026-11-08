@@ -26,13 +26,15 @@ export interface InfectedConfig {
 /** Contrato para portas/janelas destrutíveis, implementado na Fase 7. */
 export interface InfectedStructureTarget {
   readonly position: InfectedPosition;
+  /** Walkable tile adjacent to the door/window; the structure tile may be blocked. */
+  readonly approachTile: TilePosition;
   readonly isDestroyed: boolean;
   takeDamage(amount: number): number;
 }
 
 type Target =
   | { readonly kind: 'officer'; readonly officer: PoliceOfficer; readonly position: InfectedPosition }
-  | { readonly kind: 'structure'; readonly structure: InfectedStructureTarget; readonly position: InfectedPosition }
+  | { readonly kind: 'structure'; readonly structure: InfectedStructureTarget; readonly position: InfectedPosition; readonly tile: TilePosition }
   | { readonly kind: 'entry'; readonly position: InfectedPosition; readonly tile: TilePosition };
 
 const DEFAULTS = Object.freeze({
@@ -155,7 +157,7 @@ export class Infected {
     }
 
     this.attackTimer = 0;
-    const targetTile = target.kind === 'entry'
+    const targetTile = target.kind === 'entry' || target.kind === 'structure'
       ? target.tile
       : { column: Math.floor(target.position.x / tileSize), row: Math.floor(target.position.y / tileSize) };
     const targetKey = `${targetTile.column}:${targetTile.row}`;
@@ -209,7 +211,12 @@ export class Infected {
       return { kind: 'officer', officer: nearest, position: nearest.position };
     }
     if (structureTarget && !structureTarget.isDestroyed) {
-      return { kind: 'structure', structure: structureTarget, position: structureTarget.position };
+      return {
+        kind: 'structure',
+        structure: structureTarget,
+        position: structureTarget.position,
+        tile: structureTarget.approachTile,
+      };
     }
     return {
       kind: 'entry',
