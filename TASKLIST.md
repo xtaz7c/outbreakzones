@@ -96,7 +96,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T025 — P0** Definir células/áreas navegáveis e bloqueadas.
 - [ ] **T026 — P0** Implementar pathfinding e desvio de obstáculos.
 
-**Saída da fase:** em desenvolvimento. Já há dimensões 64 × 40 com células de 32 px, mapa Tiled inicial, tileset vetorial provisório, camadas de terreno/estrutura, objetos de portas/janelas/obstáculos, grade de colisão, carregamento Phaser e A* com testes unitários escritos. Ainda falta executar os testes, validar a renderização no navegador e corrigir eventuais problemas antes de marcar T017–T026 como concluídas.
+**Saída da fase:** mapa renderizado e validado visualmente pelo usuário; `npm test` passou com 32 testes, `npm run lint` passou e `npm run build` passou. T017–T026 ainda aguardam revisão final e integração por PR. A validação visual revelou a necessidade de controles de câmera, que estão sendo implementados na Fase 3.
 
 ### Fase 3 — Câmera e controles RTS
 
@@ -111,7 +111,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T035 — P0** Implementar ordem de movimentação com clique direito.
 - [ ] **T036 — P1** Implementar destino/posicionamento em formação para ordens em grupo, evitando sobreposição de unidades.
 
-**Saída da fase:** o jogador consegue navegar pela câmera, selecionar a equipe e dar ordens de movimento.
+**Saída da fase:** em andamento na branch `feat/camera-controls-t027-t030`. Foram implementados deslocamento por WASD/setas, zoom pela roda do mouse, limites de câmera e alternância de tela cheia por tecla F ou botão no HUD. T027–T030 aguardam validação no navegador. Seleção e ordens de movimento ainda não foram implementadas.
 
 ### Fase 4 — Policiais
 
