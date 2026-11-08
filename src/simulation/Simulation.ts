@@ -76,6 +76,11 @@ export class Simulation {
     this.infectedStructureTarget = target;
   }
 
+  damageInfected(infectedId: number, amount: number): number {
+    const infected = this.infected.find((candidate) => candidate.id === infectedId);
+    return infected?.takeDamage(amount) ?? 0;
+  }
+
   issueMoveOrder(officerId: number, destination: TilePosition): boolean {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
     if (!officer || !this.worldGrid || this.paused) return false;
@@ -114,9 +119,9 @@ export class Simulation {
       for (const infected of this.infected) {
         infected.update(dt, this.tileSize, this.worldGrid, this.officers, this.infectedStructureTarget);
       }
-      for (let index = this.infected.length - 1; index >= 0; index -= 1) {
-        if (this.infected[index]!.isDead) this.infected.splice(index, 1);
-      }
+    }
+    for (let index = this.infected.length - 1; index >= 0; index -= 1) {
+      if (this.infected[index]!.isDead) this.infected.splice(index, 1);
     }
   }
 
