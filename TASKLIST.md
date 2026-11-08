@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** a Fase 7 está sendo ajustada na branch `feat/residence-defense-t066-t071` para refletir a regra de design atual: a residência é um abrigo seguro e inacessível; infectados vagam aleatoriamente e perseguem policiais detectados. A implementação anterior de dano e invasão de entradas foi removida. Testes, lint, build e revisão visual ainda precisam ser executados.
+> **Status atual:** a Fase 7 está sendo ajustada na branch `feat/shelter-roaming-t066-t071` para refletir a regra de design atual: a residência é um abrigo seguro e inacessível; infectados vagam aleatoriamente e perseguem policiais detectados. A implementação anterior de dano e invasão de entradas foi removida. Testes, lint, build e revisão visual ainda precisam ser executados.
 
 ## 1. Visão e escopo
 
@@ -171,7 +171,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T070 — P0** Fazer infectados perseguirem e atacarem policiais detectados; retomar a ronda quando não houver alvo válido.
 - [ ] **T071 — P1** Exibir no HUD que a residência é um abrigo seguro e inacessível.
 
-**Progresso de implementação (branch `feat/residence-defense-t066-t071`):** removido o sistema anterior de integridade, destruição e invasão de entradas. A IA dos infectados foi alterada para escolher destinos aleatórios alcançáveis no GridMap; quando detecta um policial ativo, interrompe a ronda e persegue/ataca. Ao perder o alvo, volta a vagar. A simulação não abre mais células de portas/janelas: o GridMap permanece como fonte única de colisão para policiais e infectados. O Dev Hub identifica a casa como zona segura e inacessível. Foram adicionados testes para ronda aleatória, perímetro bloqueado, perseguição e ordens policiais sem rota para o interior. T066–T071 permanecem desmarcadas até validação automatizada e revisão visual no navegador.
+**Progresso de implementação (branch `feat/shelter-roaming-t066-t071`):** removido o sistema anterior de integridade, destruição e invasão de entradas. A IA dos infectados foi alterada para escolher destinos aleatórios alcançáveis no GridMap; quando detecta um policial ativo, interrompe a ronda e persegue/ataca. Ao perder o alvo, volta a vagar. A simulação não abre mais células de portas/janelas: o GridMap permanece como fonte única de colisão para policiais e infectados. O Dev Hub identifica a casa como zona segura e inacessível. Foram adicionados testes para ronda aleatória, perímetro bloqueado, perseguição e ordens policiais sem rota para o interior. T066–T071 permanecem desmarcadas até validação automatizada e revisão visual no navegador.
 
 **Regra de abrigo:** o interior da residência não faz parte da área jogável nesta missão. Nenhuma unidade pode atravessar o perímetro, e a casa não recebe dano nem gera condição de derrota.
 
