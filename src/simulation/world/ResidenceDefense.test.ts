@@ -16,9 +16,9 @@ describe('ResidenceDefense', () => {
     const window = residence.getEntrance('west-window')!;
 
     expect(door.takeDamage(40)).toBe(40);
-    expect(door.health).toBe(140);
+    expect(door.health).toBe(80);
     expect(door.state).toBe('damaged');
-    expect(window.health).toBe(90);
+    expect(window.health).toBe(60);
     expect(residence.getStatus().state).toBe('damaged');
   });
 
@@ -26,7 +26,7 @@ describe('ResidenceDefense', () => {
     const residence = new ResidenceDefense();
     const window = residence.getEntrance('west-window')!;
 
-    expect(window.takeDamage(200)).toBe(90);
+    expect(window.takeDamage(200)).toBe(60);
     expect(window.health).toBe(0);
     expect(window.isDestroyed).toBe(true);
     expect(window.state).toBe('breached');
@@ -49,6 +49,6 @@ describe('ResidenceDefense', () => {
 
     expect(door.takeDamage(0)).toBe(0);
     expect(door.takeDamage(Number.NaN)).toBe(0);
-    expect(door.health).toBe(180);
+    expect(door.health).toBe(120);
   });
 });
