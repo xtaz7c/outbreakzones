@@ -75,4 +75,15 @@ describe('BuildingSystem', () => {
   it('rejects duplicate identifiers', () => {
     expect(() => new BuildingSystem([definitions[0]!, definitions[0]!], new GridMap(8, 8), 32, 1)).toThrow();
   });
+  it('treats a garage as an independent access shared by valid actor types', () => {
+    const system = new BuildingSystem([
+      { id: 'garage', kind: 'garage', x: 96, y: 32, width: 32, height: 32,
+        weights: { open: 1, closed: 0 } },
+    ], new GridMap(8, 8), 32, 77);
+    const cell = { column: 3, row: 1 };
+    expect(system.getNavigationGrid('police').isWalkable(cell)).toBe(true);
+    expect(system.getNavigationGrid('civil').isWalkable(cell)).toBe(true);
+    expect(system.getNavigationGrid('infected').isWalkable(cell)).toBe(true);
+  });
+
 });
