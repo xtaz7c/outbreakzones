@@ -29,6 +29,7 @@ export interface InfectedStructureTarget {
   /** Walkable tile adjacent to the door/window; the structure tile may be blocked. */
   readonly approachTile: TilePosition;
   readonly breachTile?: TilePosition;
+  readonly isPassable?: boolean;
   readonly isDestroyed: boolean;
   takeDamage(amount: number): number;
 }
@@ -211,7 +212,7 @@ export class Infected {
     if (nearest) {
       return { kind: 'officer', officer: nearest, position: nearest.position };
     }
-    if (structureTarget && !structureTarget.isDestroyed) {
+    if (structureTarget && !structureTarget.isDestroyed && !structureTarget.isPassable) {
       return {
         kind: 'structure',
         structure: structureTarget,
@@ -219,7 +220,7 @@ export class Infected {
         tile: structureTarget.approachTile,
       };
     }
-    if (structureTarget?.isDestroyed && structureTarget.breachTile) {
+    if (structureTarget && (structureTarget.isDestroyed || structureTarget.isPassable) && structureTarget.breachTile) {
       const tile = structureTarget.breachTile;
       return { kind: 'entry', tile, position: { x: tile.column * tileSize + tileSize / 2, y: tile.row * tileSize + tileSize / 2 } };
     }
