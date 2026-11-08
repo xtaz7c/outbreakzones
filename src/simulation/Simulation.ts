@@ -9,6 +9,7 @@ import { Infected } from './Infected';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { InfectedConfig, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
+import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
 import type { TilePosition } from './world/WorldConfig';
 
 export interface SimulationState {
@@ -43,6 +44,7 @@ export class Simulation {
   private nextInfectedId = 1;
   private infectedStructureTarget: InfectedStructureTarget | undefined;
   private worldGrid: GridMap | null = null;
+  private buildingSystem: BuildingSystem | null = null;
   private tileSize = WORLD_TILE_SIZE;
 
   constructor(combatOptions: CombatSystemOptions = {}) {
@@ -63,6 +65,22 @@ export class Simulation {
     }
     this.worldGrid = map;
     this.tileSize = tileSize;
+  }
+
+  setBuildingSystem(system: BuildingSystem): void {
+    this.buildingSystem = system;
+  }
+
+  getBuildingSnapshots(): AccessSnapshot[] {
+    return this.buildingSystem?.getSnapshots() ?? [];
+  }
+
+  interactWithAccess(accessId: string, actor: ActorKind, hasKey = false): boolean {
+    return this.buildingSystem?.interact(accessId, actor, hasKey) ?? false;
+  }
+
+  damageAccess(accessId: string, amount: number): number {
+    return this.buildingSystem?.damage(accessId, amount) ?? 0;
   }
 
   getOfficers(): readonly PoliceOfficer[] {
@@ -106,7 +124,8 @@ export class Simulation {
   issueMoveOrder(officerId: number, destination: TilePosition): boolean {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
     if (!officer || !this.worldGrid || this.paused) return false;
-    return officer.issueMoveOrder(destination, this.worldGrid, this.tileSize);
+    const navigationGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
+    return officer.issueMoveOrder(destination, navigationGrid, this.tileSize);
   }
 
   setOfficerAttacking(officerId: number, attacking: boolean): boolean {
@@ -140,10 +159,12 @@ export class Simulation {
       officer.update(dt, this.tileSize);
     }
     if (this.worldGrid) {
+      const infectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
+      const policeGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
       for (const infected of this.infected) {
-        infected.update(dt, this.tileSize, this.worldGrid, this.officers, this.infectedStructureTarget);
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, this.infectedStructureTarget);
       }
-      this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, this.worldGrid, this.tileSize));
+      this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize));
     }
     for (let index = this.infected.length - 1; index >= 0; index -= 1) {
       if (this.infected[index]!.isDead) this.infected.splice(index, 1);
