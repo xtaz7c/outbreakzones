@@ -62,6 +62,20 @@ export class Simulation {
     return this.officers;
   }
 
+  getInfected(): readonly Infected[] {
+    return this.infected;
+  }
+
+  spawnInfected(config: Omit<InfectedConfig, 'id'>): Infected {
+    const infected = new Infected({ ...config, id: this.nextInfectedId++ });
+    this.infected.push(infected);
+    return infected;
+  }
+
+  setInfectedStructureTarget(target: InfectedStructureTarget | undefined): void {
+    this.infectedStructureTarget = target;
+  }
+
   issueMoveOrder(officerId: number, destination: TilePosition): boolean {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
     if (!officer || !this.worldGrid || this.paused) return false;
@@ -95,6 +109,14 @@ export class Simulation {
     this.elapsed += dt;
     for (const officer of this.officers) {
       officer.update(dt, this.tileSize);
+    }
+    if (this.worldGrid) {
+      for (const infected of this.infected) {
+        infected.update(dt, this.tileSize, this.worldGrid, this.officers, this.infectedStructureTarget);
+      }
+      for (let index = this.infected.length - 1; index >= 0; index -= 1) {
+        if (this.infected[index]!.isDead) this.infected.splice(index, 1);
+      }
     }
   }
 
