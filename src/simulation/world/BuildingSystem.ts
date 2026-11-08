@@ -167,6 +167,7 @@ export class BuildingSystem {
     readonly position: { readonly x: number; readonly y: number };
     readonly approachTile: TilePosition;
     readonly breachTile?: TilePosition;
+    readonly isPassable: boolean;
     readonly isDestroyed: boolean;
     takeDamage(amount: number): number;
   } | undefined {
@@ -178,6 +179,7 @@ export class BuildingSystem {
       position: { x: cell.column * this.tileSize + this.tileSize / 2, y: cell.row * this.tileSize + this.tileSize / 2 },
       approachTile,
       ...(breachTile ? { breachTile } : {}),
+      get isPassable() { return access.isPassable; },
       get isDestroyed() { return access.isDestroyed; },
       takeDamage: (amount) => access.takeDamage(amount),
     };
