@@ -543,7 +543,8 @@ export class MissionScene extends Phaser.Scene {
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
-          return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''}`;
+          const posture = officer.tacticalPosture === 'hold_fire' ? 'HOLD FIRE' : 'ENGAGE';
+          return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''} | ${posture}`;
         }),
         'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: interact | B: breach',
         'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority',
