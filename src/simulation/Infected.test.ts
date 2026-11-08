@@ -110,6 +110,7 @@ describe('Infected residence breach', () => {
       entryTile: { column: 2, row: 1 },
       moveSpeed: 64,
       detectionRange: 1,
+      attackInterval: 0.1,
     });
     let health = 1;
     const entrance = {
