@@ -196,7 +196,7 @@ describe('Simulation', () => {
     });
 
     sim.update(FIXED_DT);
-    expect(sim.getResidenceDefense().getEntrance('front-door')!.health).toBe(160);
+    expect(sim.getResidenceDefense().getEntrance('front-door')!.health).toBe(100);
     expect(sim.getResidenceStatus().state).toBe('damaged');
   });
 
@@ -214,7 +214,7 @@ describe('Simulation', () => {
     sim.setPaused(true);
     sim.update(FIXED_DT);
 
-    expect(sim.getResidenceDefense().getEntrance('front-door')!.health).toBe(180);
+    expect(sim.getResidenceDefense().getEntrance('front-door')!.health).toBe(120);
   });
 
   it('opens a breached entrance and defeats the mission when an infected enters', () => {
@@ -229,7 +229,7 @@ describe('Simulation', () => {
       detectionRange: 1,
       moveSpeed: 55,
     });
-    sim.getResidenceDefense().getEntrance('front-door')!.takeDamage(180);
+    sim.getResidenceDefense().getEntrance('front-door')!.takeDamage(120);
 
     for (let index = 0; index < 90; index += 1) sim.update(FIXED_DT);
 
