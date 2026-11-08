@@ -1,4 +1,4 @@
-# Testgame
+# Outbreak Zones
 
 Jogo independente de estratégia tática e sobrevivência, inspirado em jogos de navegador da época do Flash (especialmente *Class 3 Outbreak*), feito com **TypeScript + Phaser 3**.
 
