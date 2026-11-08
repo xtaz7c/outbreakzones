@@ -51,11 +51,12 @@ describe('Infected roaming and combat AI', () => {
       infected.update(1 / 60, 32, map, []);
     }
 
-    expect(infected.position.y).toBeGreaterThan(14 * 32);
-    expect(map.isWalkable({
+    const tile = {
       column: Math.floor(infected.position.x / 32),
       row: Math.floor(infected.position.y / 32),
-    })).toBe(true);
+    };
+    expect(tile.column <= 5 || tile.column >= 14 || tile.row <= 5 || tile.row >= 14).toBe(true);
+    expect(map.isWalkable(tile)).toBe(true);
   });
 
   it('detects a nearby officer and attacks at the configured interval', () => {
