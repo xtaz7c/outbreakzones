@@ -2,7 +2,7 @@
 
 Jogo independente de estratégia tática e sobrevivência, inspirado em jogos de navegador da época do Flash (especialmente *Class 3 Outbreak*), feito com **TypeScript + Phaser 3**.
 
-> **MVP:** uma missão de defesa de uma pequena residência, jogável no navegador, na qual o jogador comanda três policiais contra ondas de infectados.
+> **MVP:** um tutorial tático no qual o jogador comanda três policiais para entrar em uma residência, resgatar dois civis e levá-los à extração enquanto enfrenta infectados.
 
 ## Status
 
@@ -45,7 +45,7 @@ npm run lint
 npm run build
 ```
 
-## Controles planejados para o MVP
+## Controles atuais e de desenvolvimento
 
 | Ação | Controle |
 |---|---|
@@ -53,9 +53,13 @@ npm run build
 | Seleção múltipla | Arrastar caixa de seleção |
 | Mover unidades | Clique direito |
 | Pausar / Retomar | Espaço |
-| Câmera | WASD / setas + scroll (zoom) |
+| Câmera | WASD / setas + roda do mouse (zoom) |
+| Interagir com acesso próximo | E (com policial selecionado) |
+| Danificar acesso próximo | B (debug/protótipo) |
+| Gerar infectado | I (debug) |
+| Emitir ruído para atrair infectados à casa | N (debug) |
 
-Os controles acima descrevem o objetivo do MVP; consulte a tasklist para acompanhar o que já está implementado.
+E, B, I e N são comandos provisórios de desenvolvimento. Consulte a tasklist para acompanhar a validação e o estado de cada sistema.
 
 ## Arquitetura (resumo)
 
