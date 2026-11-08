@@ -135,7 +135,7 @@ export class Infected {
       throw new RangeError('tileSize must be a positive finite number.');
     }
 
-    const target = this.chooseTarget(officers, structureTarget);
+    const target = this.chooseTarget(officers, structureTarget, tileSize);
     const distance = this.distanceTo(target.position);
 
     if (target.kind !== 'entry' && distance <= this.attackRange) {
@@ -192,7 +192,8 @@ export class Infected {
 
   private chooseTarget(
     officers: readonly PoliceOfficer[],
-    structureTarget?: InfectedStructureTarget,
+    structureTarget: InfectedStructureTarget | undefined,
+    tileSize: number,
   ): Target {
     let nearest: PoliceOfficer | undefined;
     let nearestDistance = this.detectionRange;
@@ -214,8 +215,8 @@ export class Infected {
       kind: 'entry',
       tile: this.entryTile,
       position: {
-        x: this.entryTile.column * 32 + 16,
-        y: this.entryTile.row * 32 + 16,
+        x: this.entryTile.column * tileSize + tileSize / 2,
+        y: this.entryTile.row * tileSize + tileSize / 2,
       },
     };
   }
