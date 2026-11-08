@@ -38,7 +38,7 @@ src/
 1. Phaser chama `update(time, delta)` nas cenas.
 2. A cena de missão converte o `delta` (ms) em segundos e chama `simulation.update(dt)`.
 3. A simulação usa **fixed timestep com acumulador** (ver ADR7).
-4. Enquanto a simulação estiver **pausada**, `update` retorna imediatamente.
+4. Enquanto a simulação estiver **pausada**, `update` retorna imediatamente; ordens táticas podem ser enfileiradas e só avançam após retomar.
 5. A renderização sempre ocorre (sprites, HUD, câmera), mesmo com a simulação pausada.
 
 ## Resolução lógica e escala
@@ -58,6 +58,8 @@ src/
 | ADR5 | Pathfinding + colisões no domínio             | Comportamento previsível e testável         |
 | ADR6 | Vite + TypeScript strict                      | DX moderna e segurança de tipos             |
 | ADR7 | Fixed timestep (1/60) com acumulador          | Estabilidade em FPS variável; ver abaixo    |
+| ADR8 | Edifícios com acessos independentes            | Navegação e vulnerabilidade por componente  |
+| ADR9 | Estados iniciais reproduzíveis por seed        | Cenários e testes determinísticos           |
 
 ### ADR7 — Fixed timestep com acumulador
 
