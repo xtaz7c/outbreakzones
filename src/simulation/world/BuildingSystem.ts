@@ -58,6 +58,9 @@ function chooseState(kind: AccessKind, weights: AccessWeights, random: () => num
   return entries[entries.length - 1]![0];
 }
 function toCells(definition: AccessDefinition, tileSize: number, grid: GridMap): TilePosition[] {
+  if (![definition.x, definition.y, definition.width, definition.height].every(Number.isFinite) ||
+      definition.width <= 0 || definition.height <= 0)
+    throw new RangeError(`Access ${definition.id} must have finite coordinates and positive dimensions.`);
   const firstColumn = Math.max(0, Math.floor(definition.x / tileSize));
   const firstRow = Math.max(0, Math.floor(definition.y / tileSize));
   const lastColumn = Math.min(grid.columns - 1, Math.ceil((definition.x + definition.width) / tileSize) - 1);
@@ -95,6 +98,7 @@ export class BuildingAccess {
     return true;
   }
   interact(actor: ActorKind, hasKey = false): boolean {
+    if (this.currentState === 'broken') return false;
     if (this.isPassable) {
       this.currentState = 'closed';
       return true;
@@ -123,6 +127,7 @@ export class BuildingAccess {
 }
 export class BuildingSystem {
   readonly accesses: readonly BuildingAccess[];
+  private readonly tileSize: number;
   private readonly byId = new Map<string, BuildingAccess>();
   private readonly baseGrid: GridMap;
   constructor(
@@ -132,6 +137,7 @@ export class BuildingSystem {
     if (!Number.isInteger(seed)) throw new RangeError('Building seed must be an integer.');
     if (!Number.isFinite(tileSize) || tileSize <= 0) throw new RangeError('Tile size must be positive.');
     this.baseGrid = grid.clone();
+    this.tileSize = tileSize;
     const random = mulberry32(seed);
     this.accesses = definitions.map((definition) => {
       if (!['door', 'window', 'garage'].includes(definition.kind)) throw new RangeError('Unknown access kind.');
@@ -168,7 +174,7 @@ export class BuildingSystem {
     const cell = access.cells[0];
     if (!cell) return undefined;
     return {
-      position: { x: cell.column * 32 + 16, y: cell.row * 32 + 16 },
+      position: { x: cell.column * this.tileSize + this.tileSize / 2, y: cell.row * this.tileSize + this.tileSize / 2 },
       approachTile,
       get isDestroyed() { return access.isDestroyed; },
       takeDamage: (amount) => access.takeDamage(amount),
