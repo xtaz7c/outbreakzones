@@ -49,7 +49,7 @@ O MVP só será considerado funcional quando for possível:
 7. Fazer os policiais detectarem e atacarem automaticamente inimigos válidos.
 8. Definir prioridade de alvo manualmente.
 9. Pausar a simulação, emitir ordens e retomá-la sem inconsistências.
-10. Ver paredes, portas e janelas bloquearem permanentemente a navegação de policiais e infectados.
+10. Ver paredes bloquearem a navegação e portas/janelas permitirem passagem conforme seu estado e as regras de cada NPC.
 11. Completar todas as ondas e alcançar a vitória, ou perder quando os três policiais forem incapacitados.
 12. Reiniciar a missão sem recarregar a página.
 13. Executar testes, lint e build com sucesso.
