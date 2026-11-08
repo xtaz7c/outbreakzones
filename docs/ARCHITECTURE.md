@@ -91,6 +91,14 @@ src/
 
 **Consequências:** o pathfinding deve suportar transições interior/exterior e custos/restrições específicos por entidade. O modelo de edifício precisa separar geometria estrutural de portas, janelas e garagens.
 
+### ADR11 — Posturas e ordens táticas básicas
+
+**Contexto:** o jogador precisa controlar o comportamento de cada policial sem acoplar as ordens à cena Phaser.
+
+**Decisão:** `PoliceOfficer` mantém uma postura de combate (`engage` ou `hold_fire`) e expõe uma ordem de manter posição que cancela a rota ativa. `Simulation` fornece comandos por ID de unidade. A cena apenas traduz atalhos de teclado para esses comandos: X mantém posição, H segura fogo e G retorna ao engajamento automático. Uma prioridade manual de alvo pode autorizar disparos mesmo em `hold_fire`.
+
+**Consequências:** as regras permanecem testáveis no domínio; comandos podem ser aplicados a unidades selecionadas em grupo. Os atalhos são provisórios e ainda precisam de validação no navegador.
+
 ### ADR10 — Reparos e aprimoramentos de estruturas
 
 **Contexto:** componentes podem sofrer dano e o jogador precisa ter opções para recuperar ou preparar edifícios.
