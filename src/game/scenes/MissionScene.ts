@@ -57,6 +57,9 @@ export class MissionScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-N', () => this.emitNoiseAtHouse());
     this.input.keyboard?.on('keydown-E', () => this.interactWithNearestAccess());
     this.input.keyboard?.on('keydown-B', () => this.breachNearestAccess());
+    this.input.keyboard?.on('keydown-H', () => this.setSelectedPosture('hold_fire'));
+    this.input.keyboard?.on('keydown-G', () => this.setSelectedPosture('engage'));
+    this.input.keyboard?.on('keydown-X', () => this.holdSelectedPositions());
 
     this.input.keyboard?.on('keydown-SPACE', () => {
       this.isPaused = !this.isPaused;
@@ -346,6 +349,22 @@ export class MissionScene extends Phaser.Scene {
 
 
 
+  private setSelectedPosture(posture: 'engage' | 'hold_fire'): void {
+    for (const officer of this.simulation.getOfficers()) {
+      if (this.selectedOfficerIds.has(officer.id)) {
+        this.simulation.setOfficerTacticalPosture(officer.id, posture);
+      }
+    }
+  }
+
+  private holdSelectedPositions(): void {
+    for (const officer of this.simulation.getOfficers()) {
+      if (this.selectedOfficerIds.has(officer.id)) {
+        this.simulation.holdOfficerPosition(officer.id);
+      }
+    }
+  }
+
   private emitNoiseAtHouse(): void {
     const entry = MISSION_ENTRY_POINTS.find((point) => point.id === 'front-door');
     if (!entry) return;
@@ -527,6 +546,7 @@ export class MissionScene extends Phaser.Scene {
           return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''}`;
         }),
         'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: interact | B: breach',
+        'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority',
       ].join('\\n'),
     );
   }
