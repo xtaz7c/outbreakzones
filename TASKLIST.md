@@ -1,14 +1,12 @@
-# Testgame — Tasklist do MVP
+# Outbreak Zones — Tasklist do MVP
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** T001–T016 foram integradas à `main`. O `package-lock.json` foi regenerado e contém as dependências resolvidas; instalações limpas devem usar `npm ci`. O usuário informou que `npm run build` passou localmente; ainda falta registrar evidência de `npm ci`, `npm test` e `npm run lint` para encerrar a validação da Fase 1. A Fase 2 está em implementação na branch `feat/map-world-t017-t026`; não marcar tarefas como concluídas até executar testes e revisar o mapa no navegador.
-
-## 1. Visão e escopo
+> **Status atual:** a fundação técnica, os controles RTS, policiais, infectados e combate estão implementados na `main`, mas as tarefas continuam pendentes de validação integrada (testes, lint, build e revisão visual). A branch `feat/buildings-tactical-foundation-t066-t071` implementa a Fase 7 e correções táticas; não foi integrada.\n\n## 1. Visão e escopo
 
 Criar um jogo independente de estratégia tática e sobrevivência, inspirado em jogos de navegador da época do Flash (especialmente *Class 3 Outbreak*), sem copiar código, arte, mapas, interface, personagens ou outros elementos protegidos.
 
-**MVP:** uma missão de defesa de uma pequena residência, jogável no navegador, na qual o jogador comanda três policiais contra ondas de infectados.
+**MVP:** um tutorial tático jogável no navegador, no qual o jogador comanda três policiais para entrar em uma residência, resgatar dois civis e levá-los à extração enquanto enfrenta infectados.
 
 ### Direção de design confirmada
 
@@ -21,7 +19,7 @@ Criar um jogo independente de estratégia tática e sobrevivência, inspirado em
 - Comandos: movimentação e prioridade de alvo.
 - Combate: disparos automáticos quando houver alvo válido.
 - Inimigos: infectados chegando em ondas.
-- Objetivo: proteger uma pequena residência.
+- Objetivo do tutorial: resgatar dois civis que começam dentro de uma residência e conduzi-los até a zona de extração.\n- Edifícios: portas, janelas e garagens possuem estados e regras de passagem independentes.
 - Plataforma inicial: navegador.
 - Plataforma futura: Linux.
 
@@ -161,16 +159,16 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** policiais combatem automaticamente e o jogador consegue influenciar a escolha de alvos.
 
-### Fase 7 — Residência e defesa
+### Fase 7 — Edifícios, acessos e comportamento de infectados
 
-- [ ] **T066 — P0** Definir portas e janelas como pontos de entrada vulneráveis.
-- [ ] **T067 — P0** Implementar integridade individual de portas e janelas.
-- [ ] **T068 — P0** Permitir que infectados danifiquem entradas.
-- [ ] **T069 — P0** Permitir entrada de infectados quando uma abertura for rompida.
-- [ ] **T070 — P0** Definir e implementar a condição de invasão/derrota da residência.
-- [ ] **T071 — P1** Exibir integridade e estado de defesa da casa.
+- [ ] **T066 — P0** Modelar edifícios como estruturas com paredes sólidas e componentes de acesso independentes.
+- [ ] **T067 — P0** Gerar estado inicial probabilístico por acesso, com pesos configuráveis e seed reproduzível por missão.
+- [ ] **T068 — P0** Implementar portas, janelas e garagens com estados independentes (aberta, fechada, trancada, barricada ou destruída) e integridade.
+- [ ] **T069 — P0** Implementar interação e navegação interior/exterior respeitando o tipo de unidade e o estado de cada acesso.
+- [ ] **T070 — P0** Permitir que infectados investiguem estímulos, ataquem acessos atraídos e atravessem uma entrada após destruí-la.
+- [ ] **T071 — P1** Exibir visualmente estado e integridade dos acessos.
 
-**Saída da fase:** a residência é um objetivo funcional, não apenas um elemento visual.
+**Progresso de implementação (branch `feat/buildings-tactical-foundation-t066-t071`):** criado `BuildingSystem` desacoplado do Phaser, estados probabilísticos determinísticos via seed, portas/janelas/garagem, integridade, interação, dano, navegação específica para policiais/infectados/civis e destino interno após rompimento. A missão carrega acessos da camada Tiled `Entrances`, renderiza estados por cor e oferece E para interagir, B para danificar e N para emitir ruído que atrai infectados à porta frontal. A garagem foi adicionada ao mapa. Testes unitários foram adicionados/atualizados. **Ainda não validados:** execução de testes, lint, build e revisão no navegador. T066–T071 permanecem desmarcadas até validação. Reparos e upgrades pertencem às tarefas posteriores T121–T123.
 
 ### Fase 8 — Ondas e fluxo da missão
 
