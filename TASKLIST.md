@@ -2,7 +2,9 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** a fundação técnica, os controles RTS, policiais, infectados e combate estão implementados na `main`, mas as tarefas continuam pendentes de validação integrada (testes, lint, build e revisão visual). A branch `feat/buildings-tactical-foundation-t066-t071` implementa a Fase 7 e correções táticas; não foi integrada.\n\n## 1. Visão e escopo
+> **Status atual:** a fundação técnica, os controles RTS, policiais, infectados e combate estão implementados na `main`, mas as tarefas continuam pendentes de validação integrada (testes, lint, build e revisão visual). A branch `feat/buildings-tactical-foundation-t066-t071` implementa a Fase 7 e correções táticas; não foi integrada.
+
+## 1. Visão e escopo
 
 Criar um jogo independente de estratégia tática e sobrevivência, inspirado em jogos de navegador da época do Flash (especialmente *Class 3 Outbreak*), sem copiar código, arte, mapas, interface, personagens ou outros elementos protegidos.
 
@@ -19,7 +21,8 @@ Criar um jogo independente de estratégia tática e sobrevivência, inspirado em
 - Comandos: movimentação e prioridade de alvo.
 - Combate: disparos automáticos quando houver alvo válido.
 - Inimigos: infectados chegando em ondas.
-- Objetivo do tutorial: resgatar dois civis que começam dentro de uma residência e conduzi-los até a zona de extração.\n- Edifícios: portas, janelas e garagens possuem estados e regras de passagem independentes.
+- Objetivo do tutorial: resgatar dois civis que começam dentro de uma residência e conduzi-los até a zona de extração.
+- Edifícios: portas, janelas e garagens possuem estados e regras de passagem independentes.
 - Plataforma inicial: navegador.
 - Plataforma futura: Linux.
 
