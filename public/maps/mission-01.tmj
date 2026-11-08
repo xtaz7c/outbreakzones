@@ -7914,7 +7914,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-{
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -7937,7 +7937,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-{
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -7960,7 +7960,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-{
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -7983,7 +7983,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-{
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -8006,7 +8006,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-{
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -8029,7 +8029,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-{
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -8052,7 +8052,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-{
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
