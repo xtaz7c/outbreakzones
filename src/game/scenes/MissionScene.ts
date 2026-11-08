@@ -1,10 +1,7 @@
 import Phaser from 'phaser';
 import { Simulation } from '../../simulation/Simulation';
+import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
 
-/**
- * Cena principal da missão.
- * Responsável por input, renderização e por avançar a simulação com delta time.
- */
 export class MissionScene extends Phaser.Scene {
   private simulation!: Simulation;
   private statusText!: Phaser.GameObjects.Text;
@@ -16,20 +13,19 @@ export class MissionScene extends Phaser.Scene {
 
   create(): void {
     this.simulation = new Simulation();
+    this.createWorld();
 
-    // Texto de status (HUD mínimo)
     this.statusText = this.add
       .text(16, 16, '', {
         fontFamily: 'monospace',
         fontSize: '16px',
         color: '#e0e0e0',
-        backgroundColor: '#00000088',
+        backgroundColor: '#000000aa',
         padding: { x: 8, y: 6 },
       })
       .setScrollFactor(0)
       .setDepth(1000);
 
-    // Pausa com Espaço
     this.input.keyboard?.on('keydown-SPACE', () => {
       this.isPaused = !this.isPaused;
       this.simulation.setPaused(this.isPaused);
@@ -39,13 +35,40 @@ export class MissionScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    // delta vem em milissegundos; convertemos para segundos
     const dt = delta / 1000;
-
-    // A simulação respeita o estado de pausa internamente
     this.simulation.update(dt);
-
     this.updateStatusText(dt);
+  }
+
+  private createWorld(): void {
+    const map = this.make.tilemap({ key: 'mission-01' });
+    const tileset = map.addTilesetImage('mission-tiles', 'mission-tiles');
+
+    if (!tileset) {
+      throw new Error('Unable to attach the mission tileset to the Tiled map.');
+    }
+
+    for (const layerName of ['Ground', 'Terrain', 'Structures']) {
+      const layer = map.createLayer(layerName, tileset, 0, 0);
+      if (!layer) {
+        throw new Error(`Required Tiled layer "${layerName}" is missing.`);
+      }
+    }
+
+    const collisionGrid = buildGridFromTiledLayers(
+      map.width,
+      map.height,
+      map.tileWidth,
+      [
+        map.getObjectLayer('Collision'),
+        map.getObjectLayer('Entrances'),
+        map.getObjectLayer('Obstacles'),
+      ],
+    );
+
+    // Guardamos la grade para os sistemas de movimento/pathfinding das próximas tarefas.
+    this.registry.set('worldGrid', collisionGrid);
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
   }
 
   private updateStatusText(dt: number): void {
@@ -54,7 +77,7 @@ export class MissionScene extends Phaser.Scene {
 
     this.statusText.setText(
       [
-        `Testgame — Mission (foundation)`,
+        'Testgame — Mission',
         `Paused: ${state.paused ? 'YES' : 'NO'}  (Space)`,
         `Sim time: ${state.elapsed.toFixed(2)}s`,
         `Approx FPS: ${fps}`,
