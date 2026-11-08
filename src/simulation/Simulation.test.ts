@@ -169,6 +169,19 @@ describe('Simulation', () => {
     expect(sim.getCombatEvents()).toHaveLength(0);
   });
 
+
+  it('does not cancel a movement order when a target priority is assigned', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    const infected = sim.spawnInfected({
+      x: 900, y: 1072, entryTile: { column: 28, row: 33 }, detectionRange: 1,
+    });
+    expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(true);
+    sim.setTargetPriority(officer.id, infected.id);
+    expect(officer.state).toBe('moving');
+    expect(officer.hasMoveOrder).toBe(true);
+  });
+
   it('tracks active officers after individual incapacitation', () => {
     expect(sim.damageOfficer(2, 100)).toBe(100);
     expect(sim.getState().officerCount).toBe(3);
