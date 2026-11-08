@@ -7914,12 +7914,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-            {
-              "name": "health",
-              "type": "int",
-              "value": 120
-            },
-            {
+{
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -7942,12 +7937,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-            {
-              "name": "health",
-              "type": "int",
-              "value": 60
-            },
-            {
+{
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -7970,12 +7960,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-            {
-              "name": "health",
-              "type": "int",
-              "value": 60
-            },
-            {
+{
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -7998,12 +7983,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-            {
-              "name": "health",
-              "type": "int",
-              "value": 60
-            },
-            {
+{
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -8026,12 +8006,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-            {
-              "name": "health",
-              "type": "int",
-              "value": 60
-            },
-            {
+{
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -8054,12 +8029,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-            {
-              "name": "health",
-              "type": "int",
-              "value": 90
-            },
-            {
+{
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -8082,12 +8052,7 @@
           "rotation": 0,
           "visible": true,
           "properties": [
-            {
-              "name": "health",
-              "type": "int",
-              "value": 90
-            },
-            {
+{
               "name": "blocksMovement",
               "type": "bool",
               "value": true
