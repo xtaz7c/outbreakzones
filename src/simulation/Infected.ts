@@ -92,9 +92,8 @@ export class Infected {
         throw new RangeError(`${name} must be a positive finite number.`);
       }
     }
-    const sample = this.random();
-    if (!Number.isFinite(sample) || sample < 0 || sample >= 1) {
-      throw new RangeError('random must return a value in [0, 1).');
+    if (typeof this.random !== 'function') {
+      throw new TypeError('random must be a function.');
     }
 
     this.currentHealth = this.maxHealth;
