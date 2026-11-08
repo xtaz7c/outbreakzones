@@ -64,8 +64,10 @@ describe('Infected', () => {
     });
     let health = 20;
     const structure = {
+      id: 'north-window-west',
       position: { x: 864, y: 336 },
       approachTile: { column: 27, row: 9 },
+      interiorTile: { column: 27, row: 11 },
       get isDestroyed() { return health <= 0; },
       takeDamage(amount: number) {
         const applied = Math.min(amount, health);
@@ -73,7 +75,7 @@ describe('Infected', () => {
         return applied;
       },
     };
-    infected.update(0.5, 32, map, [], structure);
+    infected.update(0.5, 32, map, [], [structure]);
     expect(infected.state).toBe('attacking');
     expect(health).toBe(13);
   });
@@ -92,5 +94,43 @@ describe('Infected', () => {
     expect(infected.takeDamage(Number.NaN)).toBe(0);
     expect(infected.health).toBe(60);
     expect(infected.state).toBe('idle');
+  });
+});
+
+
+describe('Infected residence breach', () => {
+  it('moves through an opened entrance and records that it entered the residence', () => {
+    const map = new GridMap(10, 10);
+    const structureTile = { column: 2, row: 2 };
+    map.setBlocked(structureTile);
+    const infected = new Infected({
+      id: 2,
+      x: 80,
+      y: 80,
+      entryTile: { column: 2, row: 1 },
+      moveSpeed: 64,
+      detectionRange: 1,
+    });
+    let health = 1;
+    const entrance = {
+      id: 'test-door',
+      position: { x: 80, y: 80 },
+      approachTile: { column: 2, row: 1 },
+      interiorTile: { column: 2, row: 3 },
+      get isDestroyed() { return health <= 0; },
+      takeDamage(amount: number) {
+        const applied = Math.min(amount, health);
+        health -= applied;
+        return applied;
+      },
+    };
+
+    infected.update(0.1, 32, map, [], [entrance]);
+    expect(entrance.isDestroyed).toBe(true);
+    map.setBlocked(structureTile, false);
+    infected.update(1, 32, map, [], [entrance]);
+
+    expect(infected.hasEnteredResidence).toBe(true);
+    expect(infected.position.y).toBeGreaterThan(80);
   });
 });
