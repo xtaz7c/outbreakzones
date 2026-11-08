@@ -120,7 +120,7 @@ describe('Simulation', () => {
   it('spawns infected entities and advances their AI on fixed steps', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const infected = sim.spawnInfected({
-      x: 16, y: 16, entryTile: { column: 4, row: 1 }, moveSpeed: 32,
+      x: 16, y: 16, moveSpeed: 32,
     });
     expect(sim.getState().infectedCount).toBe(1);
     sim.update(FIXED_DT);
@@ -130,7 +130,7 @@ describe('Simulation', () => {
 
   it('removes dead infected entities safely during simulation updates', () => {
     const infected = sim.spawnInfected({
-      x: 16, y: 16, entryTile: { column: 4, row: 1 },
+      x: 16, y: 16,
     });
     infected.takeDamage(100);
     sim.update(FIXED_DT);
@@ -142,7 +142,7 @@ describe('Simulation', () => {
     sim = new Simulation({ random: () => 0 });
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const infected = sim.spawnInfected({
-      x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
+      x: 1000, y: 1072,
       moveSpeed: 1, detectionRange: 1,
     });
     let observedShot = false;
@@ -157,7 +157,7 @@ describe('Simulation', () => {
   it('does not emit combat events while paused', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     sim.spawnInfected({
-      x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
+      x: 1000, y: 1072,
       moveSpeed: 1, detectionRange: 1,
     });
     sim.setPaused(true);
