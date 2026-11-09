@@ -16,7 +16,7 @@ export class AudioManager {
   }
 
   startAmbient(): void {
-    if (this.destroyed || this.ambient) return;
+    if (this.destroyed || this.ambient || !this.scene.cache.audio.exists('ambient-loop')) return;
     this.ambient = this.scene.sound.add('ambient-loop', {
       loop: true,
       volume: 0.16,
@@ -25,7 +25,7 @@ export class AudioManager {
   }
 
   playGunshot(): void {
-    if (this.destroyed || this.isMuted) return;
+    if (this.destroyed || this.isMuted || !this.scene.cache.audio.exists('pistol-shot')) return;
     this.scene.sound.play('pistol-shot', {
       volume: 0.2,
       detune: Phaser.Math.Between(-90, 90),
@@ -33,7 +33,7 @@ export class AudioManager {
   }
 
   playInfectedGroan(): void {
-    if (this.destroyed || this.isMuted) return;
+    if (this.destroyed || this.isMuted || !this.scene.cache.audio.exists('infected-groan')) return;
     const now = this.scene.time.now;
     if (now - this.lastGroanAt < 1800 || Math.random() > 0.65) return;
     this.lastGroanAt = now;
