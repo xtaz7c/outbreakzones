@@ -174,7 +174,9 @@ export class Simulation {
   rescueCivilian(civilianId: number, officerId: number): boolean {
     const civilian = this.civilians.find((candidate) => candidate.id === civilianId);
     const officer = this.officers.find((candidate) => candidate.id === officerId && !candidate.isIncapacitated);
-    if (!civilian || !officer || civilian.state !== 'sheltered') return false;
+    if (!civilian || !officer) return false;
+    if (civilian.state === 'following') return civilian.escortId === officerId;
+    if (civilian.state !== 'sheltered') return false;
     if (Math.hypot(civilian.position.x - officer.position.x, civilian.position.y - officer.position.y) > 80) {
       return false;
     }
