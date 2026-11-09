@@ -201,7 +201,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** ciclo completo de missão, do início ao resultado, com pausa funcional.
 
-**Issue #26 — incrementos em andamento:** (1) infectados surgem fora dos quatro limites e caminham até o tile de entrada; (2) Missão 0 — O Resgate e Missão 1 — Refúgio têm objetivos/ondas separados e escolha de campanha após o tutorial; (3) infectados atacam policiais e civis; civis têm vida, pânico, fuga por rotas caminháveis, adesão automática a policiais próximos e perda de escolta por distância/obstrução; (4) escala do HUD persistente (80%–120%), independente do zoom; (5) quatro estruturas implantáveis com custos, posicionamento pela barra inferior, persistência local, desmontagem com reembolso parcial, geração de sucata (tenda de recursos), tiro automático (posto sniper), bloqueio/dano por infectados (barricada) e capacidade habitacional (abrigo). Testes unitários/de integração adicionados. QA de navegador e balanceamento continuam pendentes.
+**Issue #26 — implementação de código concluída na PR #33:** (1) infectados entram de fora do mapa; (2) Missão 0 — O Resgate e Missão 1 — Refúgio têm objetivos/ondas separados e escolha de campanha após o tutorial; (3) aquisição de alvos usa contrato `HumanTarget` extensível, com policiais/civis, pânico, fuga, adesão automática e perda de escolta; (4) escala do HUD persistente (80%–120%), independente do zoom; (5) abrigo, tenda de recursos, posto sniper e barricada têm custos, barra de posicionamento, persistência, desmontagem, produção, tiro automático, bloqueio/dano e capacidade habitacional. Testes unitários/de integração adicionados. Issue permanece aberta até QA de gameplay/navegador e revisão do balanceamento.
 
 ### Fase 9 — Interface e experiência
 
@@ -240,6 +240,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T104 — P1** Validar consistência de escala, contraste e legibilidade das texturas.
 
 **Saída da fase:** identidade visual coerente e feedback suficiente para interpretar as ações.
+
+**Áudio — PR #32 aberta:** 12 WAVs enviados ao repositório estão ligados ao `BootScene`/`AudioManager` (4 variações de disparo, 4 faixas de suspense e 4 vocalizações). CI passou; T102/T103 continuam desmarcadas até QA auditivo no navegador e integração na `main`.
 
 ### Fase 11 — Testes, estabilidade e entrega web
 
