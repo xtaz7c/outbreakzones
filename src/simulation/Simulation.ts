@@ -8,7 +8,7 @@ import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
 import { Civilian } from './Civilian';
 import { Infected } from './Infected';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
-import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
+import type { HumanTarget, InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
 import type { TilePosition } from './world/WorldConfig';
@@ -331,7 +331,8 @@ export class Simulation {
         const heardStimuli = this.stimuli.filter((stimulus) =>
           Math.hypot(infected.position.x - stimulus.position.x, infected.position.y - stimulus.position.y) <= stimulus.radius,
         );
-        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli);
+        const humanTargets: HumanTarget[] = [...this.officers, ...this.civilians];
+        infected.update(dt, this.tileSize, infectedGrid, humanTargets, undefined, heardStimuli);
       }
       const accessChanged = this.buildingSystem?.getSnapshots().some(
         (access) => accessStatesBefore.get(access.id) !== access.state,
