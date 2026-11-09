@@ -350,6 +350,20 @@ describe('Simulation', () => {
     expect(sim.getState().rescuedCivilianCount).toBe(0);
   });
 
+  it('lets infected attack civilians and makes them flee from visible threats', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const civilian = sim.getCivilians()[0]!;
+    const infected = sim.spawnInfected({
+      x: 816, y: 480, entryTile: { column: 25, row: 15 },
+      detectionRange: 200, attackRange: 40, attackInterval: 0.25, damage: 10,
+    });
+    for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
+    expect(civilian.health).toBeLessThan(civilian.maxHealth);
+    expect(civilian.mood).toBe('panicked');
+    expect(civilian.position.x).not.toBe(800);
+    expect(infected.state).toBe('attacking');
+  });
+
   it('declares defeat as soon as all officers are incapacitated', () => {
     for (const officer of sim.getOfficers()) sim.damageOfficer(officer.id, 100);
     sim.update(FIXED_DT);
