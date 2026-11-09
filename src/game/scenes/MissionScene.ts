@@ -664,9 +664,11 @@ export class MissionScene extends Phaser.Scene {
     const state = this.simulation.getState();
     const civilians = this.simulation.getCivilians();
     const officers = this.simulation.getOfficers();
-    const waveLabel = state.wavePhase === 'preparing'
-      ? `PRÓXIMA ONDA EM ${state.preparationRemaining.toFixed(0)}s`
-      : `ONDA ${state.waveNumber || 1} / ${state.totalWaves}`;
+    const waveLabel = state.wavePhase === 'disabled'
+      ? 'TUTORIAL  /  SEM ONDAS'
+      : state.wavePhase === 'preparing'
+        ? `PRÓXIMA ONDA EM ${state.preparationRemaining.toFixed(0)}s`
+        : `ONDA ${state.waveNumber || 1} / ${state.totalWaves}`;
     const objective = state.missionStatus === 'victory'
       ? 'MISSÃO CONCLUÍDA'
       : state.missionStatus === 'defeat'
