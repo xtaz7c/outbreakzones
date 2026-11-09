@@ -204,7 +204,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 ### Fase 9 — Interface e experiência
 
 - [ ] **T084 — P0** Criar página inicial de Outbreak Zones, exibida antes de carregar/iniciar a missão.
-- [ ] **T085 — P0** Criar HUD da missão fixo à viewport, independente do scroll, zoom e posição do mundo.
+- [ ] **T085 — P0** Criar HUD tático integrado ao mundo, acompanhando scroll da câmera e mantendo menus modais fixos à viewport.
+- [ ] **T095 — P1** Permitir ajustar e persistir a escala do HUD nas configurações do jogo.
 - [ ] **T086 — P0** Exibir vida e munição de cada policial.
 - [ ] **T087 — P0** Exibir informações da unidade selecionada.
 - [ ] **T088 — P0** Exibir o estado dos dois civis e o progresso do resgate.
@@ -270,24 +271,47 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Progresso parcial (branch `feat/phase-7-tactical-system`):** os três comandos foram adicionados à API da simulação e a atalhos provisórios na cena: X (manter posição), H (segurar fogo) e G (engajar automaticamente). A prioridade manual de alvo continua podendo autorizar disparos durante `hold_fire`. Testes unitários e de integração foram adicionados, mas ainda não executados neste ambiente; tarefas permanecem desmarcadas até validação.
 
-## 4. Fora do escopo do MVP
+## 4. Fora do escopo atual
 
-Não implementar antes da validação do MVP, salvo decisão explícita:
+Não implementar antes da validação das etapas de sobrevivência e campanha, salvo decisão explícita:
 
 - Multiplayer ou cooperação online.
-- Campanha com múltiplas missões.
-- Salvamento/carregamento de campanha.
+- Salvamento/carregamento de campanha entre sessões.
 - Árvore de habilidades e progressão persistente.
 - Classes e especializações policiais.
 - Vários tipos de infectados e chefes.
 - Veículos dirigíveis.
-- Construção livre de bases.
-- Economia ou gerenciamento complexo de recursos.
+- Construção livre de bases com grade modular completa.
+- Economia macro ou gerenciamento complexo de recursos.
 - Geração procedural de mapas.
 - Versão mobile.
 - Empacotamento/distribuição Linux.
 
 A versão Linux será uma etapa posterior à validação da versão web.
+
+## 4A. Fase 13 — IA de sobreviventes e progressão de missões
+
+- [ ] **T128 — P0** Generalizar alvos dos infectados para qualquer NPC humano vivo, preservando alcance de detecção e linha de visão.
+- [ ] **T129 — P0** Implementar estados comportamentais calmo/pânico para civis e NPCs humanos.
+- [ ] **T130 — P0** Fazer NPCs fugirem de infectados percebidos sem atravessar obstáculos.
+- [ ] **T131 — P0** Fazer NPCs seguirem policiais automaticamente e permitir perda/reconquista de escolta.
+- [ ] **T132 — P1** Padronizar silhueta humana dos NPCs com paletas por função/estado.
+- [ ] **T133 — P0** Fazer reforços infectados surgirem fora dos limites e percorrerem uma rota de entrada antes de patrulhar/perseguir.
+- [ ] **T134 — P0** Separar Missão 0 — O Resgate (tutorial) da Missão 1 — Refúgio (campanha).
+- [ ] **T135 — P0** Ao concluir o tutorial, oferecer retorno à página inicial ou início da campanha.
+
+**Progresso em PR #27:** infectados já usam alvos humanos genéricos e podem atacar policiais e civis; civis possuem vida, comportamento calmo/pânico, fuga por pathfinding, seguimento automático e perda de escolta por separação; reforços começam fora do mapa e caminham até a célula de entrada; constantes de mundo foram sincronizadas com 80×45; Missão 0 e Missão 1 foram separadas no fluxo inicial e o tutorial oferece retorno à Home ou início da campanha. Testes, lint e build passaram na última execução CI. QA visual/manual permanece pendente, então as tarefas seguem desmarcadas.
+
+## 4B. Fase 14 — Construções táticas e configuração do HUD
+
+- [ ] **T136 — P0** Criar barra inferior com quatro ações: abrigo improvisado, armazém improvisado, posto de atirador e barricada.
+- [ ] **T137 — P0** Definir custos, capacidade, regras de posicionamento e persistência para barraca de moradia e barraca de recursos.
+- [ ] **T138 — P0** Implementar posto de atirador fixo, com aquisição de alvos, alcance, cadência e dano.
+- [ ] **T139 — P0** Implementar barricadas/muros que bloqueiam infectados, recebem dano e podem ser destruídos.
+- [ ] **T140 — P1** Adicionar configuração persistente para aumentar/diminuir a escala do HUD, independente do zoom da câmera.
+- [ ] **T141 — P1** Validar layout dos quatro ícones e escala do HUD em resoluções desktop diferentes.
+
+**Definição pendente de balanceamento:** custos iniciais, capacidade das tendas e dano/alcance do atirador serão valores configuráveis, não constantes espalhadas pela cena. O posto de atirador não pode receber ordens de movimento; barricadas precisam atualizar navegação quando construídas/destruídas.
 
 ## 5. Regras de engenharia e colaboração
 
