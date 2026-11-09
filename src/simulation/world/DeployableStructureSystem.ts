@@ -31,6 +31,7 @@ export interface DeployableRecord {
   readonly kind: DeployableKind;
   readonly tile: TilePosition;
   readonly health: number;
+  readonly destroyed: boolean;
 }
 
 export interface DeployableState {
@@ -91,6 +92,8 @@ export class DeployableStructureSystem {
   private nextId = 1;
   private readonly structures: MutableDeployable[] = [];
   private readonly barricadeTimers = new Map<string, number>();
+  private cachedNavigationGrid: GridMap | null = null;
+  private cachedBaseGrid: GridMap | null = null;
 
   constructor(
     private readonly worldGrid: GridMap,
@@ -135,6 +138,7 @@ export class DeployableStructureSystem {
       destroyed: false,
     };
     this.structures.push(structure);
+    this.cachedNavigationGrid = null;
     return this.snapshot(structure);
   }
 
@@ -143,28 +147,37 @@ export class DeployableStructureSystem {
     if (!structure || !Number.isFinite(amount) || amount <= 0) return 0;
     const applied = Math.min(structure.health, amount);
     structure.health = Math.max(0, structure.health - applied);
-    if (structure.health === 0) structure.destroyed = true;
+    if (structure.health === 0) {
+      structure.destroyed = true;
+      this.cachedNavigationGrid = null;
+    }
     return applied;
   }
 
   dismantle(id: number): boolean {
-    const index = this.structures.findIndex((candidate) => candidate.id === id && !candidate.destroyed);
+    const index = this.structures.findIndex((candidate) => candidate.id === id);
     if (index < 0) return false;
     const structure = this.structures[index]!;
-    const cost = DEFINITIONS[structure.kind].cost;
-    this.scrap += Math.floor(cost.scrap * 0.5);
-    this.parts += Math.floor(cost.parts * 0.5);
+    if (!structure.destroyed) {
+      const cost = DEFINITIONS[structure.kind].cost;
+      this.scrap += Math.floor(cost.scrap * 0.5);
+      this.parts += Math.floor(cost.parts * 0.5);
+    }
     this.structures.splice(index, 1);
+    this.cachedNavigationGrid = null;
     return true;
   }
 
   getInfectedNavigationGrid(baseGrid: GridMap = this.worldGrid): GridMap {
+    if (this.cachedNavigationGrid && this.cachedBaseGrid === baseGrid) return this.cachedNavigationGrid;
     const navigation = baseGrid.clone();
     for (const structure of this.structures) {
       if (!structure.destroyed && structure.kind === 'barricade') {
         navigation.setBlocked(structure.tile, true);
       }
     }
+    this.cachedBaseGrid = baseGrid;
+    this.cachedNavigationGrid = navigation;
     return navigation;
   }
 
@@ -232,8 +245,8 @@ export class DeployableStructureSystem {
   exportState(): DeployableState {
     return {
       resources: this.getResources(),
-      structures: this.structures.map(({ id, kind, tile, health }) => ({
-        id, kind, tile: { ...tile }, health,
+      structures: this.structures.map(({ id, kind, tile, health, destroyed }) => ({
+        id, kind, tile: { ...tile }, health, destroyed,
       })),
       nextId: this.nextId,
     };
@@ -255,7 +268,8 @@ export class DeployableStructureSystem {
       const key = `${record.tile?.column}:${record.tile?.row}`;
       if (!definition || !Number.isInteger(record.id) || record.id <= 0 || ids.has(record.id) ||
           !this.worldGrid.isWalkable(record.tile) || occupied.has(key) ||
-          !Number.isFinite(record.health) || record.health <= 0 || record.health > definition.health) {
+          !Number.isFinite(record.health) || record.health < 0 || record.health > definition.health ||
+          (record.health === 0) !== record.destroyed) {
         throw new RangeError('Invalid persisted deployable structure.');
       }
       ids.add(record.id);
@@ -263,7 +277,7 @@ export class DeployableStructureSystem {
       maxId = Math.max(maxId, record.id);
       restored.push({
         id: record.id, kind: record.kind, tile: { ...record.tile }, health: record.health,
-        productionTimer: definition.interval, cooldown: definition.interval, destroyed: false,
+        productionTimer: definition.interval, cooldown: definition.interval, destroyed: record.destroyed,
       });
     }
     if (state.nextId <= maxId) throw new RangeError('Persisted deployable nextId must exceed all structure ids.');
@@ -272,6 +286,7 @@ export class DeployableStructureSystem {
     this.nextId = state.nextId;
     this.structures.splice(0, this.structures.length, ...restored);
     this.barricadeTimers.clear();
+    this.cachedNavigationGrid = null;
   }
 
   private snapshot(structure: MutableDeployable): DeployableSnapshot {
