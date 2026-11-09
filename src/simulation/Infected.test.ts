@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Infected } from './Infected';
+import { Civilian } from './Civilian';
 import { PoliceOfficer } from './PoliceOfficer';
 import { GridMap } from './world/GridMap';
 
@@ -88,6 +89,18 @@ describe('Infected', () => {
     infected.update(0.5, 32, map, [officer]);
     expect(infected.state).toBe('moving');
     expect(infected.position).not.toEqual({ x: 16, y: 16 });
+  });
+
+  it('detects and attacks civilians as human targets', () => {
+    const infected = new Infected({
+      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      detectionRange: 100, attackRange: 30, attackInterval: 0.5, damage: 12,
+    });
+    const civilian = new Civilian({ id: 1, x: 40, y: 16 });
+    infected.update(0.5, 32, map, [], undefined, [], [civilian]);
+    expect(infected.state).toBe('attacking');
+    expect(civilian.health).toBe(48);
+    expect(civilian.mood).toBe('panicked');
   });
 
   it('closes the remaining distance when target shares its current tile', () => {
