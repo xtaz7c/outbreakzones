@@ -113,6 +113,11 @@ export class DeployableStructureSystem {
     return { scrap: this.scrap, parts: this.parts };
   }
 
+  getShelterCapacity(): number {
+    return this.structures.reduce((total, structure) =>
+      total + (!structure.destroyed && structure.kind === 'shelter-tent' ? DEFINITIONS['shelter-tent'].capacity : 0), 0);
+  }
+
   getSnapshots(): DeployableSnapshot[] {
     return this.structures.map((structure) => this.snapshot(structure));
   }
