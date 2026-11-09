@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Infected } from './Infected';
 import { Civilian } from './Civilian';
 import { PoliceOfficer } from './PoliceOfficer';
@@ -101,6 +101,22 @@ describe('Infected', () => {
     expect(infected.state).toBe('attacking');
     expect(civilian.health).toBe(48);
     expect(civilian.mood).toBe('panicked');
+  });
+
+  it('supports future human roles through the generic target contract', () => {
+    const infected = new Infected({
+      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      detectionRange: 100, attackRange: 30, attackInterval: 0.5, damage: 12,
+    });
+    const survivor = {
+      id: 99,
+      position: { x: 40, y: 16 },
+      isIncapacitated: false,
+      takeDamage: vi.fn(() => 12),
+    };
+    infected.update(0.5, 32, map, [], undefined, [], [], [survivor]);
+    expect(survivor.takeDamage).toHaveBeenCalledWith(12);
+    expect(infected.state).toBe('attacking');
   });
 
   it('closes the remaining distance when target shares its current tile', () => {
