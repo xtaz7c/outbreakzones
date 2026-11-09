@@ -102,6 +102,34 @@ describe('BuildingSystem', () => {
     expect(system.getNavigationGrid('infected').isWalkable(cell)).toBe(true);
   });
 
+  it('exports and restores access state and integrity', () => {
+    const original = new BuildingSystem([
+      { ...definitions[0]!, maxHealth: 40, weights: { open: 0, closed: 1 } },
+      { ...definitions[1]!, maxHealth: 60, weights: { open: 0, closed: 1, barricaded: 0, broken: 0 } },
+    ], new GridMap(8, 8), 32, 9);
+    original.interact('front', 'police');
+    original.damage('window', 15);
+
+    const restored = new BuildingSystem([
+      { ...definitions[0]!, maxHealth: 40, weights: { open: 0, closed: 1 } },
+      { ...definitions[1]!, maxHealth: 60, weights: { open: 0, closed: 1, barricaded: 0, broken: 0 } },
+    ], new GridMap(8, 8), 123, 99);
+    restored.restoreState(original.exportState());
+
+    expect(restored.exportState()).toEqual(original.exportState());
+    expect(restored.getNavigationGrid('police').isWalkable({ column: 1, row: 1 })).toBe(true);
+    expect(restored.getAccess('window')?.health).toBe(45);
+  });
+
+  it('rejects incomplete or invalid persisted access state', () => {
+    const system = new BuildingSystem(definitions, new GridMap(8, 8), 32, 9);
+    expect(() => system.restoreState([])).toThrow(RangeError);
+    expect(() => system.restoreState([
+      { id: 'front', state: 'broken', health: 0 },
+      { id: 'window', state: 'open', health: Number.NaN },
+    ])).toThrow(RangeError);
+  });
+
   it('targets the access cell nearest to the infected approach tile', () => {
     const system = new BuildingSystem([{
       id: 'wide-door',
