@@ -70,7 +70,7 @@ describe('BuildingMaintenanceSystem', () => {
   });
 
   it('gives barricades and upgraded locks measurable damage resistance', () => {
-    const { buildings, maintenance } = createSystems();
+    const { buildings, maintenance } = createSystems({ scrap: 60, parts: 20 });
     const door = buildings.getAccess('front-door')!;
     expect(maintenance.start('front-door', 'barricade')).toBe(true);
     maintenance.update(8);
