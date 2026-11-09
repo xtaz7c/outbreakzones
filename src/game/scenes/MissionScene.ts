@@ -13,6 +13,8 @@ const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
 const MAX_CAMERA_ZOOM = 2.5;
 const SELECTION_DRAG_THRESHOLD = 8;
+const MISSION_SEED_STORAGE_KEY = 'outbreakzones:mission-seed';
+const BUILDING_STATE_STORAGE_PREFIX = 'outbreakzones:building-state:';
 
 interface TacticalOfficer {
   readonly id: number;
@@ -58,6 +60,7 @@ export class MissionScene extends Phaser.Scene {
   private resultPanel!: Phaser.GameObjects.Rectangle;
   private resultText!: Phaser.GameObjects.Text;
   private resultShown = false;
+  private lastPersistedBuildingState = '';
 
   constructor() {
     super('MissionScene');
@@ -91,7 +94,7 @@ export class MissionScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-X', () => this.holdSelectedPositions());
     this.input.keyboard?.on('keydown-M', () => this.audio.toggleMute());
     this.input.keyboard?.on('keydown-R', () => {
-      if (this.simulation.getState().missionStatus !== 'playing') this.scene.restart();
+      if (this.simulation.getState().missionStatus !== 'playing') this.restartMission();
     });
 
     this.input.keyboard?.on('keydown-SPACE', () => {
@@ -108,6 +111,7 @@ export class MissionScene extends Phaser.Scene {
     this.simulation.update(dt);
     this.updateCombatFeedback();
     this.updateMissionResult();
+    this.persistBuildingState();
     this.updateCamera(dt);
     if (!this.isPaused) {
       this.updateOfficers(dt);
@@ -164,12 +168,23 @@ export class MissionScene extends Phaser.Scene {
       }];
     });
     const configuredSeed = this.registry.get('missionSeed');
+    const storedSeed = this.readStoredMissionSeed();
     const missionSeed = typeof configuredSeed === 'number' && Number.isInteger(configuredSeed)
       ? configuredSeed
-      : Date.now();
+      : storedSeed ?? Date.now();
     this.registry.set('missionSeed', missionSeed);
+    this.writeStorage(MISSION_SEED_STORAGE_KEY, String(missionSeed));
     this.simulation.setRandomSeed(missionSeed);
     this.buildingSystem = new BuildingSystem(definitions, this.worldGrid, this.tileSize, missionSeed);
+    const savedBuildingState = this.readStorage(`${BUILDING_STATE_STORAGE_PREFIX}${missionSeed}`);
+    if (savedBuildingState) {
+      try {
+        this.buildingSystem.restoreState(JSON.parse(savedBuildingState) as ReturnType<BuildingSystem['exportState']>);
+      } catch {
+        this.removeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${missionSeed}`);
+      }
+    }
+    this.lastPersistedBuildingState = JSON.stringify(this.buildingSystem.exportState());
     this.simulation.setBuildingSystem(this.buildingSystem);
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
@@ -193,6 +208,57 @@ export class MissionScene extends Phaser.Scene {
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
       .setZoom(1)
       .centerOn(this.cameraWorldWidth / 2, this.cameraWorldHeight / 2);
+  }
+
+  private readStorage(key: string): string | null {
+    try {
+      return typeof window === 'undefined' ? null : window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  private writeStorage(key: string, value: string): void {
+    try {
+      if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+    } catch {
+      // Storage can be unavailable in private browsing or restricted contexts.
+    }
+  }
+
+  private removeStorage(key: string): void {
+    try {
+      if (typeof window !== 'undefined') window.localStorage.removeItem(key);
+    } catch {
+      // Storage can be unavailable in private browsing or restricted contexts.
+    }
+  }
+
+  private readStoredMissionSeed(): number | null {
+    const raw = this.readStorage(MISSION_SEED_STORAGE_KEY);
+    if (!raw) return null;
+    const seed = Number(raw);
+    return Number.isInteger(seed) ? seed : null;
+  }
+
+  private persistBuildingState(): void {
+    if (!this.buildingSystem) return;
+    const serialized = JSON.stringify(this.buildingSystem.exportState());
+    if (serialized === this.lastPersistedBuildingState) return;
+    const seed = this.registry.get('missionSeed');
+    if (typeof seed !== 'number' || !Number.isInteger(seed)) return;
+    this.writeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${seed}`, serialized);
+    this.lastPersistedBuildingState = serialized;
+  }
+
+  private restartMission(): void {
+    const seed = this.registry.get('missionSeed');
+    if (typeof seed === 'number' && Number.isInteger(seed)) {
+      this.removeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${seed}`);
+    }
+    this.removeStorage(MISSION_SEED_STORAGE_KEY);
+    this.registry.remove('missionSeed');
+    this.scene.restart();
   }
 
   private createOfficers(): void {
