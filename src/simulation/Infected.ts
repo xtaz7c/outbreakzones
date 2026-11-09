@@ -10,6 +10,13 @@ export interface InfectedPosition {
   readonly y: number;
 }
 
+export interface InfectedStimulus {
+  readonly id: string;
+  readonly position: InfectedPosition;
+  readonly radius: number;
+  readonly strength: number;
+}
+
 export interface InfectedConfig {
   readonly id: number;
   readonly x: number;
@@ -21,6 +28,10 @@ export interface InfectedConfig {
   readonly attackRange?: number;
   readonly detectionRange?: number;
   readonly attackInterval?: number;
+  readonly patrolRadiusTiles?: number;
+  readonly hearingRange?: number;
+  readonly memoryDuration?: number;
+  readonly random?: () => number;
 }
 
 /** Contrato para portas/janelas destrutíveis, implementado na Fase 7. */
@@ -46,6 +57,9 @@ const DEFAULTS = Object.freeze({
   attackRange: 40,
   detectionRange: 220,
   attackInterval: 1.2,
+  patrolRadiusTiles: 8,
+  hearingRange: 360,
+  memoryDuration: 8,
 });
 
 /**
@@ -70,6 +84,14 @@ export class Infected {
   private pathTargetKey = '';
   private attackTimer = 0;
   private attractedStructureTarget: InfectedStructureTarget | undefined;
+  private readonly patrolRadiusTiles: number;
+  private readonly hearingRange: number;
+  private readonly memoryDuration: number;
+  private readonly random: () => number;
+  private patrolTarget: TilePosition | null = null;
+  private investigationTarget: InfectedPosition | null = null;
+  private investigationRemaining = 0;
+  private lastStimulusId: string | null = null;
 
   constructor(config: InfectedConfig) {
     this.assertFinite(config.x, 'x');
@@ -84,6 +106,10 @@ export class Infected {
     this.attackRange = config.attackRange ?? DEFAULTS.attackRange;
     this.detectionRange = config.detectionRange ?? DEFAULTS.detectionRange;
     this.attackInterval = config.attackInterval ?? DEFAULTS.attackInterval;
+    this.patrolRadiusTiles = config.patrolRadiusTiles ?? DEFAULTS.patrolRadiusTiles;
+    this.hearingRange = config.hearingRange ?? DEFAULTS.hearingRange;
+    this.memoryDuration = config.memoryDuration ?? DEFAULTS.memoryDuration;
+    this.random = config.random ?? Math.random;
 
     for (const [name, value] of Object.entries({
       maxHealth: this.maxHealth,
@@ -92,6 +118,9 @@ export class Infected {
       attackRange: this.attackRange,
       detectionRange: this.detectionRange,
       attackInterval: this.attackInterval,
+      patrolRadiusTiles: this.patrolRadiusTiles,
+      hearingRange: this.hearingRange,
+      memoryDuration: this.memoryDuration,
     })) {
       if (!Number.isFinite(value) || value <= 0) {
         throw new RangeError(`${name} must be a positive finite number.`);
@@ -134,13 +163,14 @@ export class Infected {
     map: GridMap,
     officers: readonly PoliceOfficer[],
     structureTarget?: InfectedStructureTarget,
+    stimuli: readonly InfectedStimulus[] = [],
   ): void {
     if (this.isDead || !Number.isFinite(dt) || dt <= 0) return;
     if (!Number.isFinite(tileSize) || tileSize <= 0) {
       throw new RangeError('tileSize must be a positive finite number.');
     }
 
-    const target = this.chooseTarget(officers, structureTarget, tileSize);
+    const target = this.chooseTarget(officers, structureTarget, tileSize, map, stimuli);
     const distance = this.distanceTo(target.position);
 
     if (target.kind !== 'entry' && distance <= this.attackRange) {
@@ -199,6 +229,8 @@ export class Infected {
     officers: readonly PoliceOfficer[],
     structureTarget: InfectedStructureTarget | undefined,
     tileSize: number,
+    map: GridMap,
+    stimuli: readonly InfectedStimulus[],
   ): Target {
     let nearest: PoliceOfficer | undefined;
     let nearestDistance = this.detectionRange;
@@ -211,8 +243,35 @@ export class Infected {
       }
     }
     if (nearest) {
+      this.investigationTarget = null;
+      this.investigationRemaining = 0;
+      this.patrolTarget = null;
       return { kind: 'officer', officer: nearest, position: nearest.position };
     }
+
+    let strongestStimulus: InfectedStimulus | undefined;
+    let strongestScore = 0;
+    for (const stimulus of stimuli) {
+      if (
+        !Number.isFinite(stimulus.radius) || stimulus.radius <= 0 ||
+        !Number.isFinite(stimulus.strength) || stimulus.strength <= 0
+      ) continue;
+      const distance = this.distanceTo(stimulus.position);
+      const effectiveRange = Math.min(stimulus.radius, this.hearingRange);
+      if (distance > effectiveRange) continue;
+      const score = stimulus.strength * (1 - distance / effectiveRange);
+      if (score > strongestScore) {
+        strongestScore = score;
+        strongestStimulus = stimulus;
+      }
+    }
+    if (strongestStimulus) {
+      this.investigationTarget = { ...strongestStimulus.position };
+      this.investigationRemaining = this.memoryDuration;
+      this.lastStimulusId = strongestStimulus.id;
+      this.patrolTarget = null;
+    }
+
     if (structureTarget) this.attractedStructureTarget = structureTarget;
     const attracted = this.attractedStructureTarget;
     if (attracted && !attracted.isDestroyed && !attracted.isPassable) {
@@ -227,14 +286,58 @@ export class Infected {
       const tile = attracted.breachTile;
       return { kind: 'entry', tile, position: { x: tile.column * tileSize + tileSize / 2, y: tile.row * tileSize + tileSize / 2 } };
     }
+
+    if (this.investigationTarget && this.investigationRemaining > 0) {
+      const target = this.investigationTarget;
+      const tile = { column: Math.floor(target.x / tileSize), row: Math.floor(target.y / tileSize) };
+      if (this.distanceTo(target) <= tileSize * 0.6) {
+        this.investigationRemaining = Math.max(0, this.investigationRemaining - 1 / 60);
+      }
+      if (this.investigationRemaining > 0) return { kind: 'entry', tile, position: target };
+    }
+    this.investigationTarget = null;
+    this.lastStimulusId = null;
+
+    const currentTile = {
+      column: Math.floor(this.currentPosition.x / tileSize),
+      row: Math.floor(this.currentPosition.y / tileSize),
+    };
+    if (
+      !this.patrolTarget ||
+      (currentTile.column === this.patrolTarget.column && currentTile.row === this.patrolTarget.row)
+    ) {
+      this.patrolTarget = this.choosePatrolTile(map, currentTile);
+    }
+    const patrolTile = this.patrolTarget ?? this.entryTile;
     return {
       kind: 'entry',
-      tile: this.entryTile,
+      tile: patrolTile,
       position: {
-        x: this.entryTile.column * tileSize + tileSize / 2,
-        y: this.entryTile.row * tileSize + tileSize / 2,
+        x: patrolTile.column * tileSize + tileSize / 2,
+        y: patrolTile.row * tileSize + tileSize / 2,
       },
     };
+  }
+
+  private choosePatrolTile(map: GridMap, origin: TilePosition): TilePosition | null {
+    const candidates: TilePosition[] = [];
+    for (let row = Math.max(0, origin.row - this.patrolRadiusTiles);
+      row <= Math.min(map.rows - 1, origin.row + this.patrolRadiusTiles); row += 1) {
+      for (let column = Math.max(0, origin.column - this.patrolRadiusTiles);
+        column <= Math.min(map.columns - 1, origin.column + this.patrolRadiusTiles); column += 1) {
+        const candidate = { column, row };
+        if (
+          map.isWalkable(candidate) &&
+          Math.hypot(column - origin.column, row - origin.row) >= 2
+        ) candidates.push(candidate);
+      }
+    }
+    if (candidates.length === 0) return null;
+    const value = this.random();
+    if (!Number.isFinite(value) || value < 0 || value >= 1) {
+      throw new RangeError('Infected random source must return a value in [0, 1).');
+    }
+    return candidates[Math.floor(value * candidates.length)]!;
   }
 
   private moveAlongPath(dt: number, tileSize: number): boolean {
