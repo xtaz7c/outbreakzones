@@ -13,6 +13,28 @@ describe('Infected', () => {
     expect(infected.isDead).toBe(false);
   });
 
+  it('patrols to a deterministic random walkable tile when no target is perceived', () => {
+    const infected = new Infected({
+      id: 1, x: 16, y: 16, entryTile: { column: 1, row: 1 }, moveSpeed: 32,
+      random: () => 0.5, patrolRadiusTiles: 3,
+    });
+    infected.update(1, 32, map, []);
+    expect(infected.state).toBe('moving');
+    expect(infected.position).not.toEqual({ x: 16, y: 16 });
+  });
+
+  it('investigates a heard stimulus before resuming patrol', () => {
+    const infected = new Infected({
+      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 }, moveSpeed: 32,
+      detectionRange: 20, hearingRange: 200, random: () => 0.5,
+    });
+    infected.update(0.5, 32, map, [], undefined, [{
+      id: 'gunshot-1', position: { x: 112, y: 16 }, radius: 180, strength: 1,
+    }]);
+    expect(infected.state).toBe('moving');
+    expect(infected.position.x).toBeGreaterThan(16);
+  });
+
   it('moves along the grid toward its configured entry point', () => {
     const infected = new Infected({
       id: 1, x: 16, y: 16, entryTile: { column: 3, row: 1 }, moveSpeed: 32,
