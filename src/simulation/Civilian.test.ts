@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Civilian } from './Civilian';
+import { PoliceOfficer } from './PoliceOfficer';
 import { GridMap } from './world/GridMap';
 
 describe('Civilian navigation', () => {
