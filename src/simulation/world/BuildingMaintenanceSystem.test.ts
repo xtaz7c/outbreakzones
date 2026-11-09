@@ -163,6 +163,17 @@ describe('BuildingMaintenanceSystem', () => {
     expect(maintenance.getState().resources).toEqual(initialResources);
   });
 
+  it('caps repair completion to the amount paid for when the job started', () => {
+    const { buildings, maintenance } = createSystems({ scrap: 80, parts: 20 });
+    const door = buildings.getAccess('front-door')!;
+    buildings.damage('front-door', 60);
+    expect(maintenance.start('front-door', 'repair')).toBe(true);
+    buildings.damage('front-door', 60);
+    maintenance.update(5);
+    expect(door.health).toBe(60);
+    expect(maintenance.getState().jobs).toHaveLength(0);
+  });
+
   it('persists a window that is generated in the broken state', () => {
     const brokenWindow = [{
       id: 'broken-window', kind: 'window' as const, x: 32, y: 32, width: 32, height: 32,
@@ -179,6 +190,22 @@ describe('BuildingMaintenanceSystem', () => {
     expect(() => restored.restoreState(saved)).not.toThrow();
     expect(restored.getAccess('broken-window')?.state).toBe('broken');
     expect(restored.getAccess('broken-window')?.health).toBe(0);
+  });
+
+  it('migrates a legacy broken-access snapshot without discarding other access changes', () => {
+    const definitions = [
+      { id: 'front-door', kind: 'door' as const, x: 32, y: 32, width: 32, height: 32,
+        weights: { open: 0, closed: 1, locked: 0 } },
+      { id: 'side-window', kind: 'window' as const, x: 64, y: 32, width: 32, height: 32,
+        weights: { open: 0, closed: 1, barricaded: 0, broken: 0 } },
+    ];
+    const restored = new BuildingSystem(definitions, new GridMap(8, 8), 32, 1);
+    expect(() => restored.restoreState([
+      { id: 'front-door', state: 'broken', health: 120 },
+      { id: 'side-window', state: 'open', health: 60 },
+    ])).not.toThrow();
+    expect(restored.getAccess('front-door')?.health).toBe(0);
+    expect(restored.getAccess('side-window')?.state).toBe('open');
   });
 
   it('persists upgrade levels and the upgraded health ceiling', () => {
