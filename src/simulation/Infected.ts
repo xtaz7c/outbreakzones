@@ -266,9 +266,12 @@ export class Infected {
       }
     }
     if (strongestStimulus) {
-      this.investigationTarget = { ...strongestStimulus.position };
-      this.investigationRemaining = this.memoryDuration;
-      this.patrolTarget = null;
+      const walkablePosition = this.resolveWalkablePosition(strongestStimulus.position, map, tileSize);
+      if (walkablePosition) {
+        this.investigationTarget = walkablePosition;
+        this.investigationRemaining = this.memoryDuration;
+        this.patrolTarget = null;
+      }
     }
 
     if (structureTarget) this.attractedStructureTarget = structureTarget;
@@ -306,7 +309,7 @@ export class Infected {
     ) {
       this.patrolTarget = this.choosePatrolTile(map, currentTile);
     }
-    const patrolTile = this.patrolTarget ?? this.entryTile;
+    const patrolTile = this.patrolTarget ?? (map.isWalkable(this.entryTile) ? this.entryTile : currentTile);
     return {
       kind: 'entry',
       tile: patrolTile,
@@ -315,6 +318,48 @@ export class Infected {
         y: patrolTile.row * tileSize + tileSize / 2,
       },
     };
+  }
+
+  private resolveWalkablePosition(
+    position: InfectedPosition,
+    map: GridMap,
+    tileSize: number,
+  ): InfectedPosition | null {
+    const desired = {
+      column: Math.floor(position.x / tileSize),
+      row: Math.floor(position.y / tileSize),
+    };
+    if (map.isWalkable(desired)) {
+      return {
+        x: desired.column * tileSize + tileSize / 2,
+        y: desired.row * tileSize + tileSize / 2,
+      };
+    }
+
+    for (let radius = 1; radius <= 4; radius += 1) {
+      const candidates: TilePosition[] = [];
+      for (let row = desired.row - radius; row <= desired.row + radius; row += 1) {
+        for (let column = desired.column - radius; column <= desired.column + radius; column += 1) {
+          const candidate = { column, row };
+          if (
+            Math.max(Math.abs(column - desired.column), Math.abs(row - desired.row)) === radius &&
+            map.isWalkable(candidate)
+          ) candidates.push(candidate);
+        }
+      }
+      if (candidates.length > 0) {
+        candidates.sort((a, b) =>
+          Math.hypot(a.column - desired.column, a.row - desired.row) -
+          Math.hypot(b.column - desired.column, b.row - desired.row),
+        );
+        const nearest = candidates[0]!;
+        return {
+          x: nearest.column * tileSize + tileSize / 2,
+          y: nearest.row * tileSize + tileSize / 2,
+        };
+      }
+    }
+    return null;
   }
 
   private choosePatrolTile(map: GridMap, origin: TilePosition): TilePosition | null {
@@ -326,7 +371,8 @@ export class Infected {
         const candidate = { column, row };
         if (
           map.isWalkable(candidate) &&
-          Math.hypot(column - origin.column, row - origin.row) >= 2
+          Math.hypot(column - origin.column, row - origin.row) >= 2 &&
+          Math.hypot(column - origin.column, row - origin.row) <= this.patrolRadiusTiles
         ) candidates.push(candidate);
       }
     }
