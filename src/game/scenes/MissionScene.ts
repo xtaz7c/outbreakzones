@@ -173,6 +173,9 @@ export class MissionScene extends Phaser.Scene {
     this.simulation.setBuildingSystem(this.buildingSystem);
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
+    this.simulation.setExtractionZone({ x: 1024, y: 1120, radius: 72 });
+    this.add.circle(1024, 1120, 72, 0x55c878, 0.08)
+      .setStrokeStyle(3, 0x55c878, 0.85).setDepth(70);
     const spawnPoints: WaveSpawnPoint[] = [
       { id: 'west', x: 128, y: 640, entryTile: { column: 21, row: 18 } },
       { id: 'east', x: 1920, y: 640, entryTile: { column: 42, row: 18 } },
@@ -488,6 +491,24 @@ export class MissionScene extends Phaser.Scene {
 
   private interactWithNearestAccess(): void {
     if (this.isPaused) return;
+    const selected = this.simulation.getOfficers().filter((officer) =>
+      this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
+    let nearestCivilian: { id: number; officerId: number; distance: number } | null = null;
+    for (const civilian of this.simulation.getCivilians()) {
+      if (civilian.state !== 'sheltered') continue;
+      for (const officer of selected) {
+        const distance = Phaser.Math.Distance.Between(
+          civilian.position.x, civilian.position.y, officer.position.x, officer.position.y,
+        );
+        if (distance <= 80 && (!nearestCivilian || distance < nearestCivilian.distance)) {
+          nearestCivilian = { id: civilian.id, officerId: officer.id, distance };
+        }
+      }
+    }
+    if (nearestCivilian) {
+      this.simulation.rescueCivilian(nearestCivilian.id, nearestCivilian.officerId);
+      return;
+    }
     const nearest = this.findNearestAccess();
     if (nearest) this.simulation.interactWithAccess(nearest.id, 'police');
   }
@@ -677,7 +698,7 @@ export class MissionScene extends Phaser.Scene {
           const posture = officer.tacticalPosture === 'hold_fire' ? 'HOLD FIRE' : 'ENGAGE';
           return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''} | ${posture}`;
         }),
-        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: interact | B: breach',
+        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: rescue/open access | B: breach',
         'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority | R: restart after result',
       ].join('\n'),
     );
