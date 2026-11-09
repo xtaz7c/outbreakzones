@@ -7,7 +7,7 @@
 import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
 import { Infected } from './Infected';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
-import type { InfectedConfig, InfectedStructureTarget } from './Infected';
+import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
 import type { TilePosition } from './world/WorldConfig';
@@ -42,7 +42,9 @@ export class Simulation {
   private readonly combat: CombatSystem;
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
-  private noiseAttraction: { target: InfectedStructureTarget; radius: number; remaining: number } | null = null;
+  private readonly stimuli: Array<InfectedStimulus & { remaining: number; structure?: InfectedStructureTarget }> = [];
+  private nextStimulusId = 1;
+  private randomState = 0x6d2b79f5;
   private worldGrid: GridMap | null = null;
   private buildingSystem: BuildingSystem | null = null;
   private tileSize = WORLD_TILE_SIZE;
@@ -57,6 +59,11 @@ export class Simulation {
 
   isPaused(): boolean {
     return this.paused;
+  }
+
+  setRandomSeed(seed: number): void {
+    if (!Number.isInteger(seed)) throw new RangeError('Random seed must be an integer.');
+    this.randomState = (seed >>> 0) || 0x6d2b79f5;
   }
 
   setWorldGrid(map: GridMap, tileSize: number): void {
@@ -96,7 +103,7 @@ export class Simulation {
   }
 
   spawnInfected(config: Omit<InfectedConfig, 'id'>): Infected {
-    const infected = new Infected({ ...config, id: this.nextInfectedId++ });
+    const infected = new Infected({ ...config, id: this.nextInfectedId++, random: () => this.nextRandom() });
     this.infected.push(infected);
     return infected;
   }
@@ -114,9 +121,30 @@ export class Simulation {
   }
 
   emitNoiseAtStructure(target: InfectedStructureTarget, radius = 1000, duration = 10): void {
-    if (!Number.isFinite(radius) || radius <= 0) throw new RangeError('Noise radius must be positive.');
-    if (!Number.isFinite(duration) || duration <= 0) throw new RangeError('Noise duration must be positive.');
-    this.noiseAttraction = { target, radius, remaining: duration };
+    this.emitStimulus(target.position, radius, 1, duration, target);
+  }
+
+  emitStimulus(
+    position: { readonly x: number; readonly y: number },
+    radius: number,
+    strength = 1,
+    duration = 5,
+    structure?: InfectedStructureTarget,
+  ): void {
+    if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new RangeError('Stimulus position must be finite.');
+    if (!Number.isFinite(radius) || radius <= 0) throw new RangeError('Stimulus radius must be positive.');
+    if (!Number.isFinite(strength) || strength <= 0) throw new RangeError('Stimulus strength must be positive.');
+    if (!Number.isFinite(duration) || duration <= 0) throw new RangeError('Stimulus duration must be positive.');
+    this.stimuli.push({ id: `stimulus-${this.nextStimulusId++}`, position: { ...position }, radius, strength, remaining: duration, ...(structure ? { structure } : {}) });
+  }
+
+  private nextRandom(): number {
+    let value = this.randomState;
+    value ^= value << 13;
+    value ^= value >>> 17;
+    value ^= value << 5;
+    this.randomState = value >>> 0;
+    return this.randomState / 0x1_0000_0000;
   }
 
   damageInfected(infectedId: number, amount: number): number {
@@ -178,19 +206,21 @@ export class Simulation {
     if (this.worldGrid) {
       const infectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
       const policeGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
-      if (this.noiseAttraction) {
-        this.noiseAttraction.remaining -= dt;
-        if (this.noiseAttraction.remaining <= 0) this.noiseAttraction = null;
+      for (let index = this.stimuli.length - 1; index >= 0; index -= 1) {
+        this.stimuli[index]!.remaining -= dt;
+        if (this.stimuli[index]!.remaining <= 0) this.stimuli.splice(index, 1);
       }
       for (const infected of this.infected) {
-        const attraction = this.noiseAttraction;
-        const attractedTarget = attraction && Math.hypot(
-          infected.position.x - attraction.target.position.x,
-          infected.position.y - attraction.target.position.y,
-        ) <= attraction.radius ? attraction.target : undefined;
-        infected.update(dt, this.tileSize, infectedGrid, this.officers, attractedTarget);
+        const heardStimuli = this.stimuli.filter((stimulus) =>
+          Math.hypot(infected.position.x - stimulus.position.x, infected.position.y - stimulus.position.y) <= stimulus.radius,
+        );
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli);
       }
-      this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize));
+      const shotEvents = this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize);
+      this.combatEvents.push(...shotEvents);
+      for (const event of shotEvents) {
+        this.emitStimulus(event.from, 480, 0.65, 2);
+      }
     }
     for (let index = this.infected.length - 1; index >= 0; index -= 1) {
       if (this.infected[index]!.isDead) this.infected.splice(index, 1);

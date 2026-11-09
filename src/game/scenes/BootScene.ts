@@ -2,11 +2,11 @@ import Phaser from 'phaser';
 
 /**
  * Cena de inicialização: carrega assets e trata falhas de carregamento.
- * Por enquanto não há assets reais — a barra e o tratamento de erro
- * ficam prontos para quando assets forem adicionados.
+ * Carrega mapa, tileset e áudio original do jogo.
  */
 export class BootScene extends Phaser.Scene {
   private failedKeys: string[] = [];
+  private failedCriticalKeys: string[] = [];
   private progressBar!: Phaser.GameObjects.Graphics;
   private progressBox!: Phaser.GameObjects.Graphics;
   private statusText!: Phaser.GameObjects.Text;
@@ -46,26 +46,32 @@ export class BootScene extends Phaser.Scene {
 
     this.load.on('loaderror', (file: Phaser.Loader.File) => {
       this.failedKeys.push(file.key);
-      console.error('[BootScene] Falha ao carregar asset:', file.key, file.url);
+      if (file.type !== 'audio') this.failedCriticalKeys.push(file.key);
+      console.warn('[BootScene] Falha ao carregar asset:', file.key, file.url);
     });
 
     this.load.on('complete', () => {
-      if (this.failedKeys.length > 0) {
+      if (this.failedCriticalKeys.length > 0) {
         this.showLoadFailure();
+      } else if (this.failedKeys.length > 0) {
+        this.showOptionalAssetWarning();
       }
     });
 
     // Mapa e tileset originais da primeira missão.
     this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
     this.load.image('mission-tiles', '/tiles/mission-tiles.svg');
+
+    // Áudio original do projeto: ambiente, disparos e vocalização dos infectados.
+    this.load.audio('ambient-loop', '/audio/ambient-loop.wav');
+    this.load.audio('pistol-shot', '/audio/pistol-shot.wav');
+    this.load.audio('infected-groan', '/audio/infected-groan.wav');
   }
 
   create(): void {
     // Se houve falha durante o preload, showLoadFailure já foi chamado
     // e não devemos avançar.
-    if (this.failedKeys.length > 0) {
-      return;
-    }
+    if (this.failedCriticalKeys.length > 0) return;
 
     this.scene.start('MissionScene');
   }
@@ -78,8 +84,8 @@ export class BootScene extends Phaser.Scene {
     this.progressBar.fillStyle(0xc62828, 1);
     this.progressBar.fillRect(width / 2 - 160, height / 2 - 8, 320, 16);
 
-    const list = this.failedKeys.slice(0, 5).join(', ');
-    const extra = this.failedKeys.length > 5 ? ` (+${this.failedKeys.length - 5})` : '';
+    const list = this.failedCriticalKeys.slice(0, 5).join(', ');
+    const extra = this.failedCriticalKeys.length > 5 ? ` (+${this.failedCriticalKeys.length - 5})` : '';
 
     this.statusText.setColor('#ff8a80');
     this.statusText.setText(
@@ -92,7 +98,14 @@ export class BootScene extends Phaser.Scene {
 
     console.error(
       '[BootScene] Carregamento concluído com erros. Não iniciando MissionScene.',
-      this.failedKeys,
+      this.failedCriticalKeys,
     );
+  }
+
+  /** Audio is optional during development and must never prevent the mission from starting. */
+  private showOptionalAssetWarning(): void {
+    this.statusText.setColor('#e4c35b');
+    this.statusText.setText('Áudio indisponível. A missão continuará sem efeitos sonoros.');
+    console.warn('[BootScene] Assets opcionais indisponíveis:', this.failedKeys);
   }
 }

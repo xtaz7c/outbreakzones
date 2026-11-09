@@ -35,6 +35,10 @@ npm run dev
 
 Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`). Sempre versione `package.json` e `package-lock.json` juntos; não edite manualmente as entradas de dependências do lockfile.
 
+## Áudio
+
+A primeira integração inclui a camada `AudioManager`, separada da simulação, preparada para ambiente, disparos e vocalizações. Os arquivos WAV ainda não estão versionados em `public/audio/`; por isso, o carregamento e a reprodução desses sons são opcionais e a missão continua normalmente quando eles não estão disponíveis. Pressione **M** durante a missão para silenciar ou reativar o áudio. Mixagem, áudio posicional e assets licenciados/originais serão refinados em etapas posteriores.
+
 ## Validação
 
 Execute antes de abrir um Pull Request:
@@ -54,6 +58,7 @@ npm run build
 | Mover unidades | Clique direito |
 | Pausar / Retomar | Espaço |
 | Câmera | WASD / setas + scroll (zoom) |
+| Silenciar / reativar áudio | M |
 | Manter posição das unidades selecionadas | X |
 | Segurar fogo das unidades selecionadas | H |
 | Retomar engajamento automático | G |

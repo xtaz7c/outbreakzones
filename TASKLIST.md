@@ -142,6 +142,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Progresso de implementação (branch `feat/infected-ai-t046-t054`):** o modelo independente `Infected` implementa atributos, estados, navegação A*, detecção e ataque a policiais ativos, dano/vida e morte. A implementação inicial direcionava infectados para a residência e previa ataques às entradas; esses comportamentos foram revistos na Fase 7. A nova regra é vagar aleatoriamente por células caminháveis e perseguir policiais detectados, sem atacar estruturas nem entrar no abrigo. T046–T054 permanecem desmarcadas até validação integrada.
 
+**Incremento atual (branch `feat/infected-patrol-perception`):** a IA deixa de caminhar para um ponto de entrada fixo e passa a escolher destinos aleatórios dentro de um raio de patrulha, limitados a células caminháveis. Policiais só são detectados quando estão dentro do alcance e há linha de visão desobstruída. Estímulos possuem posição, raio, intensidade e duração; infectados priorizam o estímulo audível mais relevante, investigam uma posição caminhável próxima e mantêm memória temporária. Disparos dos policiais também emitem estímulos de ruído, além do evento de ruído de teste já existente. A patrulha usa PRNG com seed da missão para reprodução determinística. A implementação e os testes foram adicionados, mas ainda aguardam execução local de testes, lint, build e validação visual; portanto T046–T054 continuam desmarcadas.
+
 **Saída da fase:** infectados conseguem navegar, atacar e ser derrotados sem quebrar a simulação.
 
 ### Fase 6 — Combate

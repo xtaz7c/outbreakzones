@@ -173,8 +173,20 @@ export class BuildingSystem {
   } | undefined {
     const access = this.byId.get(id);
     if (!access) return undefined;
-    const cell = access.cells[0];
-    if (!cell) return undefined;
+    if (access.cells.length === 0) return undefined;
+    const approachX = approachTile.column * this.tileSize + this.tileSize / 2;
+    const approachY = approachTile.row * this.tileSize + this.tileSize / 2;
+    const cell = access.cells.reduce((nearest, candidate) => {
+      const candidateDistance = Math.hypot(
+        candidate.column * this.tileSize + this.tileSize / 2 - approachX,
+        candidate.row * this.tileSize + this.tileSize / 2 - approachY,
+      );
+      const nearestDistance = Math.hypot(
+        nearest.column * this.tileSize + this.tileSize / 2 - approachX,
+        nearest.row * this.tileSize + this.tileSize / 2 - approachY,
+      );
+      return candidateDistance < nearestDistance ? candidate : nearest;
+    });
     return {
       position: { x: cell.column * this.tileSize + this.tileSize / 2, y: cell.row * this.tileSize + this.tileSize / 2 },
       approachTile,

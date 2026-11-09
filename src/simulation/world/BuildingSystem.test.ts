@@ -86,4 +86,19 @@ describe('BuildingSystem', () => {
     expect(system.getNavigationGrid('infected').isWalkable(cell)).toBe(true);
   });
 
+  it('targets the access cell nearest to the infected approach tile', () => {
+    const system = new BuildingSystem([{
+      id: 'wide-door',
+      kind: 'door',
+      x: 64,
+      y: 32,
+      width: 96,
+      height: 32,
+      weights: { open: 0, closed: 1, locked: 0 },
+    }], new GridMap(8, 8), 32, 9);
+
+    const target = system.getInfectedTarget('wide-door', { column: 5, row: 1 });
+    expect(target?.position).toEqual({ x: 144, y: 48 });
+  });
+
 });
