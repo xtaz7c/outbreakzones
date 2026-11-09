@@ -13,6 +13,7 @@ import type { GridMap } from './world/GridMap';
 import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
 import { BuildingMaintenanceSystem, type MaintenanceAction, type MaintenanceState } from './world/BuildingMaintenanceSystem';
 import type { TilePosition } from './world/WorldConfig';
+import { DeployableStructureSystem, type DeployableKind, type DeployableSnapshot, type DeployableState, type DeployableResources } from './world/DeployableStructureSystem';
 import { WaveSystem, type WaveDefinition, type WaveSpawnPoint, type WavePhase } from './WaveSystem';
 
 export interface SimulationState {
@@ -63,6 +64,7 @@ export class Simulation {
   private worldGrid: GridMap | null = null;
   private buildingSystem: BuildingSystem | null = null;
   private maintenanceSystem: BuildingMaintenanceSystem | null = null;
+  private deployableSystem: DeployableStructureSystem | null = null;
   private tileSize = WORLD_TILE_SIZE;
   private waveSystem: WaveSystem | null = null;
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
@@ -97,6 +99,37 @@ export class Simulation {
   setBuildingSystem(system: BuildingSystem): void {
     this.buildingSystem = system;
     this.maintenanceSystem = new BuildingMaintenanceSystem(system);
+  }
+
+  setDeployableSystem(system: DeployableStructureSystem): void {
+    this.deployableSystem = system;
+  }
+
+  getDeployableSnapshots(): DeployableSnapshot[] {
+    return this.deployableSystem?.getSnapshots() ?? [];
+  }
+
+  getDeployableResources(): DeployableResources {
+    return this.deployableSystem?.getResources() ?? { scrap: 0, parts: 0 };
+  }
+
+  getDeployableState(): DeployableState | null {
+    return this.deployableSystem?.exportState() ?? null;
+  }
+
+  restoreDeployableState(state: DeployableState): void {
+    if (!this.deployableSystem) throw new Error('Deployable structures are not initialized.');
+    this.deployableSystem.restoreState(state);
+  }
+
+  placeDeployable(kind: DeployableKind, tile: TilePosition): DeployableSnapshot | null {
+    if (this.missionStatus !== 'playing' || !this.deployableSystem) return null;
+    return this.deployableSystem.place(kind, tile);
+  }
+
+  dismantleDeployable(id: number): boolean {
+    if (this.missionStatus !== 'playing') return false;
+    return this.deployableSystem?.dismantle(id) ?? false;
   }
 
   getMaintenanceState(): MaintenanceState | null {
@@ -348,7 +381,8 @@ export class Simulation {
     }
     this.updateCivilianEscorts(dt);
     if (this.worldGrid) {
-      const infectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
+      const baseInfectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
+      const infectedGrid = this.deployableSystem?.getInfectedNavigationGrid(baseInfectedGrid) ?? baseInfectedGrid;
       const policeGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
       const accessStatesBefore = new Map(
         this.buildingSystem?.getSnapshots().map((access) => [access.id, access.state] as const) ?? [],
@@ -364,6 +398,7 @@ export class Simulation {
         infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli, this.civilians);
       }
       this.updateCivilianAwareness(dt, this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid);
+      this.deployableSystem?.update(dt, this.infected);
 
       const accessChanged = this.buildingSystem?.getSnapshots().some(
         (access) => accessStatesBefore.get(access.id) !== access.state,
