@@ -302,7 +302,7 @@ describe('Simulation', () => {
   });
 
 
-  it('spawns configured waves and declares victory after the final infected is defeated', () => {
+  it('requires all civilians to be extracted before declaring wave victory', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     sim.configureWaves([
       { id: 'west', x: 64, y: 640, entryTile: { column: 21, row: 18 } },
@@ -311,6 +311,12 @@ describe('Simulation', () => {
     expect(sim.getState().infectedCount).toBe(1);
     expect(sim.getState().wavePhase).toBe('active');
     sim.getInfected()[0]!.takeDamage(1000);
+    sim.update(FIXED_DT);
+    expect(sim.getState().missionStatus).toBe('playing');
+    for (const civilian of sim.getCivilians()) {
+      civilian.beginFollowing();
+      civilian.extract();
+    }
     sim.update(FIXED_DT);
     expect(sim.getState().missionStatus).toBe('victory');
     expect(sim.isMissionVictory()).toBe(true);
