@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { AudioManager } from '../audio/AudioManager';
 import { Simulation } from '../../simulation/Simulation';
 import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
@@ -24,6 +25,7 @@ interface TacticalInfected {
 
 export class MissionScene extends Phaser.Scene {
   private simulation!: Simulation;
+  private audio!: AudioManager;
   private statusText!: Phaser.GameObjects.Text;
   private fullscreenText!: Phaser.GameObjects.Text;
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -48,6 +50,9 @@ export class MissionScene extends Phaser.Scene {
 
   create(): void {
     this.simulation = new Simulation();
+    this.audio = new AudioManager(this);
+    this.audio.startAmbient();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
     this.createWorld();
     this.createOfficers();
     this.createHud();
@@ -60,6 +65,7 @@ export class MissionScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-H', () => this.setSelectedPosture('hold_fire'));
     this.input.keyboard?.on('keydown-G', () => this.setSelectedPosture('engage'));
     this.input.keyboard?.on('keydown-X', () => this.holdSelectedPositions());
+    this.input.keyboard?.on('keydown-M', () => this.audio.toggleMute());
 
     this.input.keyboard?.on('keydown-SPACE', () => {
       this.isPaused = !this.isPaused;
@@ -454,6 +460,7 @@ export class MissionScene extends Phaser.Scene {
       activeIds.add(infected.id);
       let visual = this.infectedVisuals.get(infected.id);
       if (!visual) {
+        this.audio.playInfectedGroan();
         const body = this.add.circle(0, 0, 11, 0xb83b3b).setStrokeStyle(2, 0x2a1010);
         const core = this.add.circle(0, 0, 4, 0x451818);
         const container = this.add.container(infected.position.x, infected.position.y, [body, core])
@@ -474,6 +481,7 @@ export class MissionScene extends Phaser.Scene {
   private updateCombatFeedback(): void {
     this.combatGraphics.clear();
     for (const event of this.simulation.getCombatEvents()) {
+      this.audio.playGunshot();
       this.combatGraphics.lineStyle(event.hit ? 2 : 1, event.hit ? 0xffd166 : 0x9aa0a6, 0.9);
       this.combatGraphics.beginPath();
       this.combatGraphics.moveTo(event.from.x, event.from.y);
@@ -541,7 +549,7 @@ export class MissionScene extends Phaser.Scene {
     this.statusText.setText(
       [
         'Outbreak Zones — Mission',
-        `Paused: ${state.paused ? 'YES' : 'NO'}  (Space)`,
+        `Paused: ${state.paused ? 'YES' : 'NO'}  (Space) | Audio: ${this.audio.isMuted ? 'OFF' : 'ON'} (M)`,
         `Sim time: ${state.elapsed.toFixed(2)}s | Seed: ${this.registry.get('missionSeed')}`,
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
