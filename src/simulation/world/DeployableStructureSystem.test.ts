@@ -27,6 +27,15 @@ describe('DeployableStructureSystem', () => {
     expect(restored.getInfectedNavigationGrid().isWalkable({ column: 2, row: 2 })).toBe(false);
   });
 
+  it('tracks shelter housing capacity and removes it when the shelter is destroyed', () => {
+    const system = new DeployableStructureSystem(new GridMap(12, 12), 32);
+    const shelter = system.place('shelter-tent', { column: 2, row: 2 })!;
+    system.place('shelter-tent', { column: 4, row: 4 });
+    expect(system.getShelterCapacity()).toBe(4);
+    system.damage(shelter.id, 1000);
+    expect(system.getShelterCapacity()).toBe(2);
+  });
+
   it('generates scrap from resource tents over time', () => {
     const system = new DeployableStructureSystem(new GridMap(12, 12), 32);
     system.place('resource-tent', { column: 2, row: 2 });
