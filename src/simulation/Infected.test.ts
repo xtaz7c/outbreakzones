@@ -23,6 +23,17 @@ describe('Infected', () => {
     expect(infected.position).not.toEqual({ x: 16, y: 16 });
   });
 
+  it('approaches the assigned entry tile from outside the world before pathfinding', () => {
+    const infected = new Infected({
+      id: 1, x: -48, y: 144, entryTile: { column: 2, row: 4 }, moveSpeed: 64,
+    });
+    infected.update(0.5, 32, map, []);
+    expect(infected.state).toBe('moving');
+    expect(infected.position.x).toBeGreaterThan(-48);
+    expect(infected.position.x).toBeLessThan(0);
+    expect(infected.position.y).toBeGreaterThan(144);
+  });
+
   it('investigates a heard stimulus before resuming patrol', () => {
     const infected = new Infected({
       id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 }, moveSpeed: 32,
