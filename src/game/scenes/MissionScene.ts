@@ -100,8 +100,8 @@ export class MissionScene extends Phaser.Scene {
   private readonly hudBounds = {
     settings: { x: 20, y: 20, width: 56, height: 56 },
     mission: { x: 20, y: 88, width: 276, height: 142 },
-    minimap: { x: 0, y: 20, width: 236, height: 160 },
-    team: { x: 0, y: 190, width: 236, height: 154 },
+    minimap: { x: 0, y: 20, width: 320, height: 238 },
+    team: { x: 0, y: 268, width: 320, height: 154 },
   };
 
   constructor() {
@@ -154,6 +154,7 @@ export class MissionScene extends Phaser.Scene {
     this.updateMissionResult();
     this.persistBuildingState();
     this.updateCamera(dt);
+    this.clampCamera();
     if (!this.isPaused) {
       this.updateOfficers(dt);
     }
@@ -352,13 +353,13 @@ export class MissionScene extends Phaser.Scene {
   private createHud(): void {
     const width = this.scale.width;
     const height = this.scale.height;
-    const mapX = width - 260;
+    const mapX = width - 340;
     const mapY = 20;
 
     this.hudBounds.minimap.x = mapX;
     this.hudBounds.minimap.y = mapY;
     this.hudBounds.team.x = mapX;
-    this.hudBounds.team.y = mapY + 170;
+    this.hudBounds.team.y = mapY + 248;
 
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
     this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
@@ -372,16 +373,16 @@ export class MissionScene extends Phaser.Scene {
     this.hudPanels.strokeRoundedRect(20, 20, 56, 56, 8);
     this.hudPanels.fillRoundedRect(20, 88, 276, 142, 8);
     this.hudPanels.strokeRoundedRect(20, 88, 276, 142, 8);
-    this.hudPanels.fillRoundedRect(mapX, mapY, 236, 160, 8);
-    this.hudPanels.strokeRoundedRect(mapX, mapY, 236, 160, 8);
+    this.hudPanels.fillRoundedRect(mapX, mapY, 320, 238, 8);
+    this.hudPanels.strokeRoundedRect(mapX, mapY, 320, 238, 8);
     this.hudPanels.fillStyle(HUD_COLORS.officer, 1);
-    this.hudPanels.fillCircle(mapX + 14, mapY + 151, 3);
+    this.hudPanels.fillCircle(mapX + 18, mapY + 218, 3);
     this.hudPanels.fillStyle(HUD_COLORS.civilian, 1);
-    this.hudPanels.fillCircle(mapX + 82, mapY + 151, 3);
+    this.hudPanels.fillCircle(mapX + 112, mapY + 218, 3);
     this.hudPanels.fillStyle(HUD_COLORS.infected, 1);
-    this.hudPanels.fillCircle(mapX + 143, mapY + 151, 3);
-    this.hudPanels.fillRoundedRect(mapX, mapY + 170, 236, 154, 8);
-    this.hudPanels.strokeRoundedRect(mapX, mapY + 170, 236, 154, 8);
+    this.hudPanels.fillCircle(mapX + 194, mapY + 218, 3);
+    this.hudPanels.fillRoundedRect(mapX, mapY + 248, 320, 154, 8);
+    this.hudPanels.strokeRoundedRect(mapX, mapY + 248, 320, 154, 8);
 
     this.settingsButton = this.add.text(48, 48, '⚙', {
       fontFamily: 'Arial, sans-serif',
@@ -407,25 +408,25 @@ export class MissionScene extends Phaser.Scene {
       letterSpacing: 1.4,
     }).setScrollFactor(0).setDepth(1505);
     [
-      { x: mapX + 22, label: 'POLICIAIS' },
-      { x: mapX + 90, label: 'CIVIS' },
-      { x: mapX + 151, label: 'INFECTADOS' },
+      { x: mapX + 28, label: 'POLICIAIS' },
+      { x: mapX + 122, label: 'CIVIS' },
+      { x: mapX + 204, label: 'INFECTADOS' },
     ].forEach(({ x, label }) => {
-      this.add.text(x, mapY + 145, label, {
+      this.add.text(x, mapY + 211, label, {
         fontFamily: 'Arial, sans-serif',
         fontSize: '7px',
         color: '#858a87',
       }).setScrollFactor(0).setDepth(1505);
     });
 
-    this.teamText = this.add.text(mapX + 12, mapY + 180, '', {
+    this.teamText = this.add.text(mapX + 12, mapY + 260, '', {
       fontFamily: 'Arial, sans-serif',
       fontSize: '10px',
       color: '#e8e3d8',
       lineSpacing: 8,
     }).setScrollFactor(0).setDepth(1505);
 
-    const teamHitArea = this.add.rectangle(mapX + 118, mapY + 247, 224, 142, 0xffffff, 0.001)
+    const teamHitArea = this.add.rectangle(mapX + 160, mapY + 325, 296, 142, 0xffffff, 0.001)
       .setScrollFactor(0).setDepth(1507)
       .setInteractive({ useHandCursor: true });
     teamHitArea.on('pointerdown', () => this.selectAllOfficers());
@@ -606,10 +607,10 @@ export class MissionScene extends Phaser.Scene {
     this.teamText.setText(['EQUIPE  /  CLIQUE PARA SELECIONAR TODOS', ...teamLines].join('\n'));
 
     this.minimapGraphics.clear();
-    const mapX = this.hudBounds.minimap.x + 10;
+    const mapX = this.hudBounds.minimap.x + 12;
     const mapY = this.hudBounds.minimap.y + 30;
-    const mapWidth = 216;
-    const mapHeight = 102;
+    const mapWidth = 296;
+    const mapHeight = mapWidth * 9 / 16;
     this.minimapGraphics.fillStyle(0x101516, 1);
     this.minimapGraphics.fillRoundedRect(mapX, mapY, mapWidth, mapHeight, 4);
     this.minimapGraphics.lineStyle(1, HUD_COLORS.metal, 0.15);
@@ -682,8 +683,13 @@ export class MissionScene extends Phaser.Scene {
         deltaY: number,
       ) => {
         const camera = this.cameras.main;
+        const minimumZoom = Math.max(
+          MIN_CAMERA_ZOOM,
+          camera.width / this.cameraWorldWidth,
+          camera.height / this.cameraWorldHeight,
+        );
         const nextZoom = camera.zoom * (deltaY > 0 ? 0.9 : 1.1);
-        camera.setZoom(Phaser.Math.Clamp(nextZoom, MIN_CAMERA_ZOOM, MAX_CAMERA_ZOOM));
+        camera.setZoom(Phaser.Math.Clamp(nextZoom, minimumZoom, MAX_CAMERA_ZOOM));
         this.clampCamera();
       },
     );
@@ -1033,6 +1039,12 @@ export class MissionScene extends Phaser.Scene {
 
   private clampCamera(): void {
     const camera = this.cameras.main;
+    const minimumZoom = Math.max(
+      MIN_CAMERA_ZOOM,
+      camera.width / this.cameraWorldWidth,
+      camera.height / this.cameraWorldHeight,
+    );
+    if (camera.zoom < minimumZoom) camera.setZoom(minimumZoom);
     const maxScrollX = Math.max(0, this.cameraWorldWidth - camera.width / camera.zoom);
     const maxScrollY = Math.max(0, this.cameraWorldHeight - camera.height / camera.zoom);
     camera.setScroll(
