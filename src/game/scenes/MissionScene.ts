@@ -1257,10 +1257,10 @@ export class MissionScene extends Phaser.Scene {
         : 'MISSÃO FALHOU\\nTodos os policiais foram incapacitados')
       .setPosition(centerX, centerY - 48)
       .setVisible(true);
-    this.resultHomeButton.setPosition(centerX - (victory && this.missionId === 0 ? 135 : 0), centerY + 82).setVisible(true);
+    this.resultHomeButton.setPosition(centerX - 135, centerY + 82).setVisible(true);
     this.resultCampaignButton.setPosition(centerX + 135, centerY + 82)
       .setVisible(victory && this.missionId === 0);
-    this.resultRestartButton.setPosition(centerX, centerY + 82)
+    this.resultRestartButton.setPosition(centerX + 135, centerY + 82)
       .setVisible(!victory || this.missionId === 1);
   }
 
