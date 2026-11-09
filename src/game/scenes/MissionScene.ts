@@ -70,7 +70,6 @@ export class MissionScene extends Phaser.Scene {
   private combatGraphics!: Phaser.GameObjects.Graphics;
   private accessGraphics!: Phaser.GameObjects.Graphics;
   private buildingSystem!: BuildingSystem;
-  private deployableSystem!: DeployableStructureSystem;
   private deployableGraphics!: Phaser.GameObjects.Graphics;
   private placementMode: DeployableKind | null = null;
   private selectedDeployableId: number | null = null;
@@ -281,8 +280,7 @@ export class MissionScene extends Phaser.Scene {
     this.lastPersistedMaintenanceState = this.serializeMaintenanceState();
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
-    this.deployableSystem = new DeployableStructureSystem(this.worldGrid, this.tileSize);
-    this.simulation.setDeployableSystem(this.deployableSystem);
+    this.simulation.setDeployableSystem(new DeployableStructureSystem(this.worldGrid, this.tileSize));
     const savedDeployableState = this.readStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${missionSeed}`);
     if (savedDeployableState) {
       try {
@@ -503,7 +501,7 @@ export class MissionScene extends Phaser.Scene {
     this.hudPanels.fillRoundedRect(mapX, mapY + 364, 320, 154, 8);
     this.hudPanels.strokeRoundedRect(mapX, mapY + 364, 320, 154, 8);
     this.hudPanels.fillRoundedRect(viewX + 20, height / this.hudScale - 84, 440, 64, 8);
-    this.hudPanels.strokeRoundedRect(viewX + 20, height - 84, 440, 64, 8);
+    this.hudPanels.strokeRoundedRect(viewX + 20, height / this.hudScale - 84, 440, 64, 8);
 
     this.settingsButton = this.add.text(viewX + 48, viewY + 48, '⚙', {
       fontFamily: 'Arial, sans-serif',
