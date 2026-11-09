@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CombatSystem, hasLineOfSight } from './CombatSystem';
-import { Infected } from './Infected';
-import { PoliceOfficer } from './PoliceOfficer';
-import { GridMap } from './world/GridMap';
+import { Infected } from '../entities/Infected';
+import { PoliceOfficer } from '../entities/PoliceOfficer';
+import { GridMap } from '../world/GridMap';
 
 describe('hasLineOfSight', () => {
   it('allows a clear ray between walkable cells', () => {

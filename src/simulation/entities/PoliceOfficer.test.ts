@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PoliceOfficer } from './PoliceOfficer';
-import { GridMap } from './world/GridMap';
+import { GridMap } from '../world/GridMap';
 
 describe('PoliceOfficer', () => {
   it('initializes independent attributes and health', () => {

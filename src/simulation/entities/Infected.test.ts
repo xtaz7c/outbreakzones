@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Infected } from './Infected';
 import { Civilian } from './Civilian';
 import { PoliceOfficer } from './PoliceOfficer';
-import { GridMap } from './world/GridMap';
+import { GridMap } from '../world/GridMap';
 
 describe('Infected', () => {
   const map = new GridMap(10, 10);

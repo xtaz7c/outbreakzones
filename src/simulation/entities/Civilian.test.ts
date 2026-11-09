@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Civilian } from './Civilian';
 import { PoliceOfficer } from './PoliceOfficer';
-import { GridMap } from './world/GridMap';
+import { GridMap } from '../world/GridMap';
 
 describe('Civilian navigation', () => {
   it('follows a target through a walkable door cell', () => {
