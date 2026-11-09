@@ -1,6 +1,6 @@
 # Estrutura de pastas
 
-Este documento define a organização atual dos recursos e a direção de crescimento do projeto. A regra central é separar domínio/simulação, apresentação, recursos estáticos e documentação.
+A organização separa apresentação, domínio/simulação, mundo, recursos estáticos e documentação. Diretórios são criados conforme há módulos reais para ocupá-los; não manter pastas vazias apenas para antecipar arquitetura.
 
 ## Recursos estáticos
 
@@ -9,52 +9,57 @@ public/
 ├── audio/
 │   ├── music/                 # Trilhas e ambientes em loop
 │   └── effects/
-│       ├── weapons/           # Disparos, recarga e armas
-│       └── infected/          # Vocalizações e sons dos infectados
-├── images/                    # Ícones e imagens de interface
+│       ├── weapons/           # Disparos e efeitos de armas
+│       └── infected/          # Vocalizações dos infectados
+├── images/                    # Ícones e imagens
 ├── maps/                      # Mapas exportados do Tiled
 └── tiles/                     # Tilesets
 ```
 
-Os arquivos de áudio usam nomes sem timestamps, espaços ou nomes temporários de exportação. As variantes são numeradas com dois dígitos.
+Áudios usam nomes descritivos, sem timestamps ou nomes temporários; variantes usam sufixos numéricos de dois dígitos.
 
-## Organização do código (estrutura-alvo)
+## Código
 
 ```text
 src/
 ├── main.ts
 ├── game/                      # Integração Phaser e apresentação
-│   ├── audio/                 # AudioManager e adaptadores
-│   ├── scenes/                # BootScene, MissionScene e futuras cenas
-│   ├── ui/                    # HUD, minimapa, menus e componentes
-│   ├── input/                 # Teclado, mouse e comandos
-│   ├── renderers/             # Renderização de entidades e mundo
-│   └── config.ts
-├── simulation/                # Regras do jogo sem Phaser/DOM
-│   ├── entities/              # Civis, infectados, policiais
-│   ├── systems/               # Combate, ondas, navegação, resgate
-│   ├── world/                 # Grid, edifícios e estruturas
-│   ├── missions/              # Objetivos e progressão
-│   └── contracts/             # Interfaces e tipos de domínio
-├── shared/                    # Tipos/utilitários realmente compartilhados
-└── test/                      # Fixtures e helpers de teste compartilhados
+│   ├── audio/
+│   ├── scenes/
+│   ├── config.ts
+│   └── ...                    # UI, input e renderers quando extraídos
+└── simulation/                # Regras de domínio sem Phaser/DOM
+    ├── entities/              # Civilian, Infected, PoliceOfficer
+    ├── systems/
+    │   ├── buildings/         # Acessos, manutenção e estruturas implantáveis
+    │   ├── navigation/        # Pathfinding e navegação reutilizável
+    │   ├── CombatSystem
+    │   └── WaveSystem
+    ├── world/                 # GridMap, WorldConfig, loaders e pontos de entrada
+    └── Simulation.ts         # Fachada/orquestrador do domínio
 ```
 
-Essa árvore de código é uma direção de refatoração, não uma afirmação de que todos esses diretórios já existem. Mover módulos em massa exige atualizar imports e rodar a suíte completa; fazer isso em etapas pequenas.
+## Testes
+
+Os testes unitários ficam junto ao módulo que validam, com o sufixo `.test.ts`:
+- entidades em `simulation/entities/`;
+- sistemas em `simulation/systems/`, incluindo seus subdomínios;
+- componentes de mundo em `simulation/world/`.
+
+Testes de integração da orquestração permanecem junto a `Simulation.ts`. Fixtures compartilhadas só devem ser extraídas quando houver reutilização real.
 
 ## Regras de dependência
 
-1. simulation não importa Phaser, DOM, game ou APIs de interface.
-2. game pode depender de simulation e Phaser; nunca o inverso.
-3. shared não depende de game nem de simulation.
-4. Sistemas reutilizáveis têm responsabilidade única e testes próximos ao módulo.
+1. `simulation/` não importa Phaser, DOM, `game/` ou APIs de interface.
+2. `game/` pode depender de `simulation/` e Phaser; nunca o inverso.
+3. `entities/` não deve depender da cena; sistemas recebem dependências explicitamente.
+4. `world/` mantém estruturas espaciais e dados de mapa; regras operacionais reutilizáveis ficam em `systems/`.
 5. Cenas orquestram sistemas e renderização; regras de domínio ficam fora delas.
-6. Evitar pastas genéricas como misc, helpers ou utils sem responsabilidade definida.
+6. Evitar pastas genéricas como `misc`, `helpers` ou `utils` sem responsabilidade definida.
 
 ## Convenções
 
 - PascalCase para classes e cenas; camelCase para funções e variáveis.
-- Sufixos explícitos: System, Manager, Renderer, Scene e Config.
-- Testes unitários ficam junto ao módulo como *.test.ts.
-- Fixtures comuns ficam em src/test/.
+- Sufixos explícitos: `System`, `Manager`, `Renderer`, `Scene` e `Config`.
+- Imports devem apontar para o módulo proprietário; não manter arquivos de reexportação apenas para compatibilidade depois da migração.
 - Dados de cenário não devem ser misturados com lógica de simulação.
