@@ -14,7 +14,7 @@ describe('Infected', () => {
     expect(infected.state).toBe('moving');
     expect(infected.position.x).toBeGreaterThan(-48);
     expect(infected.position.x).toBeLessThan(16);
-    for (let index = 0; index < 120; index += 1) infected.update(1 / 60, 32, map, []);
+    for (let index = 0; index < 90; index += 1) infected.update(1 / 60, 32, map, []);
     expect(infected.position.x).toBeCloseTo(16, 8);
     expect(infected.position.y).toBe(80);
   });
