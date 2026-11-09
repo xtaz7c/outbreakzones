@@ -1,6 +1,7 @@
 import type { PoliceOfficer } from './PoliceOfficer';
 import type { GridMap } from './world/GridMap';
 import { findPath } from './world/Pathfinder';
+import { hasLineOfSight } from './CombatSystem';
 import type { TilePosition } from './world/WorldConfig';
 
 export type InfectedState = 'idle' | 'moving' | 'attacking' | 'dead';
@@ -64,8 +65,8 @@ const DEFAULTS = Object.freeze({
 
 /**
  * Entidade de domínio do infectado básico.
- * A IA prioriza policiais detectados; sem policiais próximos, avança até
- * o ponto de entrada configurado. Não depende do Phaser.
+ * A IA prioriza policiais visíveis, investiga estímulos audíveis e, na
+ * ausência de ameaças, patrulha células caminháveis. Não depende do Phaser.
  */
 export class Infected {
   readonly id: number;
@@ -91,7 +92,6 @@ export class Infected {
   private patrolTarget: TilePosition | null = null;
   private investigationTarget: InfectedPosition | null = null;
   private investigationRemaining = 0;
-  private lastStimulusId: string | null = null;
 
   constructor(config: InfectedConfig) {
     this.assertFinite(config.x, 'x');
@@ -237,7 +237,7 @@ export class Infected {
     for (const officer of officers) {
       if (officer.isIncapacitated) continue;
       const distance = this.distanceTo(officer.position);
-      if (distance <= nearestDistance) {
+      if (distance <= nearestDistance && hasLineOfSight(map, this.currentPosition, officer.position, tileSize)) {
         nearest = officer;
         nearestDistance = distance;
       }
@@ -268,7 +268,6 @@ export class Infected {
     if (strongestStimulus) {
       this.investigationTarget = { ...strongestStimulus.position };
       this.investigationRemaining = this.memoryDuration;
-      this.lastStimulusId = strongestStimulus.id;
       this.patrolTarget = null;
     }
 
@@ -296,7 +295,6 @@ export class Infected {
       if (this.investigationRemaining > 0) return { kind: 'entry', tile, position: target };
     }
     this.investigationTarget = null;
-    this.lastStimulusId = null;
 
     const currentTile = {
       column: Math.floor(this.currentPosition.x / tileSize),
