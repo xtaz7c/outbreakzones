@@ -343,6 +343,26 @@ describe('Simulation', () => {
     ]);
   });
 
+  it('rescues a nearby civilian, escorts them through the civil grid, and extracts them', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    const civilian = sim.getCivilians()[0]!;
+
+    expect(sim.rescueCivilian(civilian.id, officer.id)).toBe(false);
+    expect(sim.issueMoveOrder(officer.id, { column: 25, row: 15 })).toBe(true);
+    for (let index = 0; index < 500; index += 1) sim.update(FIXED_DT);
+
+    expect(sim.rescueCivilian(civilian.id, officer.id)).toBe(true);
+    expect(civilian.state).toBe('following');
+    expect(civilian.escortId).toBe(officer.id);
+
+    expect(sim.issueMoveOrder(officer.id, { column: 32, row: 35 })).toBe(true);
+    for (let index = 0; index < 1000; index += 1) sim.update(FIXED_DT);
+
+    expect(civilian.state).toBe('extracted');
+    expect(sim.getState().rescuedCivilianCount).toBe(1);
+  });
+
   it('tracks the rescue state of civilians independently', () => {
     const [first, second] = sim.getCivilians();
     expect(first!.beginFollowing()).toBe(true);
