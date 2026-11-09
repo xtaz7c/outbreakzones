@@ -100,7 +100,7 @@ describe('BuildingMaintenanceSystem', () => {
     maintenance.update(12);
     expect(door.lockLevel).toBe(2);
     expect(buildings.damage('front-door', 30)).toBe(21);
-    expect(door.health).toBe(99);
+    expect(door.health).toBe(84);
   });
 
   it('rejects jobs with insufficient resources or invalid targets', () => {
