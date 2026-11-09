@@ -464,7 +464,7 @@ export class MissionScene extends Phaser.Scene {
     const height = this.scale.height;
     const viewX = 0;
     const viewY = 0;
-    const mapX = viewX + width - 340;
+    const mapX = viewX + width / this.hudScale - 340;
     const mapY = viewY + 20;
 
     this.hudBounds.settings.x = viewX + 20;
@@ -476,7 +476,7 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.team.x = mapX;
     this.hudBounds.team.y = mapY + 364;
     this.hudBounds.build.x = viewX + 20;
-    this.hudBounds.build.y = height - 84;
+    this.hudBounds.build.y = height / this.hudScale - 84;
 
     // Tactical HUD elements are viewport-space UI and must ignore world camera movement.
     const hudLabels: Phaser.GameObjects.Text[] = [];
@@ -502,7 +502,7 @@ export class MissionScene extends Phaser.Scene {
     this.hudPanels.fillCircle(mapX + 194, mapY + 338, 3);
     this.hudPanels.fillRoundedRect(mapX, mapY + 364, 320, 154, 8);
     this.hudPanels.strokeRoundedRect(mapX, mapY + 364, 320, 154, 8);
-    this.hudPanels.fillRoundedRect(viewX + 20, height - 84, 440, 64, 8);
+    this.hudPanels.fillRoundedRect(viewX + 20, height / this.hudScale - 84, 440, 64, 8);
     this.hudPanels.strokeRoundedRect(viewX + 20, height - 84, 440, 64, 8);
 
     this.settingsButton = this.add.text(viewX + 48, viewY + 48, '⚙', {
@@ -564,15 +564,15 @@ export class MissionScene extends Phaser.Scene {
       wordWrap: { width: 296 },
     }).setScrollFactor(0).setDepth(1505);
 
-    const buildTitle = this.add.text(viewX + 32, height - 78, 'CONSTRUÇÕES  /  CLIQUE E POSICIONE NO MAPA', {
+    const buildTitle = this.add.text(viewX + 32, height / this.hudScale - 78, 'CONSTRUÇÕES  /  CLIQUE E POSICIONE NO MAPA', {
       fontFamily: 'Arial, sans-serif', fontSize: '7px', color: '#858a87', letterSpacing: 0.8,
     }).setScrollFactor(0).setDepth(1505);
     hudLabels.push(buildTitle);
     this.buildButtons.splice(0, this.buildButtons.length,
-      this.createBuildButton(viewX + 76, height - 47, 'ABRIGO 30/8', 'shelter-tent'),
-      this.createBuildButton(viewX + 184, height - 47, 'SUPR. 20/5', 'resource-tent'),
-      this.createBuildButton(viewX + 292, height - 47, 'SNIPER 45/20', 'sniper-post'),
-      this.createBuildButton(viewX + 400, height - 47, 'BARREIRA 12/3', 'barricade'),
+      this.createBuildButton(viewX + 76, height / this.hudScale - 47, 'ABRIGO 30/8', 'shelter-tent'),
+      this.createBuildButton(viewX + 184, height / this.hudScale - 47, 'SUPR. 20/5', 'resource-tent'),
+      this.createBuildButton(viewX + 292, height / this.hudScale - 47, 'SNIPER 45/20', 'sniper-post'),
+      this.createBuildButton(viewX + 400, height / this.hudScale - 47, 'BARREIRA 12/3', 'barricade'),
     );
 
     const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
@@ -850,9 +850,9 @@ export class MissionScene extends Phaser.Scene {
 
   private applyHudScale(): void {
     if (!this.hudRoot) return;
-    const offsetX = (this.scale.width * (1 - this.hudScale)) / 2;
-    const offsetY = (this.scale.height * (1 - this.hudScale)) / 2;
-    this.hudRoot.setScale(this.hudScale).setPosition(offsetX, offsetY);
+    // Anchor the left panels to the left edge and compute the right/bottom
+    // panel coordinates in scaled space so neither side clips at 80%–120%.
+    this.hudRoot.setScale(this.hudScale).setPosition(0, 0);
   }
 
   private adjustHudScale(delta: number): void {
@@ -913,8 +913,8 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private isHudPoint(x: number, y: number): boolean {
-    const localX = (x - this.hudRoot.x) / this.hudScale;
-    const localY = (y - this.hudRoot.y) / this.hudScale;
+    const localX = x / this.hudScale;
+    const localY = y / this.hudScale;
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
       localX >= rect.x && localX <= rect.x + rect.width &&
       localY >= rect.y && localY <= rect.y + rect.height;
