@@ -201,6 +201,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** ciclo completo de missão, do início ao resultado, com pausa funcional.
 
+**Issue #26 — incremento em andamento:** os pontos das ondas foram deslocados para fora dos quatro limites do mapa. `Infected` agora executa uma aproximação visual até o tile de entrada antes de ativar pathfinding/percepção normais; teste unitário cobre o spawn externo. Ainda faltam IA civil/NPC genérica, fluxo de campanha, estruturas implantáveis e escala persistente do HUD.
+
 ### Fase 9 — Interface e experiência
 
 - [ ] **T084 — P0** Criar página inicial de Outbreak Zones, exibida antes de carregar/iniciar a missão.
