@@ -459,9 +459,9 @@ export class MissionScene extends Phaser.Scene {
 
     this.missionText = this.add.text(viewX + 36, viewY + 102, '', {
       fontFamily: 'Arial, sans-serif',
-      fontSize: '13px',
+      fontSize: '11px',
       color: '#e8e3d8',
-      lineSpacing: 8,
+      lineSpacing: 6,
       wordWrap: { width: 244 },
     }).setScrollFactor(0).setDepth(1505);
 
@@ -684,6 +684,11 @@ export class MissionScene extends Phaser.Scene {
     const waveLabel = state.wavePhase === 'preparing'
       ? `PRÓXIMA ONDA EM ${state.preparationRemaining.toFixed(0)}s`
       : `ONDA ${state.waveNumber || 1} / ${state.totalWaves}`;
+    const civilianStates = {
+      sheltered: civilians.filter((civilian) => civilian.state === 'sheltered').length,
+      following: civilians.filter((civilian) => civilian.state === 'following').length,
+      extracted: civilians.filter((civilian) => civilian.state === 'extracted').length,
+    };
     const objective = state.missionStatus === 'victory'
       ? 'MISSÃO CONCLUÍDA'
       : state.missionStatus === 'defeat'
@@ -692,7 +697,8 @@ export class MissionScene extends Phaser.Scene {
     this.missionText.setText([
       'MISSÃO 01  /  SETOR 07',
       objective,
-      `CIVIS RESGATADOS  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
+      `RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
+      `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`,
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
       waveLabel,
     ].join('\n'));
