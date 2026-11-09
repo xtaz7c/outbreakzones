@@ -102,6 +102,11 @@ export class Simulation {
     return this.maintenanceSystem?.getState() ?? null;
   }
 
+  restoreMaintenanceState(state: MaintenanceState): void {
+    if (!this.maintenanceSystem) throw new Error('Building maintenance is not initialized.');
+    this.maintenanceSystem.restoreState(state);
+  }
+
   startBuildingMaintenance(accessId: string, action: MaintenanceAction): boolean {
     return this.maintenanceSystem?.start(accessId, action) ?? false;
   }
