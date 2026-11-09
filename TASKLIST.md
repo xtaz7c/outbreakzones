@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** a implementação revisada da Fase 7 está na branch `feat/shelter-roaming-t066-t071`: essa branch é a base técnica anterior. O design foi atualizado: o tutorial resgata dois civis dentro de uma casa interativa; acessos dependem do estado de portas/janelas e do tipo de NPC; infectados podem atacar a casa quando atraídos por estímulos. A implementação dessas mudanças ainda está pendente. Testes, lint, build e revisão visual ainda precisam ser executados.
+> **Status atual:** a branch `feat/buildings-tactical-foundation-t066-t071` está sincronizada com `main` e contém a primeira integração do sistema de acessos de edifícios, estado inicial determinístico, dano/rompimento de acessos, atração temporária por ruído e comandos táticos de manter posição/segurar fogo/engajar. A integração ainda precisa de validação local com testes, lint, build e revisão visual; ronda geral, percepção por linha de visão/oclusão e navegação interior/exterior completa permanecem incompletas.
 
 ## 1. Visão e escopo
 
@@ -176,6 +176,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Base técnica anterior:** a branch `feat/shelter-roaming-t066-t071` usa colisões estáticas e a regra antiga de casa inacessível. Essa lógica deve ser substituída por edifícios com interior e acessos dinâmicos.
 
+**Progresso parcial (branch `feat/phase-7-tactical-system`):** foi portada a base `BuildingSystem`, com acessos independentes de porta/janela/garagem, estados ponderados reproduzíveis por seed, integridade, interação, dano e grades de navegação por tipo de NPC. O mapa tutorial ganhou um acesso de garagem. A `Simulation` integra as grades por ator e permite interagir/danificar acessos; a cena mostra os estados e inclui comandos provisórios E/B/N. A IA atual recebe um estímulo temporário de ruído (raio e duração configuráveis), memoriza o acesso investigado e pode atacá-lo; ainda não há múltiplas fontes de estímulo, percepção por linha de visão/oclusão ou ronda aleatória. A travessia interior/exterior ainda precisa de validação e refinamento, especialmente para civis e múltiplos acessos. T066–T071 e T124 permanecem desmarcadas até validação automatizada e manual.
+
 ### Fase 8 — Ondas e fluxo da missão
 
 - [ ] **T072 — P0** Criar WaveSystem independente da cena/renderização.
@@ -249,6 +251,14 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T121 — P1** Implementar reparo de portas, janelas, garagem e demais componentes danificados.
 - [ ] **T122 — P1** Implementar aprimoramentos de componentes/edifícios (ex.: reforço, barricada ou melhoria de fechadura), com efeitos claros e limites por nível.
 - [ ] **T123 — P1** Definir custos, materiais, tempo de execução e requisitos de reparo/aprimoramento; impedir melhorias gratuitas ou ilimitadas.
+
+### Sistema Tático Básico (incremento transversal)
+
+- [ ] **T125 — P1** Implementar ordem de manter posição, cancelando a rota ativa da unidade selecionada.
+- [ ] **T126 — P1** Implementar postura de segurar fogo, suspendendo disparos automáticos sem apagar prioridades manuais.
+- [ ] **T127 — P1** Permitir retornar à postura de engajamento automático por comando para unidades selecionadas.
+
+**Progresso parcial (branch `feat/phase-7-tactical-system`):** os três comandos foram adicionados à API da simulação e a atalhos provisórios na cena: X (manter posição), H (segurar fogo) e G (engajar automaticamente). A prioridade manual de alvo continua podendo autorizar disparos durante `hold_fire`. Testes unitários e de integração foram adicionados, mas ainda não executados neste ambiente; tarefas permanecem desmarcadas até validação.
 
 ## 4. Fora do escopo do MVP
 

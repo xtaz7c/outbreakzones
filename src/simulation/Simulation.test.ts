@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FIXED_DT, Simulation } from './Simulation';
 import { GridMap } from './world/GridMap';
+import { BuildingSystem } from './world/BuildingSystem';
 
 describe('Simulation', () => {
   let sim: Simulation;
@@ -106,7 +107,7 @@ describe('Simulation', () => {
     expect(officer.position.x).toBeGreaterThan(29 * 32 + 16);
   });
 
-  it('does not move officers while paused and rejects new orders', () => {
+  it('does not move officers while paused but accepts queued orders', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const officer = sim.getOfficers()[0]!;
     expect(sim.issueMoveOrder(officer.id, { column: 30, row: 33 })).toBe(true);
@@ -114,13 +115,17 @@ describe('Simulation', () => {
     const before = officer.position;
     sim.update(1);
     expect(officer.position).toEqual(before);
-    expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(false);
+    expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(true);
+    expect(officer.state).toBe('moving');
+    sim.setPaused(false);
+    sim.update(FIXED_DT);
+    expect(officer.position).not.toEqual(before);
   });
 
   it('spawns infected entities and advances their AI on fixed steps', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const infected = sim.spawnInfected({
-      x: 16, y: 16, moveSpeed: 32, random: () => 0.99,
+      x: 16, y: 16, entryTile: { column: 4, row: 1 }, moveSpeed: 32,
     });
     expect(sim.getState().infectedCount).toBe(1);
     sim.update(FIXED_DT);
@@ -130,7 +135,7 @@ describe('Simulation', () => {
 
   it('removes dead infected entities safely during simulation updates', () => {
     const infected = sim.spawnInfected({
-      x: 16, y: 16,
+      x: 16, y: 16, entryTile: { column: 4, row: 1 },
     });
     infected.takeDamage(100);
     sim.update(FIXED_DT);
@@ -142,7 +147,7 @@ describe('Simulation', () => {
     sim = new Simulation({ random: () => 0 });
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const infected = sim.spawnInfected({
-      x: 1000, y: 1072,
+      x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
       moveSpeed: 1, detectionRange: 1,
     });
     let observedShot = false;
@@ -157,12 +162,25 @@ describe('Simulation', () => {
   it('does not emit combat events while paused', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     sim.spawnInfected({
-      x: 1000, y: 1072,
+      x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
       moveSpeed: 1, detectionRange: 1,
     });
     sim.setPaused(true);
     sim.update(1);
     expect(sim.getCombatEvents()).toHaveLength(0);
+  });
+
+
+  it('does not cancel a movement order when a target priority is assigned', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    const infected = sim.spawnInfected({
+      x: 900, y: 1072, entryTile: { column: 28, row: 33 }, detectionRange: 1,
+    });
+    expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(true);
+    sim.setTargetPriority(officer.id, infected.id);
+    expect(officer.state).toBe('moving');
+    expect(officer.hasMoveOrder).toBe(true);
   });
 
   it('tracks active officers after individual incapacitation', () => {
@@ -172,73 +190,80 @@ describe('Simulation', () => {
     expect(sim.getOfficers()[1]!.state).toBe('incapacitated');
   });
 
-  it('lets infected roam randomly when no active officer is detected', () => {
+  it('holds selected officer position by cancelling its current path', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
-    const infected = sim.spawnInfected({
-      x: 16,
-      y: 16,
-      moveSpeed: 55,
-      random: () => 0.99,
-    });
-
-    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
-
-    expect(infected.state).toBe('moving');
-    expect(infected.position).not.toEqual({ x: 16, y: 16 });
-  });
-
-  it('does not allow police movement through a closed shelter perimeter', () => {
-    const map = new GridMap(64, 40);
-    for (let column = 20; column <= 40; column += 1) {
-      map.setBlocked({ column, row: 20 });
-      map.setBlocked({ column, row: 30 });
-    }
-    for (let row = 20; row <= 30; row += 1) {
-      map.setBlocked({ column: 20, row });
-      map.setBlocked({ column: 40, row });
-    }
-    sim.setWorldGrid(map, 32);
-
     const officer = sim.getOfficers()[0]!;
-    expect(sim.issueMoveOrder(officer.id, { column: 29, row: 25 })).toBe(false);
-    expect(officer.position).toEqual({ x: 29 * 32 + 16, y: 33 * 32 + 16 });
+    expect(sim.issueMoveOrder(officer.id, { column: 32, row: 33 })).toBe(true);
+    expect(sim.holdOfficerPosition(officer.id)).toBe(true);
+    expect(officer.state).toBe('idle');
+    const position = officer.position;
+    sim.update(FIXED_DT * 5);
+    expect(officer.position).toEqual(position);
   });
 
-  it('keeps the shelter perimeter blocked during infected roaming', () => {
-    const map = new GridMap(64, 40);
-    for (let column = 20; column <= 40; column += 1) {
-      map.setBlocked({ column, row: 20 });
-      map.setBlocked({ column, row: 30 });
-    }
-    for (let row = 20; row <= 30; row += 1) {
-      map.setBlocked({ column: 20, row });
-      map.setBlocked({ column: 40, row });
-    }
-    sim.setWorldGrid(map, 32);
+  it('holds automatic fire but still honors a manual target priority', () => {
+    sim = new Simulation({ random: () => 0 });
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
     const infected = sim.spawnInfected({
-      x: 32 * 32 + 16,
-      y: 33 * 32 + 16,
-      moveSpeed: 55,
-      wanderRadiusTiles: 8,
-      random: () => 0,
+      x: 1000, y: 1072, entryTile: { column: 31, row: 33 },
+      moveSpeed: 1, detectionRange: 1,
     });
-
-    for (let index = 0; index < 180; index += 1) sim.update(FIXED_DT);
-
-    const tile = {
-      column: Math.floor(infected.position.x / 32),
-      row: Math.floor(infected.position.y / 32),
-    };
-    expect(tile.column <= 20 || tile.column >= 40 || tile.row <= 20 || tile.row >= 30).toBe(true);
-    expect(map.isWalkable({ column: 30, row: 20 })).toBe(false);
-    expect(map.isWalkable({ column: 30, row: 30 })).toBe(false);
+    expect(sim.setOfficerTacticalPosture(officer.id, 'hold_fire')).toBe(true);
+    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    expect(infected.health).toBe(60);
+    sim.setTargetPriority(officer.id, infected.id);
+    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    expect(infected.health).toBeLessThan(60);
   });
 
-  it('defeats the mission when all three officers are incapacitated', () => {
-    sim.damageOfficer(1, 100);
-    sim.damageOfficer(2, 100);
-    sim.damageOfficer(3, 100);
+  it('does not resume automatic fire for an invalid manual priority in hold-fire mode', () => {
+    sim = new Simulation({ random: () => 0 });
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    const infected = sim.spawnInfected({
+      x: 1000, y: 1072, entryTile: { column: 31, row: 33 },
+      moveSpeed: 1, detectionRange: 1,
+    });
+    sim.setOfficerTacticalPosture(officer.id, 'hold_fire');
+    sim.setTargetPriority(officer.id, 99999);
+    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    expect(infected.health).toBe(60);
+  });
+
+  it('stops simulation updates and rejects movement after all officers are incapacitated', () => {
+    for (const officer of sim.getOfficers()) sim.damageOfficer(officer.id, 100);
     expect(sim.isMissionDefeated()).toBe(true);
+    const before = sim.getState().elapsed;
+    sim.update(FIXED_DT * 10);
+    expect(sim.getState().elapsed).toBe(before);
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    expect(sim.issueMoveOrder(1, { column: 30, row: 33 })).toBe(false);
+  });
+
+  it('attracts nearby infected to a noisy access and remembers it after the noise fades', () => {
+    const grid = new GridMap(64, 40);
+    const buildings = new BuildingSystem([
+      { id: 'front', kind: 'door', x: 960, y: 864, width: 128, height: 32,
+        maxHealth: 50, weights: { open: 0, closed: 1 } },
+    ], grid, 32, 42);
+    sim.setWorldGrid(grid, 32);
+    sim.setBuildingSystem(buildings);
+    const infected = sim.spawnInfected({
+      x: 976, y: 848, entryTile: { column: 30, row: 26 },
+      detectionRange: 1, attackRange: 40, attackInterval: 0.25, damage: 5,
+    });
+    const target = buildings.getInfectedTarget(
+      'front', { column: 30, row: 26 }, { column: 30, row: 28 },
+    );
+    expect(target).toBeDefined();
+    sim.emitNoiseAtStructure(target!, 100, 0.1);
+    for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
+    expect(buildings.getAccess('front')?.health).toBeLessThan(50);
+    const healthAfterNoise = buildings.getAccess('front')!.health;
+    for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
+    expect(buildings.getAccess('front')!.health).toBeLessThan(healthAfterNoise);
+    expect(infected.state).toBe('attacking');
   });
 
 });

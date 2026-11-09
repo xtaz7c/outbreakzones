@@ -3,6 +3,7 @@ import { GridMap } from './world/GridMap';
 import { findPath } from './world/Pathfinder';
 
 export type PoliceOfficerState = 'idle' | 'moving' | 'attacking' | 'incapacitated';
+export type TacticalPosture = 'engage' | 'hold_fire';
 
 export interface PoliceOfficerConfig {
   readonly id: number;
@@ -35,6 +36,7 @@ export class PoliceOfficer {
 
   private currentHealth: number;
   private currentState: PoliceOfficerState = 'idle';
+  private currentTacticalPosture: TacticalPosture = 'engage';
   private currentPosition: { x: number; y: number };
   private currentFacingAngle = -Math.PI / 2;
   private path: TilePosition[] = [];
@@ -73,6 +75,24 @@ export class PoliceOfficer {
 
   get health(): number {
     return this.currentHealth;
+  }
+
+  get tacticalPosture(): TacticalPosture {
+    return this.currentTacticalPosture;
+  }
+
+  setTacticalPosture(posture: TacticalPosture): boolean {
+    if (this.isIncapacitated) return false;
+    this.currentTacticalPosture = posture;
+    return true;
+  }
+
+  holdPosition(): boolean {
+    if (this.isIncapacitated) return false;
+    this.path = [];
+    this.waypointIndex = 0;
+    this.currentState = 'idle';
+    return true;
   }
 
   get isIncapacitated(): boolean {

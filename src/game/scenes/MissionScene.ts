@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
 import { Simulation } from '../../simulation/Simulation';
+import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
+import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/world/MissionEntryPoints';
+import { BuildingSystem, type AccessKind } from '../../simulation/world/BuildingSystem';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -26,10 +29,13 @@ export class MissionScene extends Phaser.Scene {
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
   private selectionGraphics!: Phaser.GameObjects.Graphics;
   private combatGraphics!: Phaser.GameObjects.Graphics;
+  private accessGraphics!: Phaser.GameObjects.Graphics;
+  private buildingSystem!: BuildingSystem;
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
   private debugInfectedSpawnIndex = 0;
   private selectedOfficerIds = new Set<number>();
+  private worldGrid!: GridMap;
   private tileSize = 32;
   private cameraWorldWidth = 0;
   private cameraWorldHeight = 0;
@@ -48,6 +54,12 @@ export class MissionScene extends Phaser.Scene {
     this.createCameraControls();
     this.createSelectionControls();
     this.input.keyboard?.on('keydown-I', () => this.spawnDebugInfected());
+    this.input.keyboard?.on('keydown-N', () => this.emitNoiseAtHouse());
+    this.input.keyboard?.on('keydown-E', () => this.interactWithNearestAccess());
+    this.input.keyboard?.on('keydown-B', () => this.breachNearestAccess());
+    this.input.keyboard?.on('keydown-H', () => this.setSelectedPosture('hold_fire'));
+    this.input.keyboard?.on('keydown-G', () => this.setSelectedPosture('engage'));
+    this.input.keyboard?.on('keydown-X', () => this.holdSelectedPositions());
 
     this.input.keyboard?.on('keydown-SPACE', () => {
       this.isPaused = !this.isPaused;
@@ -66,6 +78,7 @@ export class MissionScene extends Phaser.Scene {
       this.updateOfficers(dt);
     }
     this.updateInfectedVisuals();
+    this.updateAccessVisuals();
     this.updateStatusText(dt);
   }
 
@@ -85,19 +98,37 @@ export class MissionScene extends Phaser.Scene {
     }
 
     this.tileSize = map.tileWidth;
-    const worldGrid = buildGridFromTiledLayers(
+    this.worldGrid = buildGridFromTiledLayers(
       map.width,
       map.height,
       map.tileWidth,
-      [
-        map.getObjectLayer('Collision'),
-        map.getObjectLayer('Entrances'),
-        map.getObjectLayer('Obstacles'),
-      ],
+      [map.getObjectLayer('Collision'), map.getObjectLayer('Obstacles')],
     );
 
-    this.registry.set('worldGrid', worldGrid);
-    this.simulation.setWorldGrid(worldGrid, this.tileSize);
+    const entrances = map.getObjectLayer('Entrances');
+    const definitions = (entrances?.objects ?? []).flatMap((object) => {
+      const kind = object.type as AccessKind;
+      if (!['door', 'window', 'garage'].includes(kind)) return [];
+      const health = object.properties?.health;
+      return [{
+        id: object.name || `access-${object.id}`,
+        kind,
+        x: object.x,
+        y: object.y,
+        width: object.width,
+        height: object.height,
+        ...(typeof health === 'number' ? { maxHealth: health } : {}),
+      }];
+    });
+    const configuredSeed = this.registry.get('missionSeed');
+    const missionSeed = typeof configuredSeed === 'number' && Number.isInteger(configuredSeed)
+      ? configuredSeed
+      : Date.now();
+    this.registry.set('missionSeed', missionSeed);
+    this.buildingSystem = new BuildingSystem(definitions, this.worldGrid, this.tileSize, missionSeed);
+    this.simulation.setBuildingSystem(this.buildingSystem);
+    this.registry.set('worldGrid', this.worldGrid);
+    this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
     this.cameraWorldWidth = map.widthInPixels;
     this.cameraWorldHeight = map.heightInPixels;
     this.cameras.main
@@ -156,6 +187,7 @@ export class MissionScene extends Phaser.Scene {
 
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
+    this.accessGraphics = this.add.graphics().setDepth(80);
   }
 
   private createCameraControls(): void {
@@ -293,7 +325,6 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private issueMoveOrder(worldX: number, worldY: number): void {
-    if (this.isPaused) return;
     const selected = this.simulation.getOfficers().filter(
       (officer) => this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
     );
@@ -321,6 +352,74 @@ export class MissionScene extends Phaser.Scene {
   }
 
 
+
+
+  private setSelectedPosture(posture: 'engage' | 'hold_fire'): void {
+    for (const officer of this.simulation.getOfficers()) {
+      if (this.selectedOfficerIds.has(officer.id)) {
+        this.simulation.setOfficerTacticalPosture(officer.id, posture);
+      }
+    }
+  }
+
+  private holdSelectedPositions(): void {
+    for (const officer of this.simulation.getOfficers()) {
+      if (this.selectedOfficerIds.has(officer.id)) {
+        this.simulation.holdOfficerPosition(officer.id);
+      }
+    }
+  }
+
+  private emitNoiseAtHouse(): void {
+    const entry = MISSION_ENTRY_POINTS.find((point) => point.id === 'front-door');
+    if (!entry) return;
+    const target = this.buildingSystem.getInfectedTarget(entry.id, entry.approachTile, entry.breachTile);
+    if (target) this.simulation.emitNoiseAtStructure(target, 1000, 10);
+  }
+
+  private findNearestAccess(): { id: string; distance: number } | null {
+    const selected = this.simulation.getOfficers().filter((officer) =>
+      this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
+    if (selected.length === 0) return null;
+    let nearest: { id: string; distance: number } | null = null;
+    for (const access of this.simulation.getBuildingSnapshots()) {
+      const cell = access.cells[0];
+      if (!cell) continue;
+      const x = cell.column * this.tileSize + this.tileSize / 2;
+      const y = cell.row * this.tileSize + this.tileSize / 2;
+      for (const officer of selected) {
+        const distance = Phaser.Math.Distance.Between(x, y, officer.position.x, officer.position.y);
+        if (distance <= 88 && (!nearest || distance < nearest.distance)) nearest = { id: access.id, distance };
+      }
+    }
+    return nearest;
+  }
+
+  private interactWithNearestAccess(): void {
+    if (this.isPaused) return;
+    const nearest = this.findNearestAccess();
+    if (nearest) this.simulation.interactWithAccess(nearest.id, 'police');
+  }
+
+  private breachNearestAccess(): void {
+    if (this.isPaused) return;
+    const nearest = this.findNearestAccess();
+    if (nearest) this.simulation.damageAccess(nearest.id, 30);
+  }
+
+  private updateAccessVisuals(): void {
+    this.accessGraphics.clear();
+    const colors = { open: 0x55c878, closed: 0xe4c35b, locked: 0xe05b5b,
+      barricaded: 0xd88a42, broken: 0x777777 } as const;
+    for (const access of this.simulation.getBuildingSnapshots()) {
+      this.accessGraphics.fillStyle(colors[access.state], 0.65);
+      for (const cell of access.cells) {
+        this.accessGraphics.fillRect(cell.column * this.tileSize + 4,
+          cell.row * this.tileSize + 4, this.tileSize - 8, this.tileSize - 8);
+      }
+    }
+  }
+
   private worldToTile(x: number, y: number): TilePosition {
     return {
       column: Math.floor(x / this.tileSize),
@@ -329,18 +428,22 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private spawnDebugInfected(): void {
+    const entries = getAvailableEntryPoints(this.worldGrid);
+    if (entries.length === 0) return;
+
     const spawnPlans = [
-      { x: 128, y: 640 },
-      { x: 1920, y: 640 },
-      { x: 1024, y: 64 },
-      { x: 1024, y: 1216 },
+      { x: 128, y: 640, entryId: 'west-window' },
+      { x: 1920, y: 640, entryId: 'east-window' },
+      { x: 1024, y: 64, entryId: 'north-window-west' },
+      { x: 1024, y: 1216, entryId: 'front-door' },
     ] as const;
     const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
     this.debugInfectedSpawnIndex += 1;
-
+    const entry = entries.find((candidate) => candidate.id === plan.entryId) ?? entries[0]!;
     this.simulation.spawnInfected({
       x: plan.x,
       y: plan.y,
+      entryTile: entry.approachTile,
     });
   }
 
@@ -436,20 +539,20 @@ export class MissionScene extends Phaser.Scene {
     const fps = dt > 0 ? (1 / dt).toFixed(0) : '—';
     this.statusText.setText(
       [
-        'Testgame — Mission',
+        'Outbreak Zones — Mission',
         `Paused: ${state.paused ? 'YES' : 'NO'}  (Space)`,
-        `Sim time: ${state.elapsed.toFixed(2)}s`,
+        `Sim time: ${state.elapsed.toFixed(2)}s | Seed: ${this.registry.get('missionSeed')}`,
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
-        'Shelter: safe zone | Interior inaccessible',
-        ...(this.simulation.isMissionDefeated() ? ['MISSION DEFEATED — all officers incapacitated'] : []),
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
-          return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''}`;
+          const posture = officer.tacticalPosture === 'hold_fire' ? 'HOLD FIRE' : 'ENGAGE';
+          return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''} | ${posture}`;
         }),
-        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: debug spawn',
-      ].join('\\n'),
+        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: interact | B: breach',
+        'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority',
+      ].join('\n'),
     );
   }
 }
