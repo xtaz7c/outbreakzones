@@ -69,4 +69,23 @@ describe('PoliceOfficer', () => {
     expect(officer.setAttacking(false)).toBe(true);
     expect(officer.state).toBe('idle');
   });
+  it('can hold position and cancel an active movement order', () => {
+    const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, moveSpeed: 32 });
+    const map = new GridMap(5, 5);
+    expect(officer.issueMoveOrder({ column: 4, row: 4 }, map, 32)).toBe(true);
+    expect(officer.holdPosition()).toBe(true);
+    expect(officer.state).toBe('idle');
+    officer.update(1, 32);
+    expect(officer.position).toEqual({ x: 16, y: 16 });
+  });
+
+  it('supports engage and hold-fire tactical postures', () => {
+    const officer = new PoliceOfficer({ id: 1, x: 16, y: 16 });
+    expect(officer.tacticalPosture).toBe('engage');
+    expect(officer.setTacticalPosture('hold_fire')).toBe(true);
+    expect(officer.tacticalPosture).toBe('hold_fire');
+    officer.takeDamage(100);
+    expect(officer.setTacticalPosture('engage')).toBe(false);
+  });
+
 });

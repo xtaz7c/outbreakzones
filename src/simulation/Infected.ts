@@ -14,15 +14,30 @@ export interface InfectedConfig {
   readonly id: number;
   readonly x: number;
   readonly y: number;
+  readonly entryTile: TilePosition;
   readonly maxHealth?: number;
   readonly moveSpeed?: number;
   readonly damage?: number;
   readonly attackRange?: number;
   readonly detectionRange?: number;
   readonly attackInterval?: number;
-  readonly wanderRadiusTiles?: number;
-  readonly random?: () => number;
 }
+
+/** Contrato para portas/janelas destrutíveis, implementado na Fase 7. */
+export interface InfectedStructureTarget {
+  readonly position: InfectedPosition;
+  /** Walkable tile adjacent to the door/window; the structure tile may be blocked. */
+  readonly approachTile: TilePosition;
+  readonly breachTile?: TilePosition;
+  readonly isPassable?: boolean;
+  readonly isDestroyed: boolean;
+  takeDamage(amount: number): number;
+}
+
+type Target =
+  | { readonly kind: 'officer'; readonly officer: PoliceOfficer; readonly position: InfectedPosition }
+  | { readonly kind: 'structure'; readonly structure: InfectedStructureTarget; readonly position: InfectedPosition; readonly tile: TilePosition }
+  | { readonly kind: 'entry'; readonly position: InfectedPosition; readonly tile: TilePosition };
 
 const DEFAULTS = Object.freeze({
   maxHealth: 60,
@@ -31,14 +46,12 @@ const DEFAULTS = Object.freeze({
   attackRange: 40,
   detectionRange: 220,
   attackInterval: 1.2,
-  wanderRadiusTiles: 5,
 });
 
 /**
- * Infectado básico: vaga pelo cenário escolhendo destinos caminháveis aleatórios.
- * Ao detectar um policial ativo, interrompe a ronda e persegue/ataca esse alvo.
- * Paredes, portas e janelas permanecem bloqueios do GridMap; o infectado nunca
- * recebe uma ordem para entrar na residência nem danifica suas estruturas.
+ * Entidade de domínio do infectado básico.
+ * A IA prioriza policiais detectados; sem policiais próximos, avança até
+ * o ponto de entrada configurado. Não depende do Phaser.
  */
 export class Infected {
   readonly id: number;
@@ -48,9 +61,7 @@ export class Infected {
   readonly attackRange: number;
   readonly detectionRange: number;
   readonly attackInterval: number;
-  readonly wanderRadiusTiles: number;
 
-  private readonly random: () => number;
   private currentHealth: number;
   private currentState: InfectedState = 'idle';
   private currentPosition: { x: number; y: number };
@@ -58,7 +69,7 @@ export class Infected {
   private waypointIndex = 0;
   private pathTargetKey = '';
   private attackTimer = 0;
-  private wanderTimer = 0;
+  private attractedStructureTarget: InfectedStructureTarget | undefined;
 
   constructor(config: InfectedConfig) {
     this.assertFinite(config.x, 'x');
@@ -66,7 +77,6 @@ export class Infected {
     if (!Number.isInteger(config.id) || config.id <= 0) {
       throw new RangeError('Infected id must be a positive integer.');
     }
-
     this.id = config.id;
     this.maxHealth = config.maxHealth ?? DEFAULTS.maxHealth;
     this.moveSpeed = config.moveSpeed ?? DEFAULTS.moveSpeed;
@@ -74,8 +84,6 @@ export class Infected {
     this.attackRange = config.attackRange ?? DEFAULTS.attackRange;
     this.detectionRange = config.detectionRange ?? DEFAULTS.detectionRange;
     this.attackInterval = config.attackInterval ?? DEFAULTS.attackInterval;
-    this.wanderRadiusTiles = config.wanderRadiusTiles ?? DEFAULTS.wanderRadiusTiles;
-    this.random = config.random ?? Math.random;
 
     for (const [name, value] of Object.entries({
       maxHealth: this.maxHealth,
@@ -84,19 +92,25 @@ export class Infected {
       attackRange: this.attackRange,
       detectionRange: this.detectionRange,
       attackInterval: this.attackInterval,
-      wanderRadiusTiles: this.wanderRadiusTiles,
     })) {
       if (!Number.isFinite(value) || value <= 0) {
         throw new RangeError(`${name} must be a positive finite number.`);
       }
     }
-    if (typeof this.random !== 'function') {
-      throw new TypeError('random must be a function.');
+
+    if (
+      !Number.isInteger(config.entryTile.column) ||
+      !Number.isInteger(config.entryTile.row)
+    ) {
+      throw new RangeError('entryTile must contain integer grid coordinates.');
     }
 
     this.currentHealth = this.maxHealth;
     this.currentPosition = { x: config.x, y: config.y };
+    this.entryTile = { ...config.entryTile };
   }
+
+  readonly entryTile: TilePosition;
 
   get state(): InfectedState {
     return this.currentState;
@@ -119,17 +133,54 @@ export class Infected {
     tileSize: number,
     map: GridMap,
     officers: readonly PoliceOfficer[],
+    structureTarget?: InfectedStructureTarget,
   ): void {
     if (this.isDead || !Number.isFinite(dt) || dt <= 0) return;
     if (!Number.isFinite(tileSize) || tileSize <= 0) {
       throw new RangeError('tileSize must be a positive finite number.');
     }
 
-    const target = this.findOfficerTarget(officers);
-    if (target && this.updatePursuit(dt, tileSize, map, target)) return;
+    const target = this.chooseTarget(officers, structureTarget, tileSize);
+    const distance = this.distanceTo(target.position);
+
+    if (target.kind !== 'entry' && distance <= this.attackRange) {
+      this.path = [];
+      this.waypointIndex = 0;
+      this.pathTargetKey = '';
+      this.currentState = 'attacking';
+      this.attackTimer += dt;
+      while (this.attackTimer >= this.attackInterval) {
+        this.attackTimer -= this.attackInterval;
+        if (target.kind === 'officer') target.officer.takeDamage(this.damage);
+        else target.structure.takeDamage(this.damage);
+        if (target.kind === 'structure' && target.structure.isDestroyed) break;
+        if (target.kind === 'officer' && target.officer.isIncapacitated) break;
+      }
+      return;
+    }
 
     this.attackTimer = 0;
-    this.updateWandering(dt, tileSize, map);
+    const targetTile = target.kind === 'entry' || target.kind === 'structure'
+      ? target.tile
+      : { column: Math.floor(target.position.x / tileSize), row: Math.floor(target.position.y / tileSize) };
+    const targetKey = `${targetTile.column}:${targetTile.row}`;
+
+    if (targetKey !== this.pathTargetKey) {
+      const start = {
+        column: Math.floor(this.currentPosition.x / tileSize),
+        row: Math.floor(this.currentPosition.y / tileSize),
+      };
+      const nextPath = findPath(map, start, targetTile, { allowDiagonal: true });
+      this.path = nextPath ?? [];
+      this.waypointIndex = 0;
+      this.pathTargetKey = targetKey;
+    }
+
+    const followingPath = this.moveAlongPath(dt, tileSize);
+    const closingDistance = !followingPath && target.kind !== 'entry'
+      ? this.moveWithinTargetTile(dt, target.position, tileSize)
+      : false;
+    this.currentState = followingPath || closingDistance ? 'moving' : 'idle';
   }
 
   takeDamage(amount: number): number {
@@ -144,7 +195,11 @@ export class Infected {
     return applied;
   }
 
-  private findOfficerTarget(officers: readonly PoliceOfficer[]): PoliceOfficer | undefined {
+  private chooseTarget(
+    officers: readonly PoliceOfficer[],
+    structureTarget: InfectedStructureTarget | undefined,
+    tileSize: number,
+  ): Target {
     let nearest: PoliceOfficer | undefined;
     let nearestDistance = this.detectionRange;
     for (const officer of officers) {
@@ -155,125 +210,30 @@ export class Infected {
         nearestDistance = distance;
       }
     }
-    return nearest;
-  }
-
-  private updatePursuit(
-    dt: number,
-    tileSize: number,
-    map: GridMap,
-    officer: PoliceOfficer,
-  ): boolean {
-    const targetPosition = officer.position;
-    const distance = this.distanceTo(targetPosition);
-    const targetTile = {
-      column: Math.floor(targetPosition.x / tileSize),
-      row: Math.floor(targetPosition.y / tileSize),
-    };
-    const targetKey = `officer:${officer.id}:${targetTile.column}:${targetTile.row}`;
-
-    if (distance <= this.attackRange) {
-      this.path = [];
-      this.waypointIndex = 0;
-      this.pathTargetKey = '';
-      this.currentState = 'attacking';
-      this.attackTimer += dt;
-      while (this.attackTimer >= this.attackInterval) {
-        this.attackTimer -= this.attackInterval;
-        officer.takeDamage(this.damage);
-        if (officer.isIncapacitated) break;
-      }
-      return true;
+    if (nearest) {
+      return { kind: 'officer', officer: nearest, position: nearest.position };
     }
-
-    this.attackTimer = 0;
-    if (targetKey !== this.pathTargetKey) {
-      const start = this.currentTile(tileSize);
-      const nextPath = findPath(map, start, targetTile, { allowDiagonal: true });
-      if (nextPath === null) {
-        this.path = [];
-        this.waypointIndex = 0;
-        this.pathTargetKey = '';
-        return false;
-      }
-      this.path = nextPath;
-      this.waypointIndex = 0;
-      this.pathTargetKey = targetKey;
-    }
-
-    if (this.path.length === 0) {
-      const sameTile = this.currentTile(tileSize).column === targetTile.column &&
-        this.currentTile(tileSize).row === targetTile.row;
-      if (!sameTile) return false;
-      const closing = this.moveWithinTargetTile(dt, targetPosition);
-      this.currentState = closing ? 'moving' : 'idle';
-      return true;
-    }
-
-    const moving = this.moveAlongPath(dt, tileSize);
-    this.currentState = moving ? 'moving' : 'idle';
-    return true;
-  }
-
-  private updateWandering(dt: number, tileSize: number, map: GridMap): void {
-    if (this.pathTargetKey.startsWith('officer:')) {
-      this.path = [];
-      this.waypointIndex = 0;
-      this.pathTargetKey = '';
-      this.wanderTimer = 0;
-    }
-    this.wanderTimer -= dt;
-
-    if (this.path.length === 0 || this.waypointIndex >= this.path.length) {
-      if (this.wanderTimer > 0) {
-        this.currentState = 'idle';
-        return;
-      }
-      this.chooseWanderDestination(tileSize, map);
-    }
-
-    const moving = this.moveAlongPath(dt, tileSize);
-    if (moving) {
-      this.currentState = 'moving';
-    } else {
-      this.currentState = 'idle';
-      this.wanderTimer = 0.75 + this.random() * 1.75;
-    }
-  }
-
-  private chooseWanderDestination(tileSize: number, map: GridMap): void {
-    const start = this.currentTile(tileSize);
-    this.path = [];
-    this.waypointIndex = 0;
-    this.pathTargetKey = '';
-
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      const offsetX = Math.floor(this.random() * (this.wanderRadiusTiles * 2 + 1)) - this.wanderRadiusTiles;
-      const offsetY = Math.floor(this.random() * (this.wanderRadiusTiles * 2 + 1)) - this.wanderRadiusTiles;
-      if (offsetX === 0 && offsetY === 0) continue;
-
-      const destination = {
-        column: start.column + offsetX,
-        row: start.row + offsetY,
+    if (structureTarget) this.attractedStructureTarget = structureTarget;
+    const attracted = this.attractedStructureTarget;
+    if (attracted && !attracted.isDestroyed && !attracted.isPassable) {
+      return {
+        kind: 'structure',
+        structure: attracted,
+        position: attracted.position,
+        tile: attracted.approachTile,
       };
-      if (!map.isWalkable(destination)) continue;
-
-      const path = findPath(map, start, destination, { allowDiagonal: true });
-      if (!path || path.length === 0) continue;
-
-      this.path = path;
-      this.waypointIndex = 0;
-      this.pathTargetKey = `wander:${destination.column}:${destination.row}`;
-      return;
     }
-
-    this.wanderTimer = 1;
-  }
-
-  private currentTile(tileSize: number): TilePosition {
+    if (attracted && (attracted.isDestroyed || attracted.isPassable) && attracted.breachTile) {
+      const tile = attracted.breachTile;
+      return { kind: 'entry', tile, position: { x: tile.column * tileSize + tileSize / 2, y: tile.row * tileSize + tileSize / 2 } };
+    }
     return {
-      column: Math.floor(this.currentPosition.x / tileSize),
-      row: Math.floor(this.currentPosition.y / tileSize),
+      kind: 'entry',
+      tile: this.entryTile,
+      position: {
+        x: this.entryTile.column * tileSize + tileSize / 2,
+        y: this.entryTile.row * tileSize + tileSize / 2,
+      },
     };
   }
 
@@ -299,7 +259,6 @@ export class Infected {
         remaining = 0;
       }
     }
-
     if (this.waypointIndex >= this.path.length) {
       this.path = [];
       this.waypointIndex = 0;
@@ -311,7 +270,13 @@ export class Infected {
   private moveWithinTargetTile(
     dt: number,
     target: InfectedPosition,
+    tileSize: number,
   ): boolean {
+    const sameTile =
+      Math.floor(this.currentPosition.x / tileSize) === Math.floor(target.x / tileSize) &&
+      Math.floor(this.currentPosition.y / tileSize) === Math.floor(target.y / tileSize);
+    if (!sameTile) return false;
+
     const dx = target.x - this.currentPosition.x;
     const dy = target.y - this.currentPosition.y;
     const distance = Math.hypot(dx, dy);

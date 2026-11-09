@@ -7811,7 +7811,7 @@
           "type": "",
           "x": 704,
           "y": 864,
-          "width": 256,
+          "width": 160,
           "height": 32,
           "rotation": 0,
           "visible": true
@@ -7915,6 +7915,11 @@
           "visible": true,
           "properties": [
             {
+              "name": "health",
+              "type": "int",
+              "value": 120
+            },
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -7937,6 +7942,11 @@
           "rotation": 0,
           "visible": true,
           "properties": [
+            {
+              "name": "health",
+              "type": "int",
+              "value": 60
+            },
             {
               "name": "blocksMovement",
               "type": "bool",
@@ -7961,6 +7971,11 @@
           "visible": true,
           "properties": [
             {
+              "name": "health",
+              "type": "int",
+              "value": 60
+            },
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -7983,6 +7998,11 @@
           "rotation": 0,
           "visible": true,
           "properties": [
+            {
+              "name": "health",
+              "type": "int",
+              "value": 60
+            },
             {
               "name": "blocksMovement",
               "type": "bool",
@@ -8007,6 +8027,11 @@
           "visible": true,
           "properties": [
             {
+              "name": "health",
+              "type": "int",
+              "value": 60
+            },
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -8029,6 +8054,11 @@
           "rotation": 0,
           "visible": true,
           "properties": [
+            {
+              "name": "health",
+              "type": "int",
+              "value": 90
+            },
             {
               "name": "blocksMovement",
               "type": "bool",
@@ -8053,6 +8083,11 @@
           "visible": true,
           "properties": [
             {
+              "name": "health",
+              "type": "int",
+              "value": 90
+            },
+            {
               "name": "blocksMovement",
               "type": "bool",
               "value": true
@@ -8061,6 +8096,24 @@
               "name": "blocksVision",
               "type": "bool",
               "value": true
+            }
+          ]
+        },
+        {
+          "id": 25,
+          "name": "south-garage",
+          "type": "garage",
+          "x": 864,
+          "y": 864,
+          "width": 96,
+          "height": 32,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "health",
+              "type": "int",
+              "value": 160
             }
           ]
         }
