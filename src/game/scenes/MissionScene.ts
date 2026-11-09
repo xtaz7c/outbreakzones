@@ -82,7 +82,6 @@ export class MissionScene extends Phaser.Scene {
   private minimapGraphics!: Phaser.GameObjects.Graphics;
   private missionText!: Phaser.GameObjects.Text;
   private teamText!: Phaser.GameObjects.Text;
-  private minimapTitle!: Phaser.GameObjects.Text;
   private settingsButton!: Phaser.GameObjects.Text;
   private pauseOverlay!: Phaser.GameObjects.Rectangle;
   private pausePanel!: Phaser.GameObjects.Rectangle;
@@ -400,7 +399,7 @@ export class MissionScene extends Phaser.Scene {
       wordWrap: { width: 244 },
     }).setScrollFactor(0).setDepth(1505);
 
-    this.minimapTitle = this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
+    this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
       fontFamily: 'Arial, sans-serif',
       fontSize: '9px',
       fontStyle: 'bold',
