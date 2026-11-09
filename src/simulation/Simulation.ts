@@ -61,6 +61,11 @@ export class Simulation {
     return this.paused;
   }
 
+  setRandomSeed(seed: number): void {
+    if (!Number.isInteger(seed)) throw new RangeError('Random seed must be an integer.');
+    this.randomState = (seed >>> 0) || 0x6d2b79f5;
+  }
+
   setWorldGrid(map: GridMap, tileSize: number): void {
     if (!Number.isFinite(tileSize) || tileSize <= 0) {
       throw new RangeError('Tile size must be a positive finite number.');
@@ -212,7 +217,11 @@ export class Simulation {
         const structure = heardStimuli.find((stimulus) => stimulus.structure)?.structure;
         infected.update(dt, this.tileSize, infectedGrid, this.officers, structure, heardStimuli);
       }
-      this.combatEvents.push(...this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize));
+      const shotEvents = this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize);
+      this.combatEvents.push(...shotEvents);
+      for (const event of shotEvents) {
+        this.emitStimulus(event.from, 480, 0.65, 2);
+      }
     }
     for (let index = this.infected.length - 1; index >= 0; index -= 1) {
       if (this.infected[index]!.isDead) this.infected.splice(index, 1);
