@@ -29,7 +29,6 @@ button { font: inherit; }
   width: 100%;
   height: 100vh;
   height: 100svh;
-  min-height: 480px;
   overflow: hidden;
   padding: clamp(20px, 3.2vw, 48px) clamp(22px, 6.2vw, 96px) 24px;
   background:
@@ -201,7 +200,7 @@ button { font: inherit; }
   .topbar__status { font-size: 8px; }
 }
 @media (max-width: 640px) {
-  .home-screen { min-height: 480px; padding: 18px 22px 16px; }
+  .home-screen { padding: 18px 22px 16px; }
   .wordmark__mark { width: 31px; height: 31px; font-size: 16px; }
   .wordmark__name { font-size: 14px; }
   .topbar__status { gap: 6px; font-size: 7px; letter-spacing: .8px; }
@@ -233,4 +232,13 @@ button { font: inherit; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+@media (max-height: 560px) and (max-width: 640px) {
+  .home-screen { padding-top: 12px; padding-bottom: 10px; }
+  .hero h1 { font-size: clamp(48px, 12vh, 64px); }
+  .eyebrow { margin-bottom: 12px; }
+  .hero__description { margin: 12px 0; line-height: 1.5; }
+  .mission-meta { margin-top: 16px; }
+  .primary-button { height: 44px; }
 }
