@@ -10,6 +10,7 @@ import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/
 import { BuildingSystem, type AccessKind } from '../../simulation/world/BuildingSystem';
 import type { WaveSpawnPoint } from '../../simulation/WaveSystem';
 import type { MaintenanceAction, MaintenanceState } from '../../simulation/world/BuildingMaintenanceSystem';
+import { DeployableStructureSystem, type DeployableKind, type DeployableState } from '../../simulation/world/DeployableStructureSystem';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -19,6 +20,7 @@ const MISSION_SEED_STORAGE_KEY = 'outbreakzones:mission-seed';
 const CAMPAIGN_UNLOCK_STORAGE_KEY = 'outbreakzones:campaign-unlocked';
 const BUILDING_STATE_STORAGE_PREFIX = 'outbreakzones:building-state:';
 const MAINTENANCE_STATE_STORAGE_PREFIX = 'outbreakzones:maintenance-state:';
+const DEPLOYABLE_STATE_STORAGE_PREFIX = 'outbreakzones:deployable-state:';
 
 interface TacticalOfficer {
   readonly id: number;
@@ -68,6 +70,12 @@ export class MissionScene extends Phaser.Scene {
   private combatGraphics!: Phaser.GameObjects.Graphics;
   private accessGraphics!: Phaser.GameObjects.Graphics;
   private buildingSystem!: BuildingSystem;
+  private deployableSystem!: DeployableStructureSystem;
+  private deployableGraphics!: Phaser.GameObjects.Graphics;
+  private placementMode: DeployableKind | null = null;
+  private selectedDeployableId: number | null = null;
+  private buildStatus = '';
+  private readonly buildButtons: Phaser.GameObjects.Text[] = [];
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
   private readonly civilianVisuals = new Map<number, TacticalCivilian>();
@@ -88,6 +96,7 @@ export class MissionScene extends Phaser.Scene {
   private resultShown = false;
   private lastPersistedBuildingState = '';
   private lastPersistedMaintenanceState = '';
+  private lastPersistedDeployableState = '';
   private hudRoot!: Phaser.GameObjects.Container;
   private hudScale = DEFAULT_HUD_SCALE;
   private hudScaleDownButton!: Phaser.GameObjects.Text;
@@ -122,6 +131,7 @@ export class MissionScene extends Phaser.Scene {
     mission: { x: 20, y: 88, width: 276, height: 142 },
     minimap: { x: 0, y: 20, width: 320, height: 354 },
     team: { x: 0, y: 384, width: 320, height: 154 },
+    build: { x: 20, y: 0, width: 440, height: 64 },
   };
 
   constructor() {
@@ -180,6 +190,7 @@ export class MissionScene extends Phaser.Scene {
     this.updateMissionResult();
     this.persistBuildingState();
     this.persistMaintenanceState();
+    this.persistDeployableState();
     this.updateCamera(dt);
     this.clampCamera();
     if (!this.isPaused) {
@@ -188,6 +199,7 @@ export class MissionScene extends Phaser.Scene {
     this.updateInfectedVisuals();
     this.updateCivilianVisuals();
     this.updateAccessVisuals();
+    this.updateDeployableVisuals();
     this.updateHud();
   }
 
@@ -266,6 +278,18 @@ export class MissionScene extends Phaser.Scene {
     this.lastPersistedMaintenanceState = this.serializeMaintenanceState();
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
+    this.deployableSystem = new DeployableStructureSystem(this.worldGrid, this.tileSize);
+    this.simulation.setDeployableSystem(this.deployableSystem);
+    const savedDeployableState = this.readStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${missionSeed}`);
+    if (savedDeployableState) {
+      try {
+        this.simulation.restoreDeployableState(JSON.parse(savedDeployableState) as DeployableState);
+      } catch {
+        this.removeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${missionSeed}`);
+      }
+    }
+    this.lastPersistedDeployableState = this.serializeDeployableState();
+    this.deployableGraphics = this.add.graphics().setDepth(95);
     this.simulation.setExtractionZone({ x: 1280, y: 720, radius: 72 });
     this.add.circle(1280, 720, 72, 0x55c878, 0.08)
       .setStrokeStyle(3, 0x55c878, 0.85).setDepth(70);
@@ -359,11 +383,26 @@ export class MissionScene extends Phaser.Scene {
     this.lastPersistedMaintenanceState = serialized;
   }
 
+  private serializeDeployableState(): string {
+    const state = this.simulation.getDeployableState();
+    return state ? JSON.stringify(state) : '';
+  }
+
+  private persistDeployableState(): void {
+    const serialized = this.serializeDeployableState();
+    if (!serialized || serialized === this.lastPersistedDeployableState) return;
+    const seed = this.registry.get('missionSeed');
+    if (typeof seed !== 'number' || !Number.isInteger(seed)) return;
+    this.writeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${seed}`, serialized);
+    this.lastPersistedDeployableState = serialized;
+  }
+
   private restartMission(): void {
     const seed = this.registry.get('missionSeed');
     if (typeof seed === 'number' && Number.isInteger(seed)) {
       this.removeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${seed}`);
       this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`);
+      this.removeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${seed}`);
     }
     this.removeStorage(MISSION_SEED_STORAGE_KEY);
     this.registry.remove('missionSeed');
@@ -433,6 +472,8 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.minimap.y = mapY;
     this.hudBounds.team.x = mapX;
     this.hudBounds.team.y = mapY + 364;
+    this.hudBounds.build.x = viewX + 20;
+    this.hudBounds.build.y = height - 84;
 
     // Tactical HUD elements are viewport-space UI and must ignore world camera movement.
     const hudLabels: Phaser.GameObjects.Text[] = [];
@@ -458,6 +499,8 @@ export class MissionScene extends Phaser.Scene {
     this.hudPanels.fillCircle(mapX + 194, mapY + 338, 3);
     this.hudPanels.fillRoundedRect(mapX, mapY + 364, 320, 154, 8);
     this.hudPanels.strokeRoundedRect(mapX, mapY + 364, 320, 154, 8);
+    this.hudPanels.fillRoundedRect(viewX + 20, height - 84, 440, 64, 8);
+    this.hudPanels.strokeRoundedRect(viewX + 20, height - 84, 440, 64, 8);
 
     this.settingsButton = this.add.text(viewX + 48, viewY + 48, '⚙', {
       fontFamily: 'Arial, sans-serif',
@@ -518,6 +561,17 @@ export class MissionScene extends Phaser.Scene {
       wordWrap: { width: 296 },
     }).setScrollFactor(0).setDepth(1505);
 
+    const buildTitle = this.add.text(viewX + 32, height - 78, 'CONSTRUÇÕES  /  CLIQUE E POSICIONE NO MAPA', {
+      fontFamily: 'Arial, sans-serif', fontSize: '7px', color: '#858a87', letterSpacing: 0.8,
+    }).setScrollFactor(0).setDepth(1505);
+    hudLabels.push(buildTitle);
+    this.buildButtons.splice(0, this.buildButtons.length,
+      this.createBuildButton(viewX + 76, height - 47, 'ABRIGO', 'shelter-tent'),
+      this.createBuildButton(viewX + 184, height - 47, 'SUPRIMENTOS', 'resource-tent'),
+      this.createBuildButton(viewX + 292, height - 47, 'SNIPER', 'sniper-post'),
+      this.createBuildButton(viewX + 400, height - 47, 'BARREIRA', 'barricade'),
+    );
+
     const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
       .setScrollFactor(0).setDepth(1507)
       .setInteractive({ useHandCursor: true });
@@ -527,9 +581,10 @@ export class MissionScene extends Phaser.Scene {
     this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
     this.hudRoot.add([
       this.hudPanels, this.minimapGraphics, this.settingsButton, this.fullscreenButton,
-      this.missionText, this.teamText, teamHitArea, ...hudLabels,
+      this.missionText, this.teamText, teamHitArea, ...hudLabels, ...this.buildButtons,
     ]);
     this.applyHudScale();
+    this.refreshBuildButtons();
     this.scale.on('resize', () => this.applyHudScale());
 
     this.pauseOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x080a0a, 0.72)
@@ -583,6 +638,104 @@ export class MissionScene extends Phaser.Scene {
 
     this.loadMinimapVisibility();
     this.refreshPauseMenuLabels();
+  }
+
+  private createBuildButton(x: number, y: number, label: string, kind: DeployableKind): Phaser.GameObjects.Text {
+    const button = this.add.text(x, y, label, {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '8px',
+      fontStyle: 'bold',
+      color: '#e8e3d8',
+      backgroundColor: '#252c2d',
+      padding: { x: 6, y: 8 },
+      fixedWidth: 96,
+      align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1506)
+      .setInteractive({ useHandCursor: true });
+    button.on('pointerdown', () => {
+      this.placementMode = this.placementMode === kind ? null : kind;
+      this.buildStatus = this.placementMode ? 'CLIQUE NO MAPA PARA POSICIONAR' : '';
+      this.refreshBuildButtons();
+      this.updateHud();
+    });
+    return button;
+  }
+
+  private refreshBuildButtons(): void {
+    const kinds: DeployableKind[] = ['shelter-tent', 'resource-tent', 'sniper-post', 'barricade'];
+    this.buildButtons.forEach((button, index) => {
+      const kind = kinds[index];
+      button.setBackgroundColor(this.placementMode === kind ? '#a72b2e' : '#252c2d');
+    });
+  }
+
+  private placeDeployableAt(worldX: number, worldY: number): void {
+    if (!this.placementMode) return;
+    const tile = {
+      column: Math.floor(worldX / this.tileSize),
+      row: Math.floor(worldY / this.tileSize),
+    };
+    const placed = this.simulation.placeDeployable(this.placementMode, tile);
+    if (!placed) {
+      this.buildStatus = 'SEM RECURSOS OU POSIÇÃO INVÁLIDA';
+      this.updateHud();
+      return;
+    }
+    this.selectedDeployableId = placed.id;
+    this.placementMode = null;
+    this.buildStatus = 'ESTRUTURA POSICIONADA';
+    this.refreshBuildButtons();
+    this.persistDeployableState();
+    this.updateDeployableVisuals();
+    this.updateHud();
+  }
+
+  private dismantleSelectedDeployable(): void {
+    if (this.selectedDeployableId === null) return;
+    const dismantled = this.simulation.dismantleDeployable(this.selectedDeployableId);
+    if (dismantled) {
+      this.selectedDeployableId = null;
+      this.buildStatus = 'ESTRUTURA DESMONTADA · 50% DOS MATERIAIS RECUPERADOS';
+      this.persistDeployableState();
+      this.updateDeployableVisuals();
+      this.updateHud();
+    }
+  }
+
+  private updateDeployableVisuals(): void {
+    if (!this.deployableGraphics || !this.simulation) return;
+    this.deployableGraphics.clear();
+    for (const structure of this.simulation.getDeployableSnapshots()) {
+      const { x, y } = structure.position;
+      const color = structure.isDestroyed ? 0x626967 : structure.kind === 'shelter-tent'
+        ? 0xd8b56a : structure.kind === 'resource-tent'
+          ? 0x8f9d7b : structure.kind === 'sniper-post' ? 0x6e9cbe : 0xa5aaa5;
+      this.deployableGraphics.fillStyle(color, structure.isDestroyed ? 0.35 : 0.95);
+      if (structure.kind === 'shelter-tent') {
+        this.deployableGraphics.fillTriangle(x - 14, y + 8, x, y - 12, x + 14, y + 8);
+        this.deployableGraphics.fillRect(x - 12, y + 8, 24, 10);
+      } else if (structure.kind === 'resource-tent') {
+        this.deployableGraphics.fillRoundedRect(x - 12, y - 10, 24, 20, 3);
+        this.deployableGraphics.lineStyle(2, 0x26302a, 0.9);
+        this.deployableGraphics.strokeRect(x - 12, y - 10, 24, 20);
+      } else if (structure.kind === 'sniper-post') {
+        this.deployableGraphics.fillCircle(x, y, 12);
+        this.deployableGraphics.lineStyle(3, 0x1c2930, 1);
+        this.deployableGraphics.lineBetween(x, y, x + 18, y - 8);
+      } else {
+        this.deployableGraphics.fillRect(x - 15, y - 9, 30, 18);
+        this.deployableGraphics.lineStyle(2, 0x252c2d, 1);
+        this.deployableGraphics.strokeRect(x - 15, y - 9, 30, 18);
+      }
+      if (this.selectedDeployableId === structure.id) {
+        this.deployableGraphics.lineStyle(2, HUD_COLORS.paper, 0.95);
+        this.deployableGraphics.strokeCircle(x, y, 20);
+      }
+      this.deployableGraphics.fillStyle(0x111415, 0.9);
+      this.deployableGraphics.fillRect(x - 14, y + 20, 28, 4);
+      this.deployableGraphics.fillStyle(0x72b879, 1);
+      this.deployableGraphics.fillRect(x - 14, y + 20, 28 * (structure.health / structure.maxHealth), 4);
+    }
   }
 
   private createResultAction(
@@ -763,7 +916,7 @@ export class MissionScene extends Phaser.Scene {
       localX >= rect.x && localX <= rect.x + rect.width &&
       localY >= rect.y && localY <= rect.y + rect.height;
     return inside(this.hudBounds.settings) || inside(this.hudBounds.mission) ||
-      inside(this.hudBounds.minimap) || inside(this.hudBounds.team) ||
+      inside(this.hudBounds.minimap) || inside(this.hudBounds.team) || inside(this.hudBounds.build) ||
       this.pauseMenuOpen;
   }
 
@@ -812,6 +965,8 @@ export class MissionScene extends Phaser.Scene {
       ...teamLines,
       `RECURSOS  ${maintenance?.resources.scrap ?? 0} sucata / ${maintenance?.resources.parts ?? 0} peças`,
       `MANUTENÇÃO  ${maintenanceJobs}`,
+      `ESTRUTURAS  ${this.simulation.getDeployableResources().scrap} sucata / ${this.simulation.getDeployableResources().parts} peças`,
+      ...(this.buildStatus ? [this.buildStatus] : []),
     ].join('\n'));
 
     this.minimapGraphics.clear();
@@ -912,12 +1067,24 @@ export class MissionScene extends Phaser.Scene {
     keyboard.on('keydown-ONE', () => this.selectOfficer(1));
     keyboard.on('keydown-TWO', () => this.selectOfficer(2));
     keyboard.on('keydown-THREE', () => this.selectOfficer(3));
+    keyboard.on('keydown-DELETE', () => this.dismantleSelectedDeployable());
 
     this.input.mouse?.disableContextMenu();
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (this.isHudPoint(pointer.x, pointer.y)) return;
+      if (this.placementMode && pointer.button === 0) {
+        this.placeDeployableAt(pointer.worldX, pointer.worldY);
+        return;
+      }
       if (pointer.button === 2) {
+        if (this.placementMode) {
+          this.placementMode = null;
+          this.refreshBuildButtons();
+          this.buildStatus = 'POSICIONAMENTO CANCELADO';
+          this.updateHud();
+          return;
+        }
         this.issueMoveOrder(pointer.worldX, pointer.worldY);
         return;
       }
@@ -966,11 +1133,17 @@ export class MissionScene extends Phaser.Scene {
 
     if (!additive) this.selectedOfficerIds.clear();
     if (hit && !this.simulation.getOfficers().find((officer) => officer.id === hit.id)?.isIncapacitated) {
+      this.selectedDeployableId = null;
       if (additive && this.selectedOfficerIds.has(hit.id)) {
         this.selectedOfficerIds.delete(hit.id);
       } else {
         this.selectedOfficerIds.add(hit.id);
       }
+    } else {
+      const structure = this.simulation.getDeployableSnapshots()
+        .find((candidate) => Phaser.Math.Distance.Between(x, y, candidate.position.x, candidate.position.y) <= 24);
+      this.selectedDeployableId = structure?.id ?? null;
+      this.updateDeployableVisuals();
     }
     this.refreshSelectionVisuals();
   }
