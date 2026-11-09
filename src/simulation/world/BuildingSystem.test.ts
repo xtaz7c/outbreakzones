@@ -23,6 +23,22 @@ describe('BuildingSystem', () => {
     expect(system.getNavigationGrid('police').isWalkable({ column: 1, row: 1 })).toBe(true);
   });
 
+
+  it('reopens a dynamic access cell that is blocked by the static collision map', () => {
+    const grid = new GridMap(8, 8);
+    const doorCell = { column: 1, row: 1 };
+    grid.setBlocked(doorCell);
+
+    const system = new BuildingSystem([{
+      ...definitions[0]!,
+      weights: { open: 0, closed: 1 },
+    }], grid, 32, 1);
+
+    expect(system.getNavigationGrid('police').isWalkable(doorCell)).toBe(false);
+    expect(system.interact('front', 'police')).toBe(true);
+    expect(system.getNavigationGrid('police').isWalkable(doorCell)).toBe(true);
+  });
+
   it('does not allow civilians through windows', () => {
     const grid = new GridMap(8, 8);
     const system = new BuildingSystem([{ ...definitions[1]!, weights: { open: 1, closed: 0 } }], grid, 32, 1);
