@@ -705,13 +705,13 @@ export class MissionScene extends Phaser.Scene {
     });
     const maintenance = this.simulation.getMaintenanceState();
     const maintenanceJobs = maintenance?.jobs.map((job) =>
-      \`\${job.action} \${job.accessId}: \${job.remaining.toFixed(1)}s\`).join(', ') || 'nenhum';
+      `${job.action} ${job.accessId}: ${job.remaining.toFixed(1)}s`).join(', ') || 'nenhum';
     this.teamText.setText([
       'EQUIPE  /  CLIQUE PARA SELECIONAR TODOS',
       ...teamLines,
-      \`RECURSOS  \${maintenance?.resources.scrap ?? 0} sucata / \${maintenance?.resources.parts ?? 0} peças\`,
-      \`MANUTENÇÃO  \${maintenanceJobs}\`,
-    ].join('\\n'));
+      `RECURSOS  ${maintenance?.resources.scrap ?? 0} sucata / ${maintenance?.resources.parts ?? 0} peças`,
+      `MANUTENÇÃO  ${maintenanceJobs}`,
+    ].join('\n'));
 
     this.minimapGraphics.clear();
     const mapX = this.hudBounds.minimap.x + 12;
