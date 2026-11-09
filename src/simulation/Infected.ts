@@ -171,6 +171,31 @@ export class Infected {
       throw new RangeError('tileSize must be a positive finite number.');
     }
 
+    // Wave units start beyond the playable boundary and visibly walk to their
+    // assigned entry tile before normal navigation/perception takes over.
+    const worldWidth = map.columns * tileSize;
+    const worldHeight = map.rows * tileSize;
+    const outsideWorld = this.currentPosition.x < 0 || this.currentPosition.y < 0 ||
+      this.currentPosition.x >= worldWidth || this.currentPosition.y >= worldHeight;
+    if (outsideWorld) {
+      const entry = {
+        x: this.entryTile.column * tileSize + tileSize / 2,
+        y: this.entryTile.row * tileSize + tileSize / 2,
+      };
+      const dx = entry.x - this.currentPosition.x;
+      const dy = entry.y - this.currentPosition.y;
+      const distance = Math.hypot(dx, dy);
+      const travel = Math.min(this.moveSpeed * dt, distance);
+      if (distance > 0 && travel > 0) {
+        this.currentPosition = {
+          x: this.currentPosition.x + (dx / distance) * travel,
+          y: this.currentPosition.y + (dy / distance) * travel,
+        };
+      }
+      this.currentState = 'moving';
+      return;
+    }
+
     const target = this.chooseTarget(officers, structureTarget, tileSize, map, stimuli, dt);
     const distance = this.distanceTo(target.position);
 
