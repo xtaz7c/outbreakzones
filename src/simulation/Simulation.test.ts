@@ -133,6 +133,32 @@ describe('Simulation', () => {
     expect(infected.position.x).toBeGreaterThan(16);
   });
 
+  it('replays infected patrol choices with the same mission seed', () => {
+    const patrolPosition = (seed: number) => {
+      const seeded = new Simulation();
+      seeded.setRandomSeed(seed);
+      seeded.setWorldGrid(new GridMap(20, 20), 32);
+      const infected = seeded.spawnInfected({
+        x: 144, y: 144, entryTile: { column: 1, row: 1 }, moveSpeed: 32,
+      });
+      seeded.update(FIXED_DT);
+      return infected.position;
+    };
+
+    expect(patrolPosition(12345)).toEqual(patrolPosition(12345));
+  });
+
+  it('routes infected toward a generic emitted sound stimulus', () => {
+    sim.setWorldGrid(new GridMap(20, 20), 32);
+    const infected = sim.spawnInfected({
+      x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      moveSpeed: 55, detectionRange: 1,
+    });
+    sim.emitStimulus({ x: 112, y: 16 }, 180, 1, 1);
+    sim.update(FIXED_DT);
+    expect(infected.position.x).toBeGreaterThan(16);
+  });
+
   it('removes dead infected entities safely during simulation updates', () => {
     const infected = sim.spawnInfected({
       x: 16, y: 16, entryTile: { column: 4, row: 1 },
