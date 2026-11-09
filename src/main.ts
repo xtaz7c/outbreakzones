@@ -19,7 +19,13 @@ startButton.addEventListener('click', () => {
   if (game) return;
 
   startButton.disabled = true;
-  startButton.textContent = 'PREPARANDO OPERAÇÃO…';
+  startButton.setAttribute('aria-busy', 'true');
+  startButton.innerHTML = `
+    <span>PREPARANDO OPERAÇÃO</span>
+    <span class="loading-dots" role="status" aria-label="Carregando">
+      <i></i><i></i><i></i>
+    </span>
+  `;
   homeScreen.hidden = true;
   gameContainer.hidden = false;
 
@@ -33,7 +39,11 @@ window.addEventListener('outbreakzones:return-home', () => {
   gameContainer.hidden = true;
   homeScreen.hidden = false;
   startButton.disabled = false;
-  startButton.textContent = 'INICIAR OPERAÇÃO';
+  startButton.removeAttribute('aria-busy');
+  startButton.innerHTML = `
+    <span>INICIAR OPERAÇÃO</span>
+    <span class="primary-button__arrow" aria-hidden="true">↗</span>
+  `;
 });
 
 controlsButton.addEventListener('click', () => {
