@@ -41,6 +41,7 @@ export class PoliceOfficer {
   private currentFacingAngle = -Math.PI / 2;
   private path: TilePosition[] = [];
   private waypointIndex = 0;
+  private moveDestination: TilePosition | null = null;
 
   constructor(config: PoliceOfficerConfig) {
     this.assertPositiveFinite(config.x, 'x');
@@ -91,6 +92,7 @@ export class PoliceOfficer {
     if (this.isIncapacitated) return false;
     this.path = [];
     this.waypointIndex = 0;
+    this.moveDestination = null;
     this.currentState = 'idle';
     return true;
   }
@@ -133,8 +135,24 @@ export class PoliceOfficer {
 
     this.path = nextPath;
     this.waypointIndex = 0;
+    this.moveDestination = nextPath.length > 0 ? { ...destination } : null;
     this.currentState = nextPath.length > 0 ? 'moving' : 'idle';
     return true;
+  }
+
+  /** Recalcula a rota ativa após uma porta ou outro acesso mudar de estado. */
+  replanMoveOrder(map: GridMap, tileSize: number): boolean {
+    if (this.isIncapacitated || !this.moveDestination) return false;
+    this.assertPositiveFinite(tileSize, 'tileSize');
+    const start = {
+      column: Math.floor(this.currentPosition.x / tileSize),
+      row: Math.floor(this.currentPosition.y / tileSize),
+    };
+    const nextPath = findPath(map, start, this.moveDestination, { allowDiagonal: true });
+    this.path = nextPath ?? [];
+    this.waypointIndex = 0;
+    this.currentState = nextPath && nextPath.length > 0 ? 'moving' : 'idle';
+    return nextPath !== null;
   }
 
   /** Atualiza o deslocamento em segundos; chamado pelo fixed timestep da Simulation. */
@@ -172,6 +190,7 @@ export class PoliceOfficer {
     if (this.waypointIndex >= this.path.length) {
       this.path = [];
       this.waypointIndex = 0;
+      this.moveDestination = null;
       this.currentState = 'idle';
     }
   }
@@ -183,6 +202,7 @@ export class PoliceOfficer {
     if (attacking) {
       this.path = [];
       this.waypointIndex = 0;
+      this.moveDestination = null;
       this.currentState = 'attacking';
     } else if (this.currentState === 'attacking') {
       this.currentState = 'idle';
@@ -201,6 +221,7 @@ export class PoliceOfficer {
       this.currentState = 'incapacitated';
       this.path = [];
       this.waypointIndex = 0;
+      this.moveDestination = null;
     }
 
     return appliedDamage;

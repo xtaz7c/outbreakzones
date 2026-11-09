@@ -12,6 +12,7 @@ import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from '
 import type { GridMap } from './world/GridMap';
 import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
 import type { TilePosition } from './world/WorldConfig';
+import { WaveSystem, type WaveDefinition, type WaveSpawnPoint, type WavePhase } from './WaveSystem';
 
 export interface SimulationState {
   elapsed: number;
@@ -21,6 +22,12 @@ export interface SimulationState {
   infectedCount: number;
   civilianCount: number;
   rescuedCivilianCount: number;
+  missionStatus: 'playing' | 'victory' | 'defeat';
+  wavePhase: WavePhase | 'disabled';
+  waveNumber: number;
+  totalWaves: number;
+  preparationRemaining: number;
+  remainingToSpawn: number;
 }
 
 export const FIXED_DT = 1 / 60;
@@ -55,6 +62,8 @@ export class Simulation {
   private worldGrid: GridMap | null = null;
   private buildingSystem: BuildingSystem | null = null;
   private tileSize = WORLD_TILE_SIZE;
+  private waveSystem: WaveSystem | null = null;
+  private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
 
   constructor(combatOptions: CombatSystemOptions = {}) {
     this.combat = new CombatSystem(combatOptions);
@@ -85,16 +94,32 @@ export class Simulation {
     this.buildingSystem = system;
   }
 
+  configureWaves(spawnPoints: readonly WaveSpawnPoint[], waves: readonly WaveDefinition[], preparationDuration = 8): void {
+    this.waveSystem = new WaveSystem(spawnPoints, waves, preparationDuration, () => this.nextRandom());
+    this.missionStatus = 'playing';
+  }
+
   getBuildingSnapshots(): AccessSnapshot[] {
     return this.buildingSystem?.getSnapshots() ?? [];
   }
 
   interactWithAccess(accessId: string, actor: ActorKind, hasKey = false): boolean {
-    return this.buildingSystem?.interact(accessId, actor, hasKey) ?? false;
+    const changed = this.buildingSystem?.interact(accessId, actor, hasKey) ?? false;
+    if (changed) this.replanOfficerRoutes();
+    return changed;
   }
 
   damageAccess(accessId: string, amount: number): number {
-    return this.buildingSystem?.damage(accessId, amount) ?? 0;
+    const before = this.buildingSystem?.getAccess(accessId)?.state;
+    const applied = this.buildingSystem?.damage(accessId, amount) ?? 0;
+    if (applied > 0 && this.buildingSystem?.getAccess(accessId)?.state !== before) this.replanOfficerRoutes();
+    return applied;
+  }
+
+  private replanOfficerRoutes(): void {
+    if (!this.worldGrid) return;
+    const grid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
+    for (const officer of this.officers) officer.replanMoveOrder(grid, this.tileSize);
   }
 
   getOfficers(): readonly PoliceOfficer[] {
@@ -111,6 +136,10 @@ export class Simulation {
 
   isMissionDefeated(): boolean {
     return this.officers.every((officer) => officer.isIncapacitated);
+  }
+
+  isMissionVictory(): boolean {
+    return this.missionStatus === 'victory';
   }
 
   spawnInfected(config: Omit<InfectedConfig, 'id'>): Infected {
@@ -187,12 +216,14 @@ export class Simulation {
 
   damageOfficer(officerId: number, amount: number): number {
     const officer = this.officers.find((candidate) => candidate.id === officerId);
-    return officer?.takeDamage(amount) ?? 0;
+    const applied = officer?.takeDamage(amount) ?? 0;
+    if (this.isMissionDefeated()) this.missionStatus = 'defeat';
+    return applied;
   }
 
   update(dt: number): void {
     this.combatEvents = [];
-    if (this.paused || !isValidDt(dt) || this.isMissionDefeated()) return;
+    if (this.paused || !isValidDt(dt) || this.missionStatus !== 'playing') return;
 
 
     this.accumulator += Math.min(dt, MAX_FRAME_DT);
@@ -202,6 +233,11 @@ export class Simulation {
       this.accumulator -= FIXED_DT;
       steps += 1;
       if (this.isMissionDefeated()) {
+        this.missionStatus = 'defeat';
+        this.accumulator = 0;
+        break;
+      }
+      if (this.missionStatus !== 'playing') {
         this.accumulator = 0;
         break;
       }
@@ -236,6 +272,19 @@ export class Simulation {
     for (let index = this.infected.length - 1; index >= 0; index -= 1) {
       if (this.infected[index]!.isDead) this.infected.splice(index, 1);
     }
+    this.waveSystem?.update(dt, this.infected.length, ({ point, waveNumber }) => {
+      this.spawnInfected({
+        x: point.x,
+        y: point.y,
+        entryTile: point.entryTile,
+        maxHealth: 60 + (waveNumber - 1) * 10,
+        moveSpeed: 55 + (waveNumber - 1) * 3,
+        damage: 8 + (waveNumber - 1),
+      });
+    });
+    if (this.waveSystem?.getState().phase === 'completed' && this.infected.length === 0) {
+      this.missionStatus = 'victory';
+    }
   }
 
   getState(): SimulationState {
@@ -247,6 +296,12 @@ export class Simulation {
       infectedCount: this.infected.length,
       civilianCount: this.civilians.length,
       rescuedCivilianCount: this.civilians.filter((civilian) => civilian.isRescued).length,
+      missionStatus: this.missionStatus,
+      wavePhase: this.waveSystem?.getState().phase ?? 'disabled',
+      waveNumber: this.waveSystem?.getState().waveNumber ?? 0,
+      totalWaves: this.waveSystem?.getState().totalWaves ?? 0,
+      preparationRemaining: this.waveSystem?.getState().preparationRemaining ?? 0,
+      remainingToSpawn: this.waveSystem?.getState().remainingToSpawn ?? 0,
     };
   }
 }

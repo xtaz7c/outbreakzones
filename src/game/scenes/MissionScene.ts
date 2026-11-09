@@ -7,6 +7,7 @@ import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
 import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/world/MissionEntryPoints';
 import { BuildingSystem, type AccessKind } from '../../simulation/world/BuildingSystem';
+import type { WaveSpawnPoint } from '../../simulation/WaveSystem';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -51,12 +52,19 @@ export class MissionScene extends Phaser.Scene {
   private cameraWorldHeight = 0;
   private selectionStart: { x: number; y: number; screenX: number; screenY: number } | null = null;
   private isPaused = false;
+  private resultPanel!: Phaser.GameObjects.Rectangle;
+  private resultText!: Phaser.GameObjects.Text;
+  private resultShown = false;
 
   constructor() {
     super('MissionScene');
   }
 
   create(): void {
+    this.isPaused = false;
+    this.resultShown = false;
+    this.selectedOfficerIds.clear();
+    this.debugInfectedSpawnIndex = 0;
     this.simulation = new Simulation();
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
@@ -75,8 +83,12 @@ export class MissionScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-G', () => this.setSelectedPosture('engage'));
     this.input.keyboard?.on('keydown-X', () => this.holdSelectedPositions());
     this.input.keyboard?.on('keydown-M', () => this.audio.toggleMute());
+    this.input.keyboard?.on('keydown-R', () => {
+      if (this.simulation.getState().missionStatus !== 'playing') this.scene.restart();
+    });
 
     this.input.keyboard?.on('keydown-SPACE', () => {
+      if (this.simulation.getState().missionStatus !== 'playing') return;
       this.isPaused = !this.isPaused;
       this.simulation.setPaused(this.isPaused);
     });
@@ -88,6 +100,7 @@ export class MissionScene extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 0.05);
     this.simulation.update(dt);
     this.updateCombatFeedback();
+    this.updateMissionResult();
     this.updateCamera(dt);
     if (!this.isPaused) {
       this.updateOfficers(dt);
@@ -153,6 +166,17 @@ export class MissionScene extends Phaser.Scene {
     this.simulation.setBuildingSystem(this.buildingSystem);
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
+    const spawnPoints: WaveSpawnPoint[] = [
+      { id: 'west', x: 64, y: 640, entryTile: { column: 21, row: 18 } },
+      { id: 'east', x: 1984, y: 640, entryTile: { column: 42, row: 18 } },
+      { id: 'north', x: 1024, y: 64, entryTile: { column: 32, row: 9 } },
+      { id: 'south', x: 1024, y: 1216, entryTile: { column: 32, row: 28 } },
+    ];
+    this.simulation.configureWaves(spawnPoints, [
+      { infectedCount: 3, spawnInterval: 1.4 },
+      { infectedCount: 4, spawnInterval: 1.15 },
+      { infectedCount: 5, spawnInterval: 0.9 },
+    ], 8);
     this.cameraWorldWidth = map.widthInPixels;
     this.cameraWorldHeight = map.heightInPixels;
     this.cameras.main
@@ -239,6 +263,13 @@ export class MissionScene extends Phaser.Scene {
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
     this.accessGraphics = this.add.graphics().setDepth(80);
+
+    this.resultPanel = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, 520, 190, 0x080b10, 0.92)
+      .setScrollFactor(0).setDepth(2000).setStrokeStyle(2, 0xd7e0ea).setVisible(false);
+    this.resultText = this.add.text(this.scale.width / 2, this.scale.height / 2, '', {
+      fontFamily: 'monospace', fontSize: '26px', color: '#ffffff', align: 'center',
+      padding: { x: 18, y: 12 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2001).setVisible(false);
   }
 
   private createCameraControls(): void {
@@ -590,6 +621,19 @@ export class MissionScene extends Phaser.Scene {
     else this.scale.startFullscreen();
   }
 
+  private updateMissionResult(): void {
+    const status = this.simulation.getState().missionStatus;
+    if (status === 'playing') return;
+    if (this.resultShown) return;
+    this.resultShown = true;
+    this.isPaused = true;
+    this.resultPanel.setVisible(true).setPosition(this.scale.width / 2, this.scale.height / 2);
+    this.resultText
+      .setText(status === 'victory' ? 'MISSION COMPLETE\nAll waves eliminated\n\nPress R to restart' : 'MISSION FAILED\nAll officers incapacitated\n\nPress R to restart')
+      .setPosition(this.scale.width / 2, this.scale.height / 2)
+      .setVisible(true);
+  }
+
   private updateStatusText(dt: number): void {
     const state = this.simulation.getState();
     const fps = dt > 0 ? (1 / dt).toFixed(0) : '—';
@@ -599,7 +643,9 @@ export class MissionScene extends Phaser.Scene {
         `Paused: ${state.paused ? 'YES' : 'NO'}  (Space) | Audio: ${this.audio.isMuted ? 'OFF' : 'ON'} (M)`,
         `Sim time: ${state.elapsed.toFixed(2)}s | Seed: ${this.registry.get('missionSeed')}`,
         `Approx FPS: ${fps}`,
-        `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
+        `Officers: ${state.activeOfficerCount}/${state.officerCount}  |  Infected: ${state.infectedCount}`,
+        `Wave: ${state.waveNumber}/${state.totalWaves} | ${state.wavePhase.toUpperCase()} | Spawn queue: ${state.remainingToSpawn}`,
+        state.wavePhase === 'preparing' ? `Next wave in: ${state.preparationRemaining.toFixed(1)}s` : `Mission: ${state.missionStatus.toUpperCase()}`,
         `Civilians: ${state.rescuedCivilianCount}/${state.civilianCount} extracted`,
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         ...this.simulation.getOfficers().map((officer) => {
@@ -608,7 +654,7 @@ export class MissionScene extends Phaser.Scene {
           return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''} | ${posture}`;
         }),
         'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: interact | B: breach',
-        'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority',
+        'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority | R: restart after result',
       ].join('\n'),
     );
   }

@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** a branch `feat/buildings-tactical-foundation-t066-t071` está sincronizada com `main` e contém a primeira integração do sistema de acessos de edifícios, estado inicial determinístico, dano/rompimento de acessos, atração temporária por ruído e comandos táticos de manter posição/segurar fogo/engajar. A integração ainda precisa de validação local com testes, lint, build e revisão visual; ronda geral, percepção por linha de visão/oclusão e navegação interior/exterior completa permanecem incompletas.
+ > **Status atual:** `main` já contém as fundações das Fases 2–7, inclusive mapa Tiled, câmera/controles RTS, policiais, IA de infectados, combate e acessos dinâmicos. A Fase 7 ainda precisa fechar travessia completa para civis e persistência/validação integrada. Esta branch adiciona replanejamento de rotas após mudanças de acesso e o ciclo de ondas/vitória/derrota da Fase 8. A validação de navegador continua obrigatória antes de marcar o DoD.
 
 ## 1. Visão e escopo
 
@@ -97,7 +97,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T025 — P0** Definir células/áreas navegáveis e bloqueadas.
 - [ ] **T026 — P0** Implementar pathfinding e desvio de obstáculos.
 
-**Saída da fase:** mapa renderizado e validado visualmente pelo usuário; `npm test` passou com 32 testes, `npm run lint` passou e `npm run build` passou. T017–T026 ainda aguardam revisão final e integração por PR. A validação visual revelou a necessidade de controles de câmera, que estão sendo implementados na Fase 3.
+**Progresso:** mapa Tiled, terreno, residência, acessos, obstáculos, carregamento de camadas, grade navegável e A* já estão integrados em `main`. A revisão visual final no navegador ainda precisa ser registrada; os itens permanecem desmarcados conforme o DoD.
 
 ### Fase 3 — Câmera e controles RTS
 
@@ -112,7 +112,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T035 — P0** Implementar ordem de movimentação com clique direito.
 - [ ] **T036 — P1** Implementar destino/posicionamento em formação para ordens em grupo, evitando sobreposição de unidades.
 
-**Saída da fase:** câmera, zoom, limites do mundo, deslocamento WASD/setas e tela cheia implementados na branch `feat/camera-controls-t027-t030`. Na branch `feat/rts-selection-orders-t031-t036` foram adicionados marcadores provisórios dos três policiais, seleção individual, seleção por arrasto, atalhos 1–3, seleção aditiva com Shift, ordens de movimento pelo botão direito, pathfinding A* e destinos em linha para grupos. T027–T036 aguardam execução de testes/lint/build e validação manual no navegador. Os marcadores e o movimento são provisórios e serão substituídos/integrados ao modelo PoliceOfficer na Fase 4.
+**Progresso:** câmera, zoom, limites, WASD/setas, fullscreen, seleção individual/múltipla, atalhos 1–3, seleção aditiva, ordens de movimento e formação estão integrados em `main`. A validação manual final no navegador ainda precisa ser registrada.
 
 ### Fase 4 — Policiais
 
@@ -178,9 +178,11 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Base técnica anterior:** a branch `feat/shelter-roaming-t066-t071` usa colisões estáticas e a regra antiga de casa inacessível. Essa lógica deve ser substituída por edifícios com interior e acessos dinâmicos.
 
-**Progresso parcial (branch `feat/phase-7-tactical-system`):** foi portada a base `BuildingSystem`, com acessos independentes de porta/janela/garagem, estados ponderados reproduzíveis por seed, integridade, interação, dano e grades de navegação por tipo de NPC. O mapa tutorial ganhou um acesso de garagem. A `Simulation` integra as grades por ator e permite interagir/danificar acessos; a cena mostra os estados e inclui comandos provisórios E/B/N. A IA atual recebe um estímulo temporário de ruído (raio e duração configuráveis), memoriza o acesso investigado e pode atacá-lo; ainda não há múltiplas fontes de estímulo, percepção por linha de visão/oclusão ou ronda aleatória. A travessia interior/exterior ainda precisa de validação e refinamento, especialmente para civis e múltiplos acessos. T066–T071 e T124 permanecem desmarcadas até validação automatizada e manual.
+**Progresso integrado em `main`:** `BuildingSystem` oferece acessos independentes, probabilidades reproduzíveis por seed, integridade, interação/dano e grades por tipo de ator. A IA possui patrulha, percepção visual de policiais, investigação de ruídos e ataque a acessos atraentes. Esta branch acrescenta replanejamento de rotas dos policiais quando um acesso muda de estado. Ainda falta completar e validar a travessia interior/exterior de civis e todos os tipos de NPC. Estados dos acessos permanecem em memória durante a instância da missão e não são sorteados novamente por frame. T070/T124 seguem sujeitos à validação integrada.
 
 ### Fase 8 — Ondas e fluxo da missão
+
+**Implementação nesta branch:** adicionado `WaveSystem` independente da renderização, com preparação, surgimento escalonado em pontos externos, progressão de quantidade/intervalo/dificuldade e conclusão somente após eliminar todos os infectados. A `Simulation` passa a expor estados de missão (`playing`, `victory`, `defeat`), interromper a simulação no resultado e detectar vitória após a última onda ou derrota quando todos os policiais forem incapacitados. A cena exibe onda/estado, mostra o resultado e permite reiniciar com R. Testes unitários cobrem temporização, sequência determinística, pausa, vitória e derrota. A validação automatizada da branch e a revisão manual no navegador ainda são necessárias antes de marcar T072–T083.
 
 - [ ] **T072 — P0** Criar WaveSystem independente da cena/renderização.
 - [ ] **T073 — P0** Definir pontos de surgimento fora da área protegida e fora da visão imediata do jogador, quando aplicável.
