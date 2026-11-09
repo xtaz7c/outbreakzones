@@ -18,11 +18,11 @@ if (!homeScreen || !gameContainer || !startButton || !campaignButton || !control
 
 function launchMission(missionId: 'tutorial' | 'campaign'): void {
   if (game) return;
-  startButton.disabled = true;
-  campaignButton.disabled = true;
-  startButton.textContent = 'PREPARANDO OPERAÇÃO…';
-  homeScreen.hidden = true;
-  gameContainer.hidden = false;
+  startButton!.disabled = true;
+  campaignButton!.disabled = true;
+  startButton!.textContent = 'PREPARANDO OPERAÇÃO…';
+  homeScreen!.hidden = true;
+  gameContainer!.hidden = false;
   game = new Phaser.Game({
     ...gameConfig,
     callbacks: {
