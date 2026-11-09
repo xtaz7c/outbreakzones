@@ -34,6 +34,7 @@ interface TacticalOfficer {
 interface TacticalCivilian {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
+  readonly body: Phaser.GameObjects.Arc;
 }
 
 interface TacticalInfected {
@@ -444,7 +445,7 @@ export class MissionScene extends Phaser.Scene {
       }).setOrigin(0.5, 0);
       const container = this.add.container(position.x, position.y, [body, head, label])
         .setDepth(105);
-      this.civilianVisuals.set(civilian.id, { id: civilian.id, container });
+      this.civilianVisuals.set(civilian.id, { id: civilian.id, container, body });
     }
   }
 
@@ -453,7 +454,9 @@ export class MissionScene extends Phaser.Scene {
       const visual = this.civilianVisuals.get(civilian.id);
       if (!visual) continue;
       visual.container.setPosition(civilian.position.x, civilian.position.y);
-      visual.container.setAlpha(civilian.state === 'extracted' ? 0.45 : 1);
+      visual.container.setAlpha(civilian.state === 'extracted' ? 0.45 : civilian.isIncapacitated ? 0.55 : 1);
+      visual.body.setFillStyle(civilian.isIncapacitated ? 0x626967 : civilian.mood === 'panicked'
+        ? HUD_COLORS.red : civilian.state === 'following' ? 0x8eaf75 : HUD_COLORS.civilian);
     }
   }
 
@@ -967,6 +970,7 @@ export class MissionScene extends Phaser.Scene {
       `RECURSOS  ${maintenance?.resources.scrap ?? 0} sucata / ${maintenance?.resources.parts ?? 0} peças`,
       `MANUTENÇÃO  ${maintenanceJobs}`,
       `ESTRUTURAS  ${this.simulation.getDeployableResources().scrap} sucata / ${this.simulation.getDeployableResources().parts} peças`,
+      `CAPACIDADE DE ABRIGO  ${this.simulation.getShelterCapacity()} vagas`,
       ...(this.buildStatus ? [this.buildStatus] : []),
     ].join('\n'));
 
