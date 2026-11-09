@@ -139,6 +139,7 @@ describe('Simulation', () => {
   it('allows infected to attack civilians as well as police officers', () => {
     const grid = new GridMap(80, 45);
     sim.setWorldGrid(grid, 32);
+    sim.setExtractionZone({ x: 2500, y: 1400, radius: 30 });
     const civilian = sim.getCivilians()[0]!;
     civilian.beginFollowing(1);
     civilian.updatePosition({ x: 1024, y: 1072 });
