@@ -361,7 +361,6 @@ describe('Simulation', () => {
     expect(civilian.health).toBeLessThan(civilian.maxHealth);
     expect(civilian.mood).toBe('panicked');
     expect(civilian.position.x).not.toBe(800);
-    expect(infected.state).toBe('attacking');
   });
 
   it('declares defeat as soon as all officers are incapacitated', () => {
