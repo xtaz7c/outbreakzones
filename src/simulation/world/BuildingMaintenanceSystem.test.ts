@@ -69,6 +69,24 @@ describe('BuildingMaintenanceSystem', () => {
     expect(door.lockLevel).toBe(1);
   });
 
+  it('gives barricades and upgraded locks measurable damage resistance', () => {
+    const { buildings, maintenance } = createSystems();
+    const door = buildings.getAccess('front-door')!;
+    expect(maintenance.start('front-door', 'barricade')).toBe(true);
+    maintenance.update(8);
+    expect(buildings.damage('front-door', 30)).toBe(15);
+    expect(door.health).toBe(105);
+
+    expect(door.removeBarricade()).toBe(true);
+    expect(maintenance.start('front-door', 'upgrade-lock')).toBe(true);
+    maintenance.update(8);
+    expect(maintenance.start('front-door', 'upgrade-lock')).toBe(true);
+    maintenance.update(12);
+    expect(door.lockLevel).toBe(2);
+    expect(buildings.damage('front-door', 30)).toBe(21);
+    expect(door.health).toBe(99);
+  });
+
   it('rejects jobs with insufficient resources or invalid targets', () => {
     const { buildings, maintenance } = createSystems({ scrap: 0, parts: 0 });
     expect(maintenance.start('missing', 'repair')).toBe(false);
