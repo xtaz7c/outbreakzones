@@ -395,8 +395,8 @@ export class MissionScene extends Phaser.Scene {
   private createHud(): void {
     const width = this.scale.width;
     const height = this.scale.height;
-    const viewX = this.cameras.main.scrollX;
-    const viewY = this.cameras.main.scrollY;
+    const viewX = 0;
+    const viewY = 0;
     const mapX = viewX + width - 340;
     const mapY = viewY + 20;
 
@@ -409,9 +409,9 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.team.x = mapX;
     this.hudBounds.team.y = mapY + 364;
 
-    // The tactical HUD belongs to the world layer and moves with the camera.
-    this.hudPanels = this.add.graphics().setDepth(1500);
-    this.minimapGraphics = this.add.graphics().setDepth(1502);
+    // Tactical HUD elements are viewport-space UI and must ignore world camera movement.
+    this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
+    this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
     this.accessGraphics = this.add.graphics().setDepth(80);
@@ -437,7 +437,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '29px',
       color: '#e8e3d8',
-    }).setOrigin(0.5).setDepth(1505)
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.settingsButton.on('pointerdown', () => this.openPauseMenu());
 
@@ -446,7 +446,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '27px',
       color: '#e8e3d8',
-    }).setOrigin(0.5).setDepth(1505)
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.fullscreenButton.setData('action-label', 'Entrar em tela cheia');
     this.fullscreenButton.on('pointerdown', () => this.toggleFullscreen());
@@ -463,7 +463,7 @@ export class MissionScene extends Phaser.Scene {
       color: '#e8e3d8',
       lineSpacing: 8,
       wordWrap: { width: 244 },
-    }).setDepth(1505);
+    }).setScrollFactor(0).setDepth(1505);
 
     this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
       fontFamily: 'Arial, sans-serif',
@@ -471,7 +471,7 @@ export class MissionScene extends Phaser.Scene {
       fontStyle: 'bold',
       color: '#b9b9b0',
       letterSpacing: 1.4,
-    }).setDepth(1505);
+    }).setScrollFactor(0).setDepth(1505);
     [
       { x: mapX + 28, label: 'POLICIAIS' },
       { x: mapX + 122, label: 'CIVIS' },
@@ -481,7 +481,7 @@ export class MissionScene extends Phaser.Scene {
         fontFamily: 'Arial, sans-serif',
         fontSize: '7px',
         color: '#858a87',
-      }).setDepth(1505);
+      }).setScrollFactor(0).setDepth(1505);
     });
 
     this.teamText = this.add.text(mapX + 12, mapY + 376, '', {
@@ -489,10 +489,10 @@ export class MissionScene extends Phaser.Scene {
       fontSize: '10px',
       color: '#e8e3d8',
       lineSpacing: 8,
-    }).setDepth(1505);
+    }).setScrollFactor(0).setDepth(1505);
 
     const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
-      .setDepth(1507)
+      .setScrollFactor(0).setDepth(1507)
       .setInteractive({ useHandCursor: true });
     teamHitArea.on('pointerdown', () => this.selectAllOfficers());
 
@@ -667,10 +667,9 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private isHudPoint(x: number, y: number): boolean {
-    const worldPoint = this.cameras.main.getWorldPoint(x, y);
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
-      worldPoint.x >= rect.x && worldPoint.x <= rect.x + rect.width &&
-      worldPoint.y >= rect.y && worldPoint.y <= rect.y + rect.height;
+      x >= rect.x && x <= rect.x + rect.width &&
+      y >= rect.y && y <= rect.y + rect.height;
     return inside(this.hudBounds.settings) || inside(this.hudBounds.mission) ||
       inside(this.hudBounds.minimap) || inside(this.hudBounds.team) ||
       this.pauseMenuOpen;
