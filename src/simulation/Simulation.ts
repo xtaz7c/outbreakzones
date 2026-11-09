@@ -186,16 +186,8 @@ export class Simulation {
     const civilGrid = this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid;
     for (const civilian of this.civilians) {
       if (civilian.state !== 'following') continue;
-      let escort = this.officers.find((officer) => officer.id === civilian.escortId && !officer.isIncapacitated);
-      if (!escort) {
-        escort = this.officers
-          .filter((officer) => !officer.isIncapacitated)
-          .sort((a, b) =>
-            Math.hypot(a.position.x - civilian.position.x, a.position.y - civilian.position.y) -
-            Math.hypot(b.position.x - civilian.position.x, b.position.y - civilian.position.y))[0];
-        if (!escort) continue;
-        civilian.assignEscort(escort.id);
-      }
+      const escort = this.officers.find((officer) => officer.id === civilian.escortId && !officer.isIncapacitated);
+      if (!escort) continue;
       const target = {
         x: escort.position.x - Math.cos(escort.facingAngle) * 28,
         y: escort.position.y - Math.sin(escort.facingAngle) * 28,
@@ -205,6 +197,13 @@ export class Simulation {
       if (Math.hypot(position.x - this.extractionZone.x, position.y - this.extractionZone.y) <= this.extractionZone.radius) {
         civilian.extract();
       }
+    }
+  }
+
+  private updateCivilianAwareness(dt: number, map: GridMap): void {
+    const threats = this.infected.filter((infected) => !infected.isDead).map((infected) => infected.position);
+    for (const civilian of this.civilians) {
+      civilian.updateAwareness(dt, this.tileSize, map, this.officers, threats);
     }
   }
 
@@ -224,7 +223,8 @@ export class Simulation {
   }
 
   isMissionDefeated(): boolean {
-    return this.officers.every((officer) => officer.isIncapacitated);
+    return this.officers.every((officer) => officer.isIncapacitated) ||
+      (this.requireCivilianExtraction && this.civilians.every((civilian) => civilian.isIncapacitated));
   }
 
   isMissionVictory(): boolean {
@@ -359,8 +359,10 @@ export class Simulation {
         const heardStimuli = this.stimuli.filter((stimulus) =>
           Math.hypot(infected.position.x - stimulus.position.x, infected.position.y - stimulus.position.y) <= stimulus.radius,
         );
-        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli);
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli, this.civilians);
       }
+      this.updateCivilianAwareness(dt, this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid);
+
       const accessChanged = this.buildingSystem?.getSnapshots().some(
         (access) => accessStatesBefore.get(access.id) !== access.state,
       ) ?? false;
