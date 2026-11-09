@@ -83,6 +83,7 @@ export class MissionScene extends Phaser.Scene {
   private missionText!: Phaser.GameObjects.Text;
   private teamText!: Phaser.GameObjects.Text;
   private settingsButton!: Phaser.GameObjects.Text;
+  private fullscreenButton!: Phaser.GameObjects.Text;
   private pauseOverlay!: Phaser.GameObjects.Rectangle;
   private pausePanel!: Phaser.GameObjects.Rectangle;
   private pauseTitle!: Phaser.GameObjects.Text;
@@ -103,7 +104,7 @@ export class MissionScene extends Phaser.Scene {
   };
   private pauseMenuOpen = false;
   private readonly hudBounds = {
-    settings: { x: 20, y: 20, width: 56, height: 56 },
+    settings: { x: 20, y: 20, width: 124, height: 56 },
     mission: { x: 20, y: 88, width: 276, height: 142 },
     minimap: { x: 0, y: 20, width: 320, height: 354 },
     team: { x: 0, y: 384, width: 320, height: 154 },
@@ -381,8 +382,8 @@ export class MissionScene extends Phaser.Scene {
 
     this.hudPanels.fillStyle(HUD_COLORS.panel, 0.94);
     this.hudPanels.lineStyle(1, HUD_COLORS.metal, 0.24);
-    this.hudPanels.fillRoundedRect(viewX + 20, viewY + 20, 56, 56, 8);
-    this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 20, 56, 56, 8);
+    this.hudPanels.fillRoundedRect(viewX + 20, viewY + 20, 124, 56, 8);
+    this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 20, 124, 56, 8);
     this.hudPanels.fillRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
     this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
     this.hudPanels.fillRoundedRect(mapX, mapY, 320, 354, 12);
@@ -403,6 +404,22 @@ export class MissionScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.settingsButton.on('pointerdown', () => this.openPauseMenu());
+
+    // Keep fullscreen accessible to mouse and touch users; keyboard F remains available.
+    this.fullscreenButton = this.add.text(viewX + 112, viewY + 48, '⛶', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '27px',
+      color: '#e8e3d8',
+    }).setOrigin(0.5).setDepth(1505)
+      .setInteractive({ useHandCursor: true });
+    this.fullscreenButton.setData('action-label', 'Entrar em tela cheia');
+    this.fullscreenButton.on('pointerdown', () => this.toggleFullscreen());
+    this.scale.on('enterfullscreen', () => {
+      this.fullscreenButton.setText('×').setData('action-label', 'Sair da tela cheia');
+    });
+    this.scale.on('leavefullscreen', () => {
+      this.fullscreenButton.setText('⛶').setData('action-label', 'Entrar em tela cheia');
+    });
 
     this.missionText = this.add.text(viewX + 36, viewY + 102, '', {
       fontFamily: 'Arial, sans-serif',
