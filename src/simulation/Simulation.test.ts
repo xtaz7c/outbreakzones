@@ -11,6 +11,21 @@ describe('Simulation', () => {
     sim = new Simulation();
   });
 
+  it('advances building maintenance jobs on the fixed simulation timestep', () => {
+    const buildings = new BuildingSystem([{
+      id: 'front-door', kind: 'door', x: 32, y: 32, width: 32, height: 32,
+      weights: { open: 0, closed: 1, locked: 0 },
+    }], new GridMap(8, 8), 32, 1);
+    sim.setBuildingSystem(buildings);
+    sim.damageAccess('front-door', 60);
+    expect(sim.startBuildingMaintenance('front-door', 'repair')).toBe(true);
+
+    for (let index = 0; index < 300; index += 1) sim.update(FIXED_DT);
+
+    expect(buildings.getAccess('front-door')?.health).toBe(120);
+    expect(sim.getMaintenanceState()?.jobs).toHaveLength(0);
+  });
+
   it('starts with three officers and zero infected', () => {
     const state = sim.getState();
     expect(state.officerCount).toBe(3);
