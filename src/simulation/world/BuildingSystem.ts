@@ -177,7 +177,7 @@ export class BuildingAccess {
     readonly reinforcementLevel?: number; readonly barricadeLevel?: number; readonly lockLevel?: number;
   }): void {
     const reinforcementLevel = upgrades?.reinforcementLevel ?? 0;
-    const barricadeLevel = upgrades?.barricadeLevel ?? 0;
+    const barricadeLevel = upgrades?.barricadeLevel ?? (state === 'barricaded' ? 1 : 0);
     const lockLevel = upgrades?.lockLevel ?? 0;
     if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(state) ||
         !Number.isInteger(reinforcementLevel) || reinforcementLevel < 0 || reinforcementLevel > 2 ||
@@ -255,13 +255,21 @@ export class BuildingSystem {
     for (const access of this.accesses) {
       const saved = byId.get(access.id);
       if (!saved) throw new RangeError(`Persisted state is missing access ${access.id}.`);
+      const reinforcementLevel = saved.reinforcementLevel ?? 0;
+      const barricadeLevel = saved.barricadeLevel ?? (saved.state === 'barricaded' ? 1 : 0);
+      const lockLevel = saved.lockLevel ?? 0;
+      let maximumHealth = access.maxHealth;
+      if (Number.isInteger(reinforcementLevel) && reinforcementLevel >= 0 && reinforcementLevel <= 2) {
+        for (let level = 0; level < reinforcementLevel; level += 1) {
+          maximumHealth += Math.ceil(maximumHealth * 0.2);
+        }
+      }
       if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(saved.state) ||
-          !Number.isFinite(saved.health) || saved.health < 0 || saved.health > access.maxHealth ||
-          !Number.isInteger(saved.reinforcementLevel ?? 0) || (saved.reinforcementLevel ?? 0) < 0 || (saved.reinforcementLevel ?? 0) > 2 ||
-          !Number.isInteger(saved.barricadeLevel ?? (saved.state === 'barricaded' ? 1 : 0)) ||
-          (saved.barricadeLevel ?? (saved.state === 'barricaded' ? 1 : 0)) < 0 ||
-          (saved.barricadeLevel ?? (saved.state === 'barricaded' ? 1 : 0)) > 1 ||
-          !Number.isInteger(saved.lockLevel ?? 0) || (saved.lockLevel ?? 0) < 0 || (saved.lockLevel ?? 0) > 2 ||
+          !Number.isFinite(saved.health) || saved.health < 0 || saved.health > maximumHealth ||
+          !Number.isInteger(reinforcementLevel) || reinforcementLevel < 0 || reinforcementLevel > 2 ||
+          !Number.isInteger(barricadeLevel) || barricadeLevel < 0 || barricadeLevel > 1 ||
+          !Number.isInteger(lockLevel) || lockLevel < 0 || lockLevel > 2 ||
+          (saved.state === 'barricaded' && barricadeLevel === 0) ||
           (saved.health === 0 && saved.state !== 'broken')) {
         throw new RangeError(`Invalid persisted state for access ${access.id}.`);
       }
