@@ -55,6 +55,7 @@ const HUD_COLORS = {
 } as const;
 
 export class MissionScene extends Phaser.Scene {
+  private missionId: 'tutorial' | 'campaign' = 'campaign';
   private simulation!: Simulation;
   private audio!: AudioManager;
   private readonly playedCombatEvents = new WeakSet<CombatEvent>();
@@ -76,6 +77,8 @@ export class MissionScene extends Phaser.Scene {
   private isPaused = false;
   private resultPanel!: Phaser.GameObjects.Rectangle;
   private resultText!: Phaser.GameObjects.Text;
+  private resultHomeButton!: Phaser.GameObjects.Text;
+  private resultCampaignButton!: Phaser.GameObjects.Text;
   private resultShown = false;
   private lastPersistedBuildingState = '';
   private hudPanels!: Phaser.GameObjects.Graphics;
@@ -122,7 +125,9 @@ export class MissionScene extends Phaser.Scene {
     this.resultShown = false;
     this.selectedOfficerIds.clear();
     this.debugInfectedSpawnIndex = 0;
+    this.missionId = this.registry.get('missionId') === 'tutorial' ? 'tutorial' : 'campaign';
     this.simulation = new Simulation();
+    this.simulation.setTutorialMode(this.missionId === 'tutorial');
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
@@ -244,11 +249,13 @@ export class MissionScene extends Phaser.Scene {
       { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 0 } },
       { id: 'south', x: 1280, y: 1488, entryTile: { column: 40, row: 44 } },
     ];
-    this.simulation.configureWaves(spawnPoints, [
-      { infectedCount: 3, spawnInterval: 1.4 },
-      { infectedCount: 4, spawnInterval: 1.15 },
-      { infectedCount: 5, spawnInterval: 0.9 },
-    ], 8);
+    if (this.missionId === 'campaign') {
+      this.simulation.configureWaves(spawnPoints, [
+        { infectedCount: 3, spawnInterval: 1.4 },
+        { infectedCount: 4, spawnInterval: 1.15 },
+        { infectedCount: 5, spawnInterval: 0.9 },
+      ], 8);
+    }
     this.cameraWorldWidth = map.widthInPixels;
     this.cameraWorldHeight = map.heightInPixels;
     this.cameras.main
@@ -480,7 +487,7 @@ export class MissionScene extends Phaser.Scene {
       this.setPauseMenuVisible(true);
     });
 
-    this.resultPanel = this.add.rectangle(width / 2, height / 2, 520, 190, 0x111415, 0.96)
+    this.resultPanel = this.add.rectangle(width / 2, height / 2, 560, 250, 0x111415, 0.96)
       .setScrollFactor(0).setDepth(2000).setStrokeStyle(2, HUD_COLORS.red).setVisible(false);
     this.resultText = this.add.text(width / 2, height / 2, '', {
       fontFamily: 'Barlow Condensed, Impact, sans-serif',
@@ -489,9 +496,35 @@ export class MissionScene extends Phaser.Scene {
       align: 'center',
       padding: { x: 18, y: 12 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2001).setVisible(false);
+    this.resultHomeButton = this.createResultAction(width / 2, height / 2 + 82, 'VOLTAR À TELA INICIAL', () => {
+      window.dispatchEvent(new Event('outbreakzones:return-home'));
+    });
+    this.resultCampaignButton = this.createResultAction(width / 2, height / 2 + 132, 'INICIAR CAMPANHA  /  REFÚGIO', () => {
+      window.dispatchEvent(new Event('outbreakzones:start-campaign'));
+    });
 
     this.loadMinimapVisibility();
     this.refreshPauseMenuLabels();
+  }
+
+  private createResultAction(
+    x: number,
+    y: number,
+    label: string,
+    action: () => void,
+  ): Phaser.GameObjects.Text {
+    const button = this.add.text(x, y, label, {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '11px',
+      fontStyle: 'bold',
+      color: '#fff5e9',
+      backgroundColor: '#a72b2e',
+      padding: { x: 18, y: 10 },
+      letterSpacing: 1,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2002).setVisible(false)
+      .setInteractive({ useHandCursor: true });
+    button.on('pointerdown', action);
+    return button;
   }
 
   private createPauseAction(
@@ -640,7 +673,7 @@ export class MissionScene extends Phaser.Scene {
         ? 'EQUIPE INCAPACITADA'
         : 'RESGATAR SOBREVIVENTES';
     this.missionText.setText([
-      'MISSÃO 01  /  SETOR 07',
+      this.missionId === 'tutorial' ? 'MISSÃO 00  /  O RESGATE' : 'MISSÃO 01  /  REFÚGIO',
       objective,
       `CIVIS RESGATADOS  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
@@ -1119,10 +1152,19 @@ export class MissionScene extends Phaser.Scene {
     this.pauseMenuOpen = false;
     this.setPauseMenuVisible(false);
     this.resultPanel.setVisible(true).setPosition(this.scale.width / 2, this.scale.height / 2);
+    const tutorialVictory = this.missionId === 'tutorial' && status === 'victory';
     this.resultText
-      .setText(status === 'victory' ? 'MISSION COMPLETE\nAll civilians rescued\nAll waves eliminated\n\nPress R to restart' : 'MISSION FAILED\nAll officers incapacitated\n\nPress R to restart')
-      .setPosition(this.scale.width / 2, this.scale.height / 2)
+      .setText(status === 'victory'
+        ? tutorialVictory
+          ? 'MISSÃO 0 CONCLUÍDA\nO resgate foi concluído.\n\nEscolha como deseja continuar.'
+          : 'MISSÃO CONCLUÍDA\nRefúgio assegurado.'
+        : 'MISSÃO FALHOU\nTodos os policiais foram incapacitados.')
+      .setPosition(this.scale.width / 2, this.scale.height / 2 - 28)
       .setVisible(true);
+    this.resultHomeButton.setPosition(this.scale.width / 2, this.scale.height / 2 + 74).setVisible(true);
+    this.resultCampaignButton
+      .setPosition(this.scale.width / 2, this.scale.height / 2 + 124)
+      .setVisible(tutorialVictory);
   }
 
 
