@@ -102,6 +102,37 @@ describe('BuildingSystem', () => {
     expect(system.getNavigationGrid('infected').isWalkable(cell)).toBe(true);
   });
 
+  it('persists seeded broken windows with zero health', () => {
+    const system = new BuildingSystem([{
+      id: 'broken-window',
+      kind: 'window',
+      x: 32,
+      y: 32,
+      width: 32,
+      height: 32,
+      maxHealth: 60,
+      weights: { open: 0, closed: 0, barricaded: 0, broken: 1 },
+    }], new GridMap(8, 8), 32, 9);
+
+    expect(system.getAccess('broken-window')?.health).toBe(0);
+    const saved = system.exportState();
+    expect(saved[0]?.state).toBe('broken');
+    expect(saved[0]?.health).toBe(0);
+
+    const restored = new BuildingSystem([{
+      id: 'broken-window',
+      kind: 'window',
+      x: 32,
+      y: 32,
+      width: 32,
+      height: 32,
+      maxHealth: 60,
+      weights: { open: 0, closed: 0, barricaded: 0, broken: 1 },
+    }], new GridMap(8, 8), 32, 10);
+    restored.restoreState(saved);
+    expect(restored.exportState()).toEqual(saved);
+  });
+
   it('exports and restores access state and integrity', () => {
     const original = new BuildingSystem([
       { ...definitions[0]!, maxHealth: 40, weights: { open: 0, closed: 1 } },
