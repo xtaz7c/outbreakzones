@@ -659,48 +659,6 @@ export class MissionScene extends Phaser.Scene {
     this.settingsButton.setColor(this.pauseMenuOpen ? '#c33a36' : '#e8e3d8');
   }
 
-
-    // O Dev Hub pertence ao mundo: acompanha o movimento da câmera e
-    // também respeita o zoom, em vez de ficar preso à viewport.
-    this.statusText = this.add
-      .text(16, 16, '', {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#e0e0e0',
-        backgroundColor: '#000000aa',
-        padding: { x: 8, y: 6 },
-      })
-      .setDepth(1000);
-
-    this.fullscreenText = this.add
-      .text(this.scale.width - 16, 16, 'Fullscreen [F]', {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#ffffff',
-        backgroundColor: '#000000cc',
-        padding: { x: 10, y: 8 },
-      })
-      .setOrigin(1, 0)
-      .setScrollFactor(0)
-      .setDepth(1000)
-      .setInteractive({ useHandCursor: true });
-
-    this.fullscreenText.on('pointerdown', () => this.toggleFullscreen());
-    this.scale.on('enterfullscreen', () => this.fullscreenText.setText('Exit fullscreen [F]'));
-    this.scale.on('leavefullscreen', () => this.fullscreenText.setText('Fullscreen [F]'));
-
-    this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
-    this.combatGraphics = this.add.graphics().setDepth(120);
-    this.accessGraphics = this.add.graphics().setDepth(80);
-
-    this.resultPanel = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, 520, 190, HUD_COLORS.ink, 0.96)
-      .setScrollFactor(0).setDepth(2000).setStrokeStyle(2, HUD_COLORS.red).setVisible(false);
-    this.resultText = this.add.text(this.scale.width / 2, this.scale.height / 2, '', {
-      fontFamily: 'Barlow Condensed, Impact, sans-serif', fontSize: '26px', color: '#e8e3d8', align: 'center',
-      padding: { x: 18, y: 12 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(2001).setVisible(false);
-  }
-
   private createCameraControls(): void {
     const keyboard = this.input.keyboard;
     if (!keyboard) return;
