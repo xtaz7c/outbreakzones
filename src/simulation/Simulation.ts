@@ -214,8 +214,7 @@ export class Simulation {
         const heardStimuli = this.stimuli.filter((stimulus) =>
           Math.hypot(infected.position.x - stimulus.position.x, infected.position.y - stimulus.position.y) <= stimulus.radius,
         );
-        const structure = heardStimuli.find((stimulus) => stimulus.structure)?.structure;
-        infected.update(dt, this.tileSize, infectedGrid, this.officers, structure, heardStimuli);
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli);
       }
       const shotEvents = this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize);
       this.combatEvents.push(...shotEvents);
