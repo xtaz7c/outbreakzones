@@ -63,6 +63,18 @@ describe('DeployableStructureSystem', () => {
     expect(system.getInfectedNavigationGrid().isWalkable({ column: 4, row: 4 })).toBe(true);
   });
 
+  it('restores destroyed structures without re-blocking the infected route', () => {
+    const grid = new GridMap(12, 12);
+    const system = new DeployableStructureSystem(grid, 32);
+    const barricade = system.place('barricade', { column: 4, row: 4 })!;
+    system.damage(barricade.id, 1000);
+    const restored = new DeployableStructureSystem(grid, 32);
+    restored.restoreState(system.exportState());
+    expect(restored.getSnapshots()[0]?.isDestroyed).toBe(true);
+    expect(restored.getInfectedNavigationGrid().isWalkable({ column: 4, row: 4 })).toBe(true);
+    expect(restored.dismantle(barricade.id)).toBe(true);
+  });
+
   it('refunds part of the cost when a structure is dismantled', () => {
     const system = new DeployableStructureSystem(new GridMap(12, 12), 32);
     const before = system.getResources().scrap;
