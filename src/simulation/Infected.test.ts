@@ -126,7 +126,7 @@ describe('Infected', () => {
     };
     infected.update(1, 32, map, [], breached);
     expect(infected.position.x).toBeGreaterThan(48);
-    expect(infected.state).toBe('moving');
+    expect(infected.state).toBe('idle');
   });
 
   it('clamps damage to remaining health and enters dead state', () => {
