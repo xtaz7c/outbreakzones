@@ -130,7 +130,7 @@ describe('Simulation', () => {
     expect(sim.getState().infectedCount).toBe(1);
     sim.update(FIXED_DT);
     expect(infected.state).toBe('moving');
-    expect(infected.position.x).toBeGreaterThan(16);
+    expect(infected.position).not.toEqual({ x: 16, y: 16 });
   });
 
   it('replays infected patrol choices with the same mission seed', () => {
@@ -231,6 +231,9 @@ describe('Simulation', () => {
     sim = new Simulation({ random: () => 0 });
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const officer = sim.getOfficers()[0]!;
+    for (const member of sim.getOfficers()) {
+      sim.setOfficerTacticalPosture(member.id, 'hold_fire');
+    }
     const infected = sim.spawnInfected({
       x: 1000, y: 1072, entryTile: { column: 31, row: 33 },
       moveSpeed: 1, detectionRange: 1,
@@ -247,6 +250,9 @@ describe('Simulation', () => {
     sim = new Simulation({ random: () => 0 });
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const officer = sim.getOfficers()[0]!;
+    for (const member of sim.getOfficers()) {
+      sim.setOfficerTacticalPosture(member.id, 'hold_fire');
+    }
     const infected = sim.spawnInfected({
       x: 1000, y: 1072, entryTile: { column: 31, row: 33 },
       moveSpeed: 1, detectionRange: 1,

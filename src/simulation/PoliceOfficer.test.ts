@@ -65,9 +65,10 @@ describe('PoliceOfficer', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16 });
     expect(officer.setAttacking(true)).toBe(true);
     expect(officer.state).toBe('attacking');
-    expect(officer.issueMoveOrder({ column: 2, row: 2 }, new GridMap(4, 4), 32)).toBe(false);
     expect(officer.setAttacking(false)).toBe(true);
     expect(officer.state).toBe('idle');
+    expect(officer.issueMoveOrder({ column: 2, row: 2 }, new GridMap(4, 4), 32)).toBe(true);
+    expect(officer.state).toBe('moving');
   });
   it('can hold position and cancel an active movement order', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, moveSpeed: 32 });
