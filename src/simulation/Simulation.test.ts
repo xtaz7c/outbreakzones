@@ -363,6 +363,17 @@ describe('Simulation', () => {
     expect(civilian.position.x).not.toBe(800);
   });
 
+  it('exposes paid deployable placement and dismantling through the simulation', () => {
+    const grid = new GridMap(20, 20);
+    sim.setWorldGrid(grid, 32);
+    sim.setDeployableSystem(new DeployableStructureSystem(grid, 32));
+    const placed = sim.placeDeployable('barricade', { column: 4, row: 4 });
+    expect(placed?.kind).toBe('barricade');
+    expect(sim.getDeployableSnapshots()).toHaveLength(1);
+    expect(sim.dismantleDeployable(placed!.id)).toBe(true);
+    expect(sim.getDeployableSnapshots()).toHaveLength(0);
+  });
+
   it('declares defeat as soon as all officers are incapacitated', () => {
     for (const officer of sim.getOfficers()) sim.damageOfficer(officer.id, 100);
     sim.update(FIXED_DT);
