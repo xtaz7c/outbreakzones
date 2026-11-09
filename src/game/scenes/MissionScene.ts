@@ -8,7 +8,7 @@ import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader'
 import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/world/MissionEntryPoints';
 import { BuildingSystem, type AccessKind } from '../../simulation/world/BuildingSystem';
 import type { WaveSpawnPoint } from '../../simulation/WaveSystem';
-import type { MaintenanceAction } from '../../simulation/world/BuildingMaintenanceSystem';
+import type { MaintenanceAction, MaintenanceState } from '../../simulation/world/BuildingMaintenanceSystem';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -16,6 +16,7 @@ const MAX_CAMERA_ZOOM = 2.5;
 const SELECTION_DRAG_THRESHOLD = 8;
 const MISSION_SEED_STORAGE_KEY = 'outbreakzones:mission-seed';
 const BUILDING_STATE_STORAGE_PREFIX = 'outbreakzones:building-state:';
+const MAINTENANCE_STATE_STORAGE_PREFIX = 'outbreakzones:maintenance-state:';
 
 interface TacticalOfficer {
   readonly id: number;
@@ -62,6 +63,7 @@ export class MissionScene extends Phaser.Scene {
   private resultText!: Phaser.GameObjects.Text;
   private resultShown = false;
   private lastPersistedBuildingState = '';
+  private lastPersistedMaintenanceState = '';
 
   constructor() {
     super('MissionScene');
@@ -117,6 +119,7 @@ export class MissionScene extends Phaser.Scene {
     this.updateCombatFeedback();
     this.updateMissionResult();
     this.persistBuildingState();
+    this.persistMaintenanceState();
     this.updateCamera(dt);
     if (!this.isPaused) {
       this.updateOfficers(dt);
@@ -191,6 +194,15 @@ export class MissionScene extends Phaser.Scene {
     }
     this.lastPersistedBuildingState = JSON.stringify(this.buildingSystem.exportState());
     this.simulation.setBuildingSystem(this.buildingSystem);
+    const savedMaintenanceState = this.readStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${missionSeed}`);
+    if (savedMaintenanceState) {
+      try {
+        this.simulation.restoreMaintenanceState(JSON.parse(savedMaintenanceState) as MaintenanceState);
+      } catch {
+        this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${missionSeed}`);
+      }
+    }
+    this.lastPersistedMaintenanceState = this.serializeMaintenanceState();
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
     this.simulation.setExtractionZone({ x: 1024, y: 1120, radius: 72 });
@@ -256,10 +268,29 @@ export class MissionScene extends Phaser.Scene {
     this.lastPersistedBuildingState = serialized;
   }
 
+  private serializeMaintenanceState(): string {
+    const state = this.simulation.getMaintenanceState();
+    if (!state) return '';
+    return JSON.stringify({
+      resources: state.resources,
+      jobs: state.jobs.map((job) => ({ ...job, remaining: Math.ceil(job.remaining) })),
+    });
+  }
+
+  private persistMaintenanceState(): void {
+    const serialized = this.serializeMaintenanceState();
+    if (!serialized || serialized === this.lastPersistedMaintenanceState) return;
+    const seed = this.registry.get('missionSeed');
+    if (typeof seed !== 'number' || !Number.isInteger(seed)) return;
+    this.writeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`, serialized);
+    this.lastPersistedMaintenanceState = serialized;
+  }
+
   private restartMission(): void {
     const seed = this.registry.get('missionSeed');
     if (typeof seed === 'number' && Number.isInteger(seed)) {
       this.removeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${seed}`);
+      this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`);
     }
     this.removeStorage(MISSION_SEED_STORAGE_KEY);
     this.registry.remove('missionSeed');
