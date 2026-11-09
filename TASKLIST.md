@@ -215,6 +215,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T093 — P0** Permitir reiniciar a missão.
 - [ ] **T094 — P1** Garantir legibilidade e usabilidade em diferentes resoluções desktop.
 
+**Implementação em andamento na PR #30:** o HUD/minimapa está sendo corrigido para permanecer em coordenadas de viewport durante scroll/zoom. A equipe também passa a exibir vida e munição/recarga de cada policial (T086). T085–T086 continuam desmarcadas até CI e QA no navegador.
+
 **Saída da fase:** jogador entende o estado da missão e consegue executar todas as ações necessárias pela interface.
 
 ### Fase 10 — Arte, áudio e acabamento
@@ -345,4 +347,4 @@ Uma tarefa só pode ser marcada como concluída quando:
 - [ ] O resultado foi revisado no navegador, quando envolve gameplay ou interface.
 
 
-**Ajuste adicional de interface:** o painel Dev Hub foi convertido para coordenadas do mundo (sem `setScrollFactor(0)`), acompanhando o deslocamento e o zoom da câmera. Os controles de tela cheia e a caixa de seleção continuam fixos à viewport por serem elementos de interface.
+**Ajuste de interface pendente na `main`:** a implementação da PR #28 posicionou os painéis do HUD/minimapa em coordenadas do mundo, fazendo-os sair do enquadramento durante o deslocamento da câmera. O requisito correto é HUD fixo à viewport; a branch `fix/tactical-hud-viewport-anchor-t085` corrige o `scrollFactor` e a detecção de cliques para coordenadas de tela. A validação visual e em diferentes resoluções continua pendente.
