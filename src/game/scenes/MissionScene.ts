@@ -579,13 +579,13 @@ export class MissionScene extends Phaser.Scene {
     if (selected.length === 0) return null;
     let nearest: { id: string; distance: number } | null = null;
     for (const access of this.simulation.getBuildingSnapshots()) {
-      const cell = access.cells[0];
-      if (!cell) continue;
-      const x = cell.column * this.tileSize + this.tileSize / 2;
-      const y = cell.row * this.tileSize + this.tileSize / 2;
-      for (const officer of selected) {
-        const distance = Phaser.Math.Distance.Between(x, y, officer.position.x, officer.position.y);
-        if (distance <= 88 && (!nearest || distance < nearest.distance)) nearest = { id: access.id, distance };
+      for (const cell of access.cells) {
+        const x = cell.column * this.tileSize + this.tileSize / 2;
+        const y = cell.row * this.tileSize + this.tileSize / 2;
+        for (const officer of selected) {
+          const distance = Phaser.Math.Distance.Between(x, y, officer.position.x, officer.position.y);
+          if (distance <= 88 && (!nearest || distance < nearest.distance)) nearest = { id: access.id, distance };
+        }
       }
     }
     return nearest;
