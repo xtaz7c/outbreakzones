@@ -262,6 +262,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T122 — P1** Implementar aprimoramentos de componentes/edifícios (ex.: reforço, barricada ou melhoria de fechadura), com efeitos claros e limites por nível.
 - [ ] **T123 — P1** Definir custos, materiais, tempo de execução e requisitos de reparo/aprimoramento; impedir melhorias gratuitas ou ilimitadas.
 
+**Implementação em `feat/phase-7-building-maintenance`:** criado `BuildingMaintenanceSystem` independente do Phaser, com carteira finita de sucata e peças, jobs temporizados e limite de um job por acesso. Reparos restauram integridade e recuperam acessos destruídos; reforços aumentam a durabilidade em até dois níveis; barricadas reduzem dano recebido em 50%; fechaduras de até nível 2 reduzem dano enquanto trancadas em 15% por nível. Os custos variam por tipo de acesso e dano, e cada ação exige materiais e tempo. A cena expõe Y (reparar), U (reforçar), V (barricada) e L (melhorar fechadura); E permite à polícia remover uma barricada instalada. O Dev Hub exibe recursos, progresso dos jobs, integridade do acesso próximo e níveis de melhoria. Recursos, jobs em andamento e melhorias são persistidos entre recargas. Testes cobrem custos, limites, resistência, reparos, restauração e jobs em andamento. T121–T123 seguem desmarcadas até CI e validação manual.
+
 ### Sistema Tático Básico (incremento transversal)
 
 - [ ] **T125 — P1** Implementar ordem de manter posição, cancelando a rota ativa da unidade selecionada.

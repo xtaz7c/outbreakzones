@@ -8,6 +8,7 @@ import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader'
 import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/world/MissionEntryPoints';
 import { BuildingSystem, type AccessKind } from '../../simulation/world/BuildingSystem';
 import type { WaveSpawnPoint } from '../../simulation/WaveSystem';
+import type { MaintenanceAction, MaintenanceState } from '../../simulation/world/BuildingMaintenanceSystem';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -15,6 +16,7 @@ const MAX_CAMERA_ZOOM = 2.5;
 const SELECTION_DRAG_THRESHOLD = 8;
 const MISSION_SEED_STORAGE_KEY = 'outbreakzones:mission-seed';
 const BUILDING_STATE_STORAGE_PREFIX = 'outbreakzones:building-state:';
+const MAINTENANCE_STATE_STORAGE_PREFIX = 'outbreakzones:maintenance-state:';
 
 interface TacticalOfficer {
   readonly id: number;
@@ -61,6 +63,7 @@ export class MissionScene extends Phaser.Scene {
   private resultText!: Phaser.GameObjects.Text;
   private resultShown = false;
   private lastPersistedBuildingState = '';
+  private lastPersistedMaintenanceState = '';
 
   constructor() {
     super('MissionScene');
@@ -89,6 +92,10 @@ export class MissionScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-N', () => this.emitNoiseAtHouse());
     this.input.keyboard?.on('keydown-E', () => this.interactWithNearestAccess());
     this.input.keyboard?.on('keydown-B', () => this.breachNearestAccess());
+    this.input.keyboard?.on('keydown-Y', () => this.startMaintenance('repair'));
+    this.input.keyboard?.on('keydown-U', () => this.startMaintenance('reinforce'));
+    this.input.keyboard?.on('keydown-V', () => this.startMaintenance('barricade'));
+    this.input.keyboard?.on('keydown-L', () => this.startMaintenance('upgrade-lock'));
     this.input.keyboard?.on('keydown-H', () => this.setSelectedPosture('hold_fire'));
     this.input.keyboard?.on('keydown-G', () => this.setSelectedPosture('engage'));
     this.input.keyboard?.on('keydown-X', () => this.holdSelectedPositions());
@@ -112,6 +119,7 @@ export class MissionScene extends Phaser.Scene {
     this.updateCombatFeedback();
     this.updateMissionResult();
     this.persistBuildingState();
+    this.persistMaintenanceState();
     this.updateCamera(dt);
     if (!this.isPaused) {
       this.updateOfficers(dt);
@@ -186,6 +194,15 @@ export class MissionScene extends Phaser.Scene {
     }
     this.lastPersistedBuildingState = JSON.stringify(this.buildingSystem.exportState());
     this.simulation.setBuildingSystem(this.buildingSystem);
+    const savedMaintenanceState = this.readStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${missionSeed}`);
+    if (savedMaintenanceState) {
+      try {
+        this.simulation.restoreMaintenanceState(JSON.parse(savedMaintenanceState) as MaintenanceState);
+      } catch {
+        this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${missionSeed}`);
+      }
+    }
+    this.lastPersistedMaintenanceState = this.serializeMaintenanceState();
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
     this.simulation.setExtractionZone({ x: 1024, y: 1120, radius: 72 });
@@ -251,10 +268,29 @@ export class MissionScene extends Phaser.Scene {
     this.lastPersistedBuildingState = serialized;
   }
 
+  private serializeMaintenanceState(): string {
+    const state = this.simulation.getMaintenanceState();
+    if (!state) return '';
+    return JSON.stringify({
+      resources: state.resources,
+      jobs: state.jobs.map((job) => ({ ...job, remaining: Math.ceil(job.remaining) })),
+    });
+  }
+
+  private persistMaintenanceState(): void {
+    const serialized = this.serializeMaintenanceState();
+    if (!serialized || serialized === this.lastPersistedMaintenanceState) return;
+    const seed = this.registry.get('missionSeed');
+    if (typeof seed !== 'number' || !Number.isInteger(seed)) return;
+    this.writeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`, serialized);
+    this.lastPersistedMaintenanceState = serialized;
+  }
+
   private restartMission(): void {
     const seed = this.registry.get('missionSeed');
     if (typeof seed === 'number' && Number.isInteger(seed)) {
       this.removeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${seed}`);
+      this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`);
     }
     this.removeStorage(MISSION_SEED_STORAGE_KEY);
     this.registry.remove('missionSeed');
@@ -543,13 +579,13 @@ export class MissionScene extends Phaser.Scene {
     if (selected.length === 0) return null;
     let nearest: { id: string; distance: number } | null = null;
     for (const access of this.simulation.getBuildingSnapshots()) {
-      const cell = access.cells[0];
-      if (!cell) continue;
-      const x = cell.column * this.tileSize + this.tileSize / 2;
-      const y = cell.row * this.tileSize + this.tileSize / 2;
-      for (const officer of selected) {
-        const distance = Phaser.Math.Distance.Between(x, y, officer.position.x, officer.position.y);
-        if (distance <= 88 && (!nearest || distance < nearest.distance)) nearest = { id: access.id, distance };
+      for (const cell of access.cells) {
+        const x = cell.column * this.tileSize + this.tileSize / 2;
+        const y = cell.row * this.tileSize + this.tileSize / 2;
+        for (const officer of selected) {
+          const distance = Phaser.Math.Distance.Between(x, y, officer.position.x, officer.position.y);
+          if (distance <= 88 && (!nearest || distance < nearest.distance)) nearest = { id: access.id, distance };
+        }
       }
     }
     return nearest;
@@ -583,6 +619,12 @@ export class MissionScene extends Phaser.Scene {
     if (this.isPaused) return;
     const nearest = this.findNearestAccess();
     if (nearest) this.simulation.damageAccess(nearest.id, 30);
+  }
+
+  private startMaintenance(action: MaintenanceAction): void {
+    if (this.isPaused) return;
+    const nearest = this.findNearestAccess();
+    if (nearest) this.simulation.startBuildingMaintenance(nearest.id, action);
   }
 
   private updateAccessVisuals(): void {
@@ -752,6 +794,14 @@ export class MissionScene extends Phaser.Scene {
     const shelteredCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'sheltered').length;
     const hasActiveSelection = this.simulation.getOfficers().some((officer) =>
       this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
+    const maintenance = this.simulation.getMaintenanceState();
+    const maintenanceJobs = maintenance?.jobs.map((job) =>
+      `${job.action} ${job.accessId}: ${job.remaining.toFixed(1)}s`).join(', ') || 'none';
+    const nearbyAccessId = this.findNearestAccess()?.id;
+    const nearbyAccess = this.simulation.getBuildingSnapshots().find((access) => access.id === nearbyAccessId);
+    const accessDetails = nearbyAccess
+      ? `${nearbyAccess.id} ${nearbyAccess.state} HP ${nearbyAccess.health}/${nearbyAccess.maxHealth} | R${nearbyAccess.reinforcementLevel} B${nearbyAccess.barricadeLevel} L${nearbyAccess.lockLevel}`
+      : 'none';
     const tutorialHint = !hasActiveSelection
       ? 'Tutorial: select an active police officer with left-click or keys 1-3.'
       : shelteredCount > 0
@@ -769,8 +819,11 @@ export class MissionScene extends Phaser.Scene {
         `Wave: ${state.waveNumber}/${state.totalWaves} | ${state.wavePhase.toUpperCase()} | Spawn queue: ${state.remainingToSpawn}`,
         state.wavePhase === 'preparing' ? `Next wave in: ${state.preparationRemaining.toFixed(1)}s` : `Mission: ${state.missionStatus.toUpperCase()}`,
         `Civilians: ${state.rescuedCivilianCount}/${state.civilianCount} extracted`,
+        `Supplies: ${maintenance?.resources.scrap ?? 0} scrap / ${maintenance?.resources.parts ?? 0} parts | Jobs: ${maintenanceJobs}`,
+        `Nearby access: ${accessDetails}`,
         tutorialHint,
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
+        'E interact | B breach | Y repair | U reinforce | V barricade | L lock upgrade',
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
           const posture = officer.tacticalPosture === 'hold_fire' ? 'HOLD FIRE' : 'ENGAGE';
