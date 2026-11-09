@@ -100,7 +100,7 @@ export class BuildingAccess {
     this.baseMaxHealth = definition.maxHealth ?? (definition.kind === 'window' ? 60 : 120);
     if (!Number.isFinite(this.baseMaxHealth) || this.baseMaxHealth <= 0) throw new RangeError('Access maxHealth must be positive.');
     this.currentMaxHealth = this.baseMaxHealth;
-    this.currentHealth = this.currentMaxHealth;
+    this.currentHealth = state === 'broken' ? 0 : this.currentMaxHealth;
     this.currentState = state;
     this.cells = cells.map((cell) => ({ ...cell }));
   }
