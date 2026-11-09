@@ -233,6 +233,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T103 — P2** Adicionar áudio ambiente ou música, se contribuir para a experiência.
 - [ ] **T104 — P1** Validar consistência de escala, contraste e legibilidade das texturas.
 
+**Áudio adicionado ao repositório pelo usuário:** 4 variações de disparo, 4 faixas de suspense e 4 vocalizações de infectados em `public/audio/`. A integração na branch `feat/audio-assets-and-issue-26-progress` registra preload com nomes/URLs codificados e seleção aleatória de variantes no `AudioManager`. T102/T103 aguardam CI e QA auditivo no navegador; confirmar também comportamento de autoplay/mute.
+
 **Saída da fase:** identidade visual coerente e feedback suficiente para interpretar as ações.
 
 ### Fase 11 — Testes, estabilidade e entrega web

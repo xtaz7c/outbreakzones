@@ -37,7 +37,7 @@ Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`). Semp
 
 ## Áudio
 
-A primeira integração inclui a camada `AudioManager`, separada da simulação, preparada para ambiente, disparos e vocalizações. Os arquivos WAV ainda não estão versionados em `public/audio/`; por isso, o carregamento e a reprodução desses sons são opcionais e a missão continua normalmente quando eles não estão disponíveis. Pressione **M** durante a missão para silenciar ou reativar o áudio. Mixagem, áudio posicional e assets licenciados/originais serão refinados em etapas posteriores.
+O projeto inclui 12 arquivos WAV em `public/audio/`: quatro variações de disparo, quatro faixas de suspense e quatro vocalizações de infectados. `BootScene` pré-carrega esses assets com nomes de arquivo codificados nas URLs; `AudioManager` escolhe variantes aleatórias para evitar repetição imediata. O áudio é opcional e falhas de carregamento não bloqueiam a missão. Pressione **M** durante a missão para silenciar ou reativar o áudio. Mixagem, áudio posicional e validação de autoplay/volume ainda precisam de QA no navegador.
 
 ## Validação
 

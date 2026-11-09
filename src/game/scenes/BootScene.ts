@@ -145,10 +145,29 @@ export class BootScene extends Phaser.Scene {
     this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
     this.load.image('mission-tiles', '/tiles/mission-tiles.svg');
 
-    // Áudio original do projeto: ambiente, disparos e vocalização dos infectados.
-    this.load.audio('ambient-loop', '/audio/ambient-loop.wav');
-    this.load.audio('pistol-shot', '/audio/pistol-shot.wav');
-    this.load.audio('infected-groan', '/audio/infected-groan.wav');
+    // Assets de áudio enviados ao repositório. Os caracteres especiais dos
+    // nomes são codificados na URL para que "#" não seja interpretado como fragmento.
+    const audioAssets = [
+      ...Array.from({ length: 4 }, (_, index) => ({
+        key: `pistol-shot-${index + 1}`,
+        url: `/audio/Sharp,_loud_pistol_g_%23${index + 1}-${[
+          '1794228749125', '1794228875117', '1794228882576', '1794228889978',
+        ][index]}.wav`,
+      })),
+      ...Array.from({ length: 4 }, (_, index) => ({
+        key: `ambient-loop-${index + 1}`,
+        url: `/audio/trilha%20sonora/Suspenseful_cinemati_%23${index + 1}-${[
+          '1794229273745', '1794229316708', '1794229318667', '1794229318668',
+        ][index]}.wav`,
+      })),
+      ...Array.from({ length: 4 }, (_, index) => ({
+        key: `infected-groan-${index + 1}`,
+        url: `/audio/zombies/Guttural_zombie_snar_%23${index + 1}-${[
+          '1794228967632', '1794228986373', '1794228988925', '1794228990906',
+        ][index]}.wav`,
+      })),
+    ];
+    for (const asset of audioAssets) this.load.audio(asset.key, asset.url);
   }
 
   create(): void {
