@@ -268,7 +268,7 @@ export class Infected {
     let nearestHuman: HumanTarget | undefined;
     let nearestDistance = this.detectionRange;
     for (const human of [...officers, ...civilians, ...additionalHumanTargets]) {
-      if (human.isIncapacitated || human.isRescued) continue;
+      if (human.isIncapacitated || ('isRescued' in human && human.isRescued)) continue;
       const distance = this.distanceTo(human.position);
       if (distance <= nearestDistance && hasLineOfSight(map, this.currentPosition, human.position, tileSize)) {
         nearestHuman = human;
