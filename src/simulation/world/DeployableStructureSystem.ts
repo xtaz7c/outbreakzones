@@ -263,7 +263,8 @@ export class DeployableStructureSystem {
     const occupied = new Set<string>();
     const restored: MutableDeployable[] = [];
     let maxId = 0;
-    for (const record of state.structures) {
+    const records = state.structures as readonly DeployableRecord[];
+    for (const record of records) {
       const definition = DEFINITIONS[record.kind];
       const key = `${record.tile?.column}:${record.tile?.row}`;
       if (!definition || !Number.isInteger(record.id) || record.id <= 0 || ids.has(record.id) ||
