@@ -64,6 +64,7 @@ export class Simulation {
   private tileSize = WORLD_TILE_SIZE;
   private waveSystem: WaveSystem | null = null;
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
+  private extractionZone = { x: 1024, y: 1120, radius: 72 };
 
   constructor(combatOptions: CombatSystemOptions = {}) {
     this.combat = new CombatSystem(combatOptions);
@@ -132,6 +133,65 @@ export class Simulation {
 
   getCivilians(): readonly Civilian[] {
     return this.civilians;
+  }
+
+  setExtractionZone(zone: { readonly x: number; readonly y: number; readonly radius: number }): void {
+    if (![zone.x, zone.y, zone.radius].every(Number.isFinite) || zone.radius <= 0) {
+      throw new RangeError('Extraction zone requires finite coordinates and a positive radius.');
+    }
+    this.extractionZone = { ...zone };
+  }
+
+  rescueCivilian(civilianId: number, officerId: number): boolean {
+    const civilian = this.civilians.find((candidate) => candidate.id === civilianId);
+    const officer = this.officers.find((candidate) => candidate.id === officerId && !candidate.isIncapacitated);
+    if (!civilian || !officer || civilian.state !== 'sheltered') return false;
+    if (Math.hypot(civilian.position.x - officer.position.x, civilian.position.y - officer.position.y) > 80) {
+      return false;
+    }
+    return civilian.beginFollowing(officerId);
+  }
+
+  private updateCivilianEscorts(dt: number): void {
+    if (!this.worldGrid) return;
+    const civilGrid = this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid;
+    for (const civilian of this.civilians) {
+      if (civilian.state !== 'following') continue;
+      let escort = this.officers.find((officer) => officer.id === civilian.escortId && !officer.isIncapacitated);
+      if (!escort) {
+        escort = this.officers
+          .filter((officer) => !officer.isIncapacitated)
+          .sort((a, b) =>
+            Math.hypot(a.position.x - civilian.position.x, a.position.y - civilian.position.y) -
+            Math.hypot(b.position.x - civilian.position.x, b.position.y - civilian.position.y))[0];
+        if (!escort) continue;
+        civilian.assignEscort(escort.id);
+      }
+      const target = {
+        x: escort.position.x - Math.cos(escort.facingAngle) * 28,
+        y: escort.position.y - Math.sin(escort.facingAngle) * 28,
+      };
+      civilian.updateFollowing(dt, this.tileSize, civilGrid, target);
+      const position = civilian.position;
+      if (Math.hypot(position.x - this.extractionZone.x, position.y - this.extractionZone.y) <= this.extractionZone.radius) {
+        civilian.extract();
+      }
+    }
+  }
+
+  private replanCivilianEscorts(): void {
+    if (!this.worldGrid) return;
+    const civilGrid = this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid;
+    for (const civilian of this.civilians) {
+      if (civilian.state !== 'following') continue;
+      const escort = this.officers.find((officer) => officer.id === civilian.escortId && !officer.isIncapacitated);
+      if (!escort) continue;
+      const target = {
+        x: escort.position.x - Math.cos(escort.facingAngle) * 28,
+        y: escort.position.y - Math.sin(escort.facingAngle) * 28,
+      };
+      civilian.replan(civilGrid, this.tileSize, target);
+    }
   }
 
   isMissionDefeated(): boolean {
@@ -250,6 +310,7 @@ export class Simulation {
     for (const officer of this.officers) {
       officer.update(dt, this.tileSize);
     }
+    this.updateCivilianEscorts(dt);
     if (this.worldGrid) {
       const infectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
       const policeGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
@@ -269,7 +330,10 @@ export class Simulation {
       const accessChanged = this.buildingSystem?.getSnapshots().some(
         (access) => accessStatesBefore.get(access.id) !== access.state,
       ) ?? false;
-      if (accessChanged) this.replanOfficerRoutes();
+      if (accessChanged) {
+        this.replanOfficerRoutes();
+        this.replanCivilianEscorts();
+      }
       const shotEvents = this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize);
       this.combatEvents.push(...shotEvents);
       for (const event of shotEvents) {
