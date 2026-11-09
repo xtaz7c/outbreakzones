@@ -19,6 +19,7 @@ export interface MaintenanceJob {
   readonly cost: MaintenanceCost;
   readonly duration: number;
   readonly remaining: number;
+  readonly repairAmount?: number;
 }
 
 export interface MaintenanceState {
@@ -33,6 +34,7 @@ interface MutableJob {
   cost: MaintenanceCost;
   duration: number;
   remaining: number;
+  repairAmount?: number;
 }
 
 function accessFactor(kind: AccessKind): number {
@@ -76,19 +78,28 @@ export class BuildingMaintenanceSystem {
     let maximumJobId = 0;
     const restoredJobs: MutableJob[] = [];
     for (const job of state.jobs) {
+      const access = this.buildings.getAccess(job.accessId);
+      const repairAmount = job.action === 'repair'
+        ? job.repairAmount ?? (access ? access.maxHealth - access.health : 0)
+        : undefined;
       if (!Number.isInteger(job.id) || job.id <= 0 || jobIds.has(job.id) ||
-          !this.buildings.getAccess(job.accessId) || accessIds.has(job.accessId) ||
+          !access || accessIds.has(job.accessId) ||
           !['repair', 'reinforce', 'barricade', 'upgrade-lock'].includes(job.action) ||
           !Number.isFinite(job.duration) || job.duration <= 0 ||
           !Number.isFinite(job.remaining) || job.remaining < 0 || job.remaining > job.duration ||
           !Number.isInteger(job.cost?.scrap) || job.cost.scrap < 0 ||
-          !Number.isInteger(job.cost?.parts) || job.cost.parts < 0) {
+          !Number.isInteger(job.cost?.parts) || job.cost.parts < 0 ||
+          (job.action === 'repair' && (!Number.isFinite(repairAmount) || repairAmount <= 0))) {
         throw new RangeError('Invalid persisted maintenance job.');
       }
       accessIds.add(job.accessId);
       jobIds.add(job.id);
       maximumJobId = Math.max(maximumJobId, job.id);
-      restoredJobs.push({ ...job, cost: { ...job.cost } });
+      restoredJobs.push({
+        ...job,
+        ...(job.action === 'repair' ? { repairAmount } : {}),
+        cost: { ...job.cost },
+      });
     }
     this.scrap = state.resources.scrap;
     this.parts = state.resources.parts;
@@ -111,6 +122,7 @@ export class BuildingMaintenanceSystem {
       cost: plan.cost,
       duration: plan.duration,
       remaining: plan.duration,
+      ...(plan.repairAmount !== undefined ? { repairAmount: plan.repairAmount } : {}),
     });
     return true;
   }
@@ -141,6 +153,7 @@ export class BuildingMaintenanceSystem {
   private createPlan(access: BuildingAccess, action: MaintenanceAction): {
     readonly cost: MaintenanceCost;
     readonly duration: number;
+    readonly repairAmount?: number;
   } | null {
     const factor = accessFactor(access.kind);
     switch (action) {
@@ -153,6 +166,7 @@ export class BuildingMaintenanceSystem {
             parts: Math.max(1, Math.ceil(missing / 45)),
           },
           duration: Math.max(2, missing / 12),
+          repairAmount: missing,
         };
       }
       case 'reinforce':
@@ -175,7 +189,7 @@ export class BuildingMaintenanceSystem {
 
   private complete(access: BuildingAccess, action: MaintenanceAction): boolean {
     switch (action) {
-      case 'repair': return access.repair() > 0;
+      case 'repair': return access.repair(this.jobs.find((job) => job.accessId === access.id)?.repairAmount) > 0;
       case 'reinforce': return access.reinforce();
       case 'barricade': return access.installBarricade();
       case 'upgrade-lock': return access.upgradeLock();
