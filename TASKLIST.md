@@ -215,6 +215,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T093 — P0** Permitir reiniciar a missão.
 - [ ] **T094 — P1** Garantir legibilidade e usabilidade em diferentes resoluções desktop.
 
+**Implementação em andamento na PR #30:** o HUD/minimapa está sendo corrigido para permanecer em coordenadas de viewport durante scroll/zoom. A equipe também passa a exibir vida e munição/recarga de cada policial (T086). T085–T086 continuam desmarcadas até CI e QA no navegador.
+
 **Saída da fase:** jogador entende o estado da missão e consegue executar todas as ações necessárias pela interface.
 
 ### Fase 10 — Arte, áudio e acabamento
