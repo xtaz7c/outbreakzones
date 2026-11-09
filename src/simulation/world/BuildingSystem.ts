@@ -137,7 +137,11 @@ export class BuildingAccess {
     if (!Number.isFinite(amount) || amount <= 0 || this.isDestroyed) return 0;
     const applied = Math.min(amount, this.currentHealth);
     this.currentHealth -= applied;
-    if (this.currentHealth === 0) this.currentState = 'broken';
+    if (this.currentHealth === 0) {
+      this.currentState = 'broken';
+      this.currentBarricadeLevel = 0;
+      this.currentLockLevel = 0;
+    }
     return applied;
   }
   repair(): number {
