@@ -797,6 +797,11 @@ export class MissionScene extends Phaser.Scene {
     const maintenance = this.simulation.getMaintenanceState();
     const maintenanceJobs = maintenance?.jobs.map((job) =>
       `${job.action} ${job.accessId}: ${job.remaining.toFixed(1)}s`).join(', ') || 'none';
+    const nearbyAccessId = this.findNearestAccess()?.id;
+    const nearbyAccess = this.simulation.getBuildingSnapshots().find((access) => access.id === nearbyAccessId);
+    const accessDetails = nearbyAccess
+      ? `${nearbyAccess.id} ${nearbyAccess.state} HP ${nearbyAccess.health}/${nearbyAccess.maxHealth} | R${nearbyAccess.reinforcementLevel} B${nearbyAccess.barricadeLevel} L${nearbyAccess.lockLevel}`
+      : 'none';
     const tutorialHint = !hasActiveSelection
       ? 'Tutorial: select an active police officer with left-click or keys 1-3.'
       : shelteredCount > 0
@@ -815,6 +820,7 @@ export class MissionScene extends Phaser.Scene {
         state.wavePhase === 'preparing' ? `Next wave in: ${state.preparationRemaining.toFixed(1)}s` : `Mission: ${state.missionStatus.toUpperCase()}`,
         `Civilians: ${state.rescuedCivilianCount}/${state.civilianCount} extracted`,
         `Supplies: ${maintenance?.resources.scrap ?? 0} scrap / ${maintenance?.resources.parts ?? 0} parts | Jobs: ${maintenanceJobs}`,
+        `Nearby access: ${accessDetails}`,
         tutorialHint,
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         'E interact | B breach | Y repair | U reinforce | V barricade | L lock upgrade',
