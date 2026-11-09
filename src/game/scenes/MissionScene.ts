@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { AudioManager } from '../audio/AudioManager';
 import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
+import { canStartCampaign, getMissionDefinition, type MissionId } from '../MissionProgression';
 import { Simulation } from '../../simulation/Simulation';
 import type { CombatEvent } from '../../simulation/CombatSystem';
 import { GridMap } from '../../simulation/world/GridMap';
@@ -92,7 +93,7 @@ export class MissionScene extends Phaser.Scene {
   private resultHomeButton!: Phaser.GameObjects.Text;
   private resultCampaignButton!: Phaser.GameObjects.Text;
   private resultRestartButton!: Phaser.GameObjects.Text;
-  private missionId: 0 | 1 = 0;
+  private missionId: MissionId = 0;
   private resultShown = false;
   private lastPersistedBuildingState = '';
   private lastPersistedMaintenanceState = '';
@@ -301,22 +302,12 @@ export class MissionScene extends Phaser.Scene {
       { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 9 } },
       { id: 'south', x: 1280, y: 1488, entryTile: { column: 40, row: 43 } },
     ];
-    const tutorialWaves = [
-      { infectedCount: 3, spawnInterval: 1.4 },
-      { infectedCount: 4, spawnInterval: 1.15 },
-      { infectedCount: 5, spawnInterval: 0.9 },
-    ];
-    const refugeWaves = [
-      { infectedCount: 4, spawnInterval: 1.25 },
-      { infectedCount: 5, spawnInterval: 1.05 },
-      { infectedCount: 6, spawnInterval: 0.85 },
-      { infectedCount: 7, spawnInterval: 0.7 },
-    ];
+    const mission = getMissionDefinition(this.missionId);
     this.simulation.configureWaves(
       spawnPoints,
-      this.missionId === 0 ? tutorialWaves : refugeWaves,
-      this.missionId === 0 ? 8 : 10,
-      this.missionId === 0,
+      mission.waves,
+      mission.preparationDuration,
+      mission.requiresCivilianExtraction,
     );
     this.cameraWorldWidth = map.widthInPixels;
     this.cameraWorldHeight = map.heightInPixels;
@@ -765,7 +756,8 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private startCampaign(): void {
-    if (this.missionId !== 0 || this.simulation.getState().missionStatus !== 'victory') return;
+    const unlocked = this.readStorage(CAMPAIGN_UNLOCK_STORAGE_KEY) === '1';
+    if (!canStartCampaign(this.missionId, this.simulation.getState().missionStatus, unlocked)) return;
     this.writeStorage(CAMPAIGN_UNLOCK_STORAGE_KEY, '1');
     this.removeStorage(MISSION_SEED_STORAGE_KEY);
     this.registry.remove('missionSeed');
@@ -943,7 +935,7 @@ export class MissionScene extends Phaser.Scene {
         ? 'EQUIPE INCAPACITADA'
         : 'RESGATAR SOBREVIVENTES';
     this.missionText.setText([
-      this.missionId === 0 ? 'MISSÃO 0  /  O RESGATE' : 'MISSÃO 1  /  REFÚGIO',
+      `MISSÃO ${this.missionId}  /  ${getMissionDefinition(this.missionId).title.toUpperCase()}`,
       objective,
       `RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
       `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`,
