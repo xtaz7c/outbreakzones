@@ -15,6 +15,7 @@ const MIN_CAMERA_ZOOM = 0.5;
 const MAX_CAMERA_ZOOM = 2.5;
 const SELECTION_DRAG_THRESHOLD = 8;
 const MISSION_SEED_STORAGE_KEY = 'outbreakzones:mission-seed';
+const CAMPAIGN_UNLOCK_STORAGE_KEY = 'outbreakzones:campaign-unlocked';
 const BUILDING_STATE_STORAGE_PREFIX = 'outbreakzones:building-state:';
 const MAINTENANCE_STATE_STORAGE_PREFIX = 'outbreakzones:maintenance-state:';
 
@@ -78,6 +79,10 @@ export class MissionScene extends Phaser.Scene {
   private isPaused = false;
   private resultPanel!: Phaser.GameObjects.Rectangle;
   private resultText!: Phaser.GameObjects.Text;
+  private resultHomeButton!: Phaser.GameObjects.Text;
+  private resultCampaignButton!: Phaser.GameObjects.Text;
+  private resultRestartButton!: Phaser.GameObjects.Text;
+  private missionId: 0 | 1 = 0;
   private resultShown = false;
   private lastPersistedBuildingState = '';
   private lastPersistedMaintenanceState = '';
@@ -126,6 +131,7 @@ export class MissionScene extends Phaser.Scene {
     this.resultShown = false;
     this.selectedOfficerIds.clear();
     this.debugInfectedSpawnIndex = 0;
+    this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.simulation = new Simulation();
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
@@ -262,11 +268,23 @@ export class MissionScene extends Phaser.Scene {
       { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 9 } },
       { id: 'south', x: 1280, y: 1488, entryTile: { column: 40, row: 43 } },
     ];
-    this.simulation.configureWaves(spawnPoints, [
+    const tutorialWaves = [
       { infectedCount: 3, spawnInterval: 1.4 },
       { infectedCount: 4, spawnInterval: 1.15 },
       { infectedCount: 5, spawnInterval: 0.9 },
-    ], 8);
+    ];
+    const refugeWaves = [
+      { infectedCount: 4, spawnInterval: 1.25 },
+      { infectedCount: 5, spawnInterval: 1.05 },
+      { infectedCount: 6, spawnInterval: 0.85 },
+      { infectedCount: 7, spawnInterval: 0.7 },
+    ];
+    this.simulation.configureWaves(
+      spawnPoints,
+      this.missionId === 0 ? tutorialWaves : refugeWaves,
+      this.missionId === 0 ? 8 : 10,
+      this.missionId === 0,
+    );
     this.cameraWorldWidth = map.widthInPixels;
     this.cameraWorldHeight = map.heightInPixels;
     this.cameras.main
@@ -531,18 +549,52 @@ export class MissionScene extends Phaser.Scene {
       this.setPauseMenuVisible(true);
     });
 
-    this.resultPanel = this.add.rectangle(width / 2, height / 2, 520, 190, 0x111415, 0.96)
+    this.resultPanel = this.add.rectangle(width / 2, height / 2, 560, 270, 0x111415, 0.97)
       .setScrollFactor(0).setDepth(2000).setStrokeStyle(2, HUD_COLORS.red).setVisible(false);
-    this.resultText = this.add.text(width / 2, height / 2, '', {
+    this.resultText = this.add.text(width / 2, height / 2 - 48, '', {
       fontFamily: 'Barlow Condensed, Impact, sans-serif',
       fontSize: '26px',
       color: '#e8e3d8',
       align: 'center',
       padding: { x: 18, y: 12 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2001).setVisible(false);
+    this.resultHomeButton = this.createResultAction(width / 2 - 135, height / 2 + 82, 'VOLTAR AO INÍCIO', () => this.returnToHome());
+    this.resultCampaignButton = this.createResultAction(width / 2 + 135, height / 2 + 82, 'INICIAR CAMPANHA', () => this.startCampaign());
+    this.resultRestartButton = this.createResultAction(width / 2, height / 2 + 82, 'JOGAR NOVAMENTE', () => this.restartMission());
 
     this.loadMinimapVisibility();
     this.refreshPauseMenuLabels();
+  }
+
+  private createResultAction(
+    x: number,
+    y: number,
+    label: string,
+    action: () => void,
+  ): Phaser.GameObjects.Text {
+    const button = this.add.text(x, y, label, {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '10px',
+      fontStyle: 'bold',
+      color: '#fff5e9',
+      backgroundColor: '#252c2d',
+      padding: { x: 14, y: 12 },
+      fixedWidth: 230,
+      align: 'center',
+      letterSpacing: 0.8,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2002).setVisible(false)
+      .setInteractive({ useHandCursor: true });
+    button.on('pointerdown', action);
+    return button;
+  }
+
+  private startCampaign(): void {
+    if (this.missionId !== 0 || this.simulation.getState().missionStatus !== 'victory') return;
+    this.writeStorage(CAMPAIGN_UNLOCK_STORAGE_KEY, '1');
+    this.removeStorage(MISSION_SEED_STORAGE_KEY);
+    this.registry.remove('missionSeed');
+    this.registry.set('missionId', 1);
+    this.scene.restart();
   }
 
   private createPauseAction(
@@ -695,7 +747,7 @@ export class MissionScene extends Phaser.Scene {
         ? 'EQUIPE INCAPACITADA'
         : 'RESGATAR SOBREVIVENTES';
     this.missionText.setText([
-      'MISSÃO 01  /  SETOR 07',
+      this.missionId === 0 ? 'MISSÃO 0  /  O RESGATE' : 'MISSÃO 1  /  REFÚGIO',
       objective,
       `RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
       `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`,
@@ -1192,11 +1244,24 @@ export class MissionScene extends Phaser.Scene {
     this.simulation.setPaused(true);
     this.pauseMenuOpen = false;
     this.setPauseMenuVisible(false);
-    this.resultPanel.setVisible(true).setPosition(this.scale.width / 2, this.scale.height / 2);
+    const centerX = this.scale.width / 2;
+    const centerY = this.scale.height / 2;
+    const victory = status === 'victory';
+    if (victory && this.missionId === 0) this.writeStorage(CAMPAIGN_UNLOCK_STORAGE_KEY, '1');
+    this.resultPanel.setVisible(true).setPosition(centerX, centerY);
     this.resultText
-      .setText(status === 'victory' ? 'MISSION COMPLETE\nAll civilians rescued\nAll waves eliminated\n\nPress R to restart' : 'MISSION FAILED\nAll officers incapacitated\n\nPress R to restart')
-      .setPosition(this.scale.width / 2, this.scale.height / 2)
+      .setText(victory
+        ? this.missionId === 0
+          ? 'O RESGATE CONCLUÍDO\\nSobreviventes extraídos\\nTodas as ondas eliminadas'
+          : 'REFÚGIO DEFENDIDO\\nTodas as ondas eliminadas\\nSetor estabilizado'
+        : 'MISSÃO FALHOU\\nTodos os policiais foram incapacitados')
+      .setPosition(centerX, centerY - 48)
       .setVisible(true);
+    this.resultHomeButton.setPosition(centerX - (victory && this.missionId === 0 ? 135 : 0), centerY + 82).setVisible(true);
+    this.resultCampaignButton.setPosition(centerX + 135, centerY + 82)
+      .setVisible(victory && this.missionId === 0);
+    this.resultRestartButton.setPosition(centerX, centerY + 82)
+      .setVisible(!victory || this.missionId === 1);
   }
 
 
