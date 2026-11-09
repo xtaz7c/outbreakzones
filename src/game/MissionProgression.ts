@@ -1,4 +1,4 @@
-import type { WaveDefinition } from '../simulation/WaveSystem';
+import type { WaveDefinition } from '../simulation/systems/WaveSystem';
 
 export type MissionId = 0 | 1;
 export type MissionStatus = 'playing' | 'victory' | 'defeat';

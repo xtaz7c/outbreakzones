@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BuildingSystem } from './BuildingSystem';
 import { BuildingMaintenanceSystem } from './BuildingMaintenanceSystem';
-import { GridMap } from './GridMap';
+import { GridMap } from '../../world/GridMap';
 
 const definitions = [
   { id: 'front-door', kind: 'door' as const, x: 32, y: 32, width: 32, height: 32,

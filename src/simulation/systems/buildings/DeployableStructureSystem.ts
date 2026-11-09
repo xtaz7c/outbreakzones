@@ -1,7 +1,7 @@
-import type { Infected } from '../Infected';
+import type { Infected } from '../../entities/Infected';
 import { hasLineOfSight } from '../CombatSystem';
-import type { GridMap } from './GridMap';
-import type { TilePosition } from './WorldConfig';
+import type { GridMap } from '../../world/GridMap';
+import type { TilePosition } from '../../world/WorldConfig';
 
 export type DeployableKind = 'shelter-tent' | 'resource-tent' | 'sniper-post' | 'barricade';
 

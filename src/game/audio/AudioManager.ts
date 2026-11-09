@@ -1,9 +1,6 @@
 import Phaser from 'phaser';
 
-/**
- * Camada de apresentação sonora. A simulação não conhece Phaser nem
- * reproduz áudio; a cena traduz eventos do jogo em efeitos sonoros.
- */
+/** Camada de apresentação sonora; a simulação não conhece Phaser nem reproduz áudio. */
 export class AudioManager {
   private ambient: Phaser.Sound.BaseSound | null = null;
   private lastGroanAt = Number.NEGATIVE_INFINITY;
@@ -15,9 +12,39 @@ export class AudioManager {
     return this.scene.sound.mute;
   }
 
+  private playRandomVariant(prefix: string, volume: number, detune = 0): void {
+    if (this.destroyed || this.isMuted) {
+      return;
+    }
+
+    const variants = [1, 2, 3, 4]
+      .map((number) => `${prefix}-${number}`)
+      .filter((key) => this.scene.cache.audio.exists(key));
+
+    if (variants.length === 0) {
+      return;
+    }
+
+    this.scene.sound.play(Phaser.Utils.Array.GetRandom(variants), {
+      volume,
+      detune: detune ? Phaser.Math.Between(-detune, detune) : 0,
+    });
+  }
+
   startAmbient(): void {
-    if (this.destroyed || this.ambient || !this.scene.cache.audio.exists('ambient-loop')) return;
-    this.ambient = this.scene.sound.add('ambient-loop', {
+    if (this.destroyed || this.ambient) {
+      return;
+    }
+
+    const ambientTrackKey = this.scene.registry.get('ambientTrackKey');
+    if (
+      typeof ambientTrackKey !== 'string' ||
+      !this.scene.cache.audio.exists(ambientTrackKey)
+    ) {
+      return;
+    }
+
+    this.ambient = this.scene.sound.add(ambientTrackKey, {
       loop: true,
       volume: 0.16,
     });
@@ -25,32 +52,35 @@ export class AudioManager {
   }
 
   playGunshot(): void {
-    if (this.destroyed || this.isMuted || !this.scene.cache.audio.exists('pistol-shot')) return;
-    this.scene.sound.play('pistol-shot', {
-      volume: 0.2,
-      detune: Phaser.Math.Between(-90, 90),
-    });
+    this.playRandomVariant('pistol-shot', 0.2, 90);
   }
 
   playInfectedGroan(): void {
-    if (this.destroyed || this.isMuted || !this.scene.cache.audio.exists('infected-groan')) return;
+    if (this.destroyed || this.isMuted) {
+      return;
+    }
+
     const now = this.scene.time.now;
-    if (now - this.lastGroanAt < 1800 || Math.random() > 0.65) return;
+    if (now - this.lastGroanAt < 1800 || Math.random() > 0.65) {
+      return;
+    }
+
     this.lastGroanAt = now;
-    this.scene.sound.play('infected-groan', {
-      volume: 0.14,
-      detune: Phaser.Math.Between(-160, 160),
-    });
+    this.playRandomVariant('infected-groan', 0.14, 160);
   }
 
   toggleMute(): boolean {
-    if (this.destroyed) return this.isMuted;
-    this.scene.sound.mute = !this.scene.sound.mute;
+    if (!this.destroyed) {
+      this.scene.sound.mute = !this.scene.sound.mute;
+    }
     return this.isMuted;
   }
 
   destroy(): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
+
     this.destroyed = true;
     this.ambient?.stop();
     this.ambient?.destroy();

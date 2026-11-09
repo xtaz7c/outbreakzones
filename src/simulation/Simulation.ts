@@ -4,18 +4,22 @@
  *
  * Timestep: fixed timestep com acumulador (ADR7).
  */
-import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
-import { Civilian } from './Civilian';
-import { Infected } from './Infected';
-import type { HumanTarget } from './HumanTarget';
-import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
-import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
+import { PoliceOfficer, type TacticalPosture } from './entities/PoliceOfficer';
+import { Civilian } from './entities/Civilian';
+import { Infected } from './entities/Infected';
+import type { HumanTarget } from './entities/HumanTarget';
+import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './systems/CombatSystem';
+import type {
+  InfectedConfig,
+  InfectedStimulus,
+  InfectedStructureTarget,
+} from './entities/Infected';
 import type { GridMap } from './world/GridMap';
-import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
-import { BuildingMaintenanceSystem, type MaintenanceAction, type MaintenanceState } from './world/BuildingMaintenanceSystem';
+import { BuildingSystem, type AccessSnapshot, type ActorKind } from './systems/buildings/BuildingSystem';
+import { BuildingMaintenanceSystem, type MaintenanceAction, type MaintenanceState } from './systems/buildings/BuildingMaintenanceSystem';
 import type { TilePosition } from './world/WorldConfig';
-import { DeployableStructureSystem, type DeployableKind, type DeployableSnapshot, type DeployableState, type DeployableResources } from './world/DeployableStructureSystem';
-import { WaveSystem, type WaveDefinition, type WaveSpawnPoint, type WavePhase } from './WaveSystem';
+import { DeployableStructureSystem, type DeployableKind, type DeployableSnapshot, type DeployableState, type DeployableResources } from './systems/buildings/DeployableStructureSystem';
+import { WaveSystem, type WaveDefinition, type WaveSpawnPoint, type WavePhase } from './systems/WaveSystem';
 
 export interface SimulationState {
   elapsed: number;
