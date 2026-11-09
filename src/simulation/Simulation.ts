@@ -7,6 +7,7 @@
 import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
 import { Civilian } from './Civilian';
 import { Infected } from './Infected';
+import type { HumanTarget } from './HumanTarget';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
@@ -51,6 +52,7 @@ export class Simulation {
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
   private readonly infected: Infected[] = [];
+  private additionalHumanTargets: HumanTarget[] = [];
   private readonly civilians: Civilian[] = [
     new Civilian({ id: 1, x: 800, y: 480 }),
     new Civilian({ id: 2, x: 1200, y: 480 }),
@@ -195,6 +197,20 @@ export class Simulation {
 
   getCivilians(): readonly Civilian[] {
     return this.civilians;
+  }
+
+  /** Supply additional human roles (survivors, medics, guards, etc.) to infected perception. */
+  setAdditionalHumanTargets(targets: readonly HumanTarget[]): void {
+    const ids = new Set<number>();
+    for (const target of targets) {
+      if (!Number.isInteger(target.id) || target.id <= 0 || ids.has(target.id) ||
+          !Number.isFinite(target.position.x) || !Number.isFinite(target.position.y) ||
+          typeof target.takeDamage !== 'function') {
+        throw new RangeError('Additional human targets must have unique ids, finite positions and damage handling.');
+      }
+      ids.add(target.id);
+    }
+    this.additionalHumanTargets = [...targets];
   }
 
   setExtractionZone(zone: { readonly x: number; readonly y: number; readonly radius: number }): void {
@@ -395,7 +411,7 @@ export class Simulation {
         const heardStimuli = this.stimuli.filter((stimulus) =>
           Math.hypot(infected.position.x - stimulus.position.x, infected.position.y - stimulus.position.y) <= stimulus.radius,
         );
-        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli, this.civilians);
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli, this.civilians, this.additionalHumanTargets);
       }
       this.updateCivilianAwareness(dt, this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid);
       this.deployableSystem?.update(dt, this.infected);
