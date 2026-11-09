@@ -115,14 +115,21 @@ export class MissionScene extends Phaser.Scene {
     const definitions = (entrances?.objects ?? []).flatMap((object) => {
       const kind = object.type as AccessKind;
       if (!['door', 'window', 'garage'].includes(kind)) return [];
+      const { x, y, width, height } = object;
+      if (
+        typeof x !== 'number' || !Number.isFinite(x) ||
+        typeof y !== 'number' || !Number.isFinite(y) ||
+        typeof width !== 'number' || !Number.isFinite(width) || width <= 0 ||
+        typeof height !== 'number' || !Number.isFinite(height) || height <= 0
+      ) return [];
       const health = object.properties?.health;
       return [{
         id: object.name || `access-${object.id}`,
         kind,
-        x: object.x,
-        y: object.y,
-        width: object.width,
-        height: object.height,
+        x,
+        y,
+        width,
+        height,
         ...(typeof health === 'number' ? { maxHealth: health } : {}),
       }];
     });
