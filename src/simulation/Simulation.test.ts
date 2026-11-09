@@ -125,6 +125,20 @@ describe('Simulation', () => {
     expect(officer.position).not.toEqual(before);
   });
 
+  it('allows infected to attack civilians as well as police officers', () => {
+    const grid = new GridMap(80, 45);
+    sim.setWorldGrid(grid, 32);
+    const civilian = sim.getCivilians()[0]!;
+    civilian.updatePosition({ x: 1000, y: 1072 });
+    const infected = sim.spawnInfected({
+      x: 980, y: 1072, entryTile: { column: 30, row: 33 },
+      detectionRange: 100, attackRange: 40, attackInterval: FIXED_DT, damage: 8,
+    });
+    for (let index = 0; index < 10; index += 1) sim.update(FIXED_DT);
+    expect(civilian.health).toBeLessThan(civilian.maxHealth);
+    expect(infected.state).toBe('attacking');
+  });
+
   it('spawns infected entities and advances their AI on fixed steps', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const infected = sim.spawnInfected({
