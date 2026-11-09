@@ -16,6 +16,7 @@ export interface InfectedStimulus {
   readonly position: InfectedPosition;
   readonly radius: number;
   readonly strength: number;
+  readonly structure?: InfectedStructureTarget;
 }
 
 export interface InfectedConfig {
@@ -170,7 +171,7 @@ export class Infected {
       throw new RangeError('tileSize must be a positive finite number.');
     }
 
-    const target = this.chooseTarget(officers, structureTarget, tileSize, map, stimuli);
+    const target = this.chooseTarget(officers, structureTarget, tileSize, map, stimuli, dt);
     const distance = this.distanceTo(target.position);
 
     if (target.kind !== 'entry' && distance <= this.attackRange) {
@@ -231,6 +232,7 @@ export class Infected {
     tileSize: number,
     map: GridMap,
     stimuli: readonly InfectedStimulus[],
+    dt: number,
   ): Target {
     let nearest: PoliceOfficer | undefined;
     let nearestDistance = this.detectionRange;
@@ -274,7 +276,8 @@ export class Infected {
       }
     }
 
-    if (structureTarget) this.attractedStructureTarget = structureTarget;
+    if (strongestStimulus?.structure) this.attractedStructureTarget = strongestStimulus.structure;
+    else if (structureTarget) this.attractedStructureTarget = structureTarget;
     const attracted = this.attractedStructureTarget;
     if (attracted && !attracted.isDestroyed && !attracted.isPassable) {
       return {
@@ -293,7 +296,7 @@ export class Infected {
       const target = this.investigationTarget;
       const tile = { column: Math.floor(target.x / tileSize), row: Math.floor(target.y / tileSize) };
       if (this.distanceTo(target) <= tileSize * 0.6) {
-        this.investigationRemaining = Math.max(0, this.investigationRemaining - 1 / 60);
+        this.investigationRemaining = Math.max(0, this.investigationRemaining - dt);
       }
       if (this.investigationRemaining > 0) return { kind: 'entry', tile, position: target };
     }
