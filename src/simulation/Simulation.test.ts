@@ -3,6 +3,7 @@ import { FIXED_DT, Simulation } from './Simulation';
 import { Civilian } from './Civilian';
 import { GridMap } from './world/GridMap';
 import { BuildingSystem } from './world/BuildingSystem';
+import { DeployableStructureSystem } from './world/DeployableStructureSystem';
 
 describe('Simulation', () => {
   let sim: Simulation;
@@ -335,6 +336,43 @@ describe('Simulation', () => {
     sim.update(FIXED_DT);
     expect(sim.getState().missionStatus).toBe('victory');
     expect(sim.isMissionVictory()).toBe(true);
+  });
+
+  it('allows the Refuge campaign mission to win after its waves without tutorial extraction', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.configureWaves([
+      { id: 'west', x: -48, y: 640, entryTile: { column: 21, row: 18 } },
+    ], [{ infectedCount: 1, spawnInterval: 1 }], 0, false);
+    sim.update(FIXED_DT);
+    expect(sim.getState().infectedCount).toBe(1);
+    sim.getInfected()[0]!.takeDamage(1000);
+    sim.update(FIXED_DT);
+    expect(sim.getState().missionStatus).toBe('victory');
+    expect(sim.getState().rescuedCivilianCount).toBe(0);
+  });
+
+  it('lets infected attack civilians and makes them flee from visible threats', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const civilian = sim.getCivilians()[0]!;
+    sim.spawnInfected({
+      x: 816, y: 480, entryTile: { column: 25, row: 15 },
+      detectionRange: 200, attackRange: 40, attackInterval: 0.25, damage: 10,
+    });
+    for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
+    expect(civilian.health).toBeLessThan(civilian.maxHealth);
+    expect(civilian.mood).toBe('panicked');
+    expect(civilian.position.x).not.toBe(800);
+  });
+
+  it('exposes paid deployable placement and dismantling through the simulation', () => {
+    const grid = new GridMap(20, 20);
+    sim.setWorldGrid(grid, 32);
+    sim.setDeployableSystem(new DeployableStructureSystem(grid, 32));
+    const placed = sim.placeDeployable('barricade', { column: 4, row: 4 });
+    expect(placed?.kind).toBe('barricade');
+    expect(sim.getDeployableSnapshots()).toHaveLength(1);
+    expect(sim.dismantleDeployable(placed!.id)).toBe(true);
+    expect(sim.getDeployableSnapshots()).toHaveLength(0);
   });
 
   it('declares defeat as soon as all officers are incapacitated', () => {

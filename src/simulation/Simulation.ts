@@ -7,12 +7,14 @@
 import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
 import { Civilian } from './Civilian';
 import { Infected } from './Infected';
+import type { HumanTarget } from './HumanTarget';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
 import { BuildingMaintenanceSystem, type MaintenanceAction, type MaintenanceState } from './world/BuildingMaintenanceSystem';
 import type { TilePosition } from './world/WorldConfig';
+import { DeployableStructureSystem, type DeployableKind, type DeployableSnapshot, type DeployableState, type DeployableResources } from './world/DeployableStructureSystem';
 import { WaveSystem, type WaveDefinition, type WaveSpawnPoint, type WavePhase } from './WaveSystem';
 
 export interface SimulationState {
@@ -50,6 +52,7 @@ export class Simulation {
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
   private readonly infected: Infected[] = [];
+  private additionalHumanTargets: HumanTarget[] = [];
   private readonly civilians: Civilian[] = [
     new Civilian({ id: 1, x: 800, y: 480 }),
     new Civilian({ id: 2, x: 1200, y: 480 }),
@@ -63,9 +66,11 @@ export class Simulation {
   private worldGrid: GridMap | null = null;
   private buildingSystem: BuildingSystem | null = null;
   private maintenanceSystem: BuildingMaintenanceSystem | null = null;
+  private deployableSystem: DeployableStructureSystem | null = null;
   private tileSize = WORLD_TILE_SIZE;
   private waveSystem: WaveSystem | null = null;
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
+  private requireCivilianExtraction = true;
   private extractionZone = { x: 1024, y: 1120, radius: 72 };
 
   constructor(combatOptions: CombatSystemOptions = {}) {
@@ -98,6 +103,41 @@ export class Simulation {
     this.maintenanceSystem = new BuildingMaintenanceSystem(system);
   }
 
+  setDeployableSystem(system: DeployableStructureSystem): void {
+    this.deployableSystem = system;
+  }
+
+  getDeployableSnapshots(): DeployableSnapshot[] {
+    return this.deployableSystem?.getSnapshots() ?? [];
+  }
+
+  getDeployableResources(): DeployableResources {
+    return this.deployableSystem?.getResources() ?? { scrap: 0, parts: 0 };
+  }
+
+  getShelterCapacity(): number {
+    return this.deployableSystem?.getShelterCapacity() ?? 0;
+  }
+
+  getDeployableState(): DeployableState | null {
+    return this.deployableSystem?.exportState() ?? null;
+  }
+
+  restoreDeployableState(state: DeployableState): void {
+    if (!this.deployableSystem) throw new Error('Deployable structures are not initialized.');
+    this.deployableSystem.restoreState(state);
+  }
+
+  placeDeployable(kind: DeployableKind, tile: TilePosition): DeployableSnapshot | null {
+    if (this.missionStatus !== 'playing' || !this.deployableSystem) return null;
+    return this.deployableSystem.place(kind, tile);
+  }
+
+  dismantleDeployable(id: number): boolean {
+    if (this.missionStatus !== 'playing') return false;
+    return this.deployableSystem?.dismantle(id) ?? false;
+  }
+
   getMaintenanceState(): MaintenanceState | null {
     return this.maintenanceSystem?.getState() ?? null;
   }
@@ -111,8 +151,14 @@ export class Simulation {
     return this.maintenanceSystem?.start(accessId, action) ?? false;
   }
 
-  configureWaves(spawnPoints: readonly WaveSpawnPoint[], waves: readonly WaveDefinition[], preparationDuration = 8): void {
+  configureWaves(
+    spawnPoints: readonly WaveSpawnPoint[],
+    waves: readonly WaveDefinition[],
+    preparationDuration = 8,
+    requireCivilianExtraction = true,
+  ): void {
     this.waveSystem = new WaveSystem(spawnPoints, waves, preparationDuration, () => this.nextRandom());
+    this.requireCivilianExtraction = requireCivilianExtraction;
     this.missionStatus = 'playing';
   }
 
@@ -157,6 +203,20 @@ export class Simulation {
     return this.civilians;
   }
 
+  /** Supply additional human roles (survivors, medics, guards, etc.) to infected perception. */
+  setAdditionalHumanTargets(targets: readonly HumanTarget[]): void {
+    const ids = new Set<number>();
+    for (const target of targets) {
+      if (!Number.isInteger(target.id) || target.id <= 0 || ids.has(target.id) ||
+          !Number.isFinite(target.position.x) || !Number.isFinite(target.position.y) ||
+          typeof target.takeDamage !== 'function') {
+        throw new RangeError('Additional human targets must have unique ids, finite positions and damage handling.');
+      }
+      ids.add(target.id);
+    }
+    this.additionalHumanTargets = [...targets];
+  }
+
   setExtractionZone(zone: { readonly x: number; readonly y: number; readonly radius: number }): void {
     if (![zone.x, zone.y, zone.radius].every(Number.isFinite) || zone.radius <= 0) {
       throw new RangeError('Extraction zone requires finite coordinates and a positive radius.');
@@ -167,7 +227,9 @@ export class Simulation {
   rescueCivilian(civilianId: number, officerId: number): boolean {
     const civilian = this.civilians.find((candidate) => candidate.id === civilianId);
     const officer = this.officers.find((candidate) => candidate.id === officerId && !candidate.isIncapacitated);
-    if (!civilian || !officer || civilian.state !== 'sheltered') return false;
+    if (!civilian || !officer) return false;
+    if (civilian.state === 'following') return civilian.escortId === officerId;
+    if (civilian.state !== 'sheltered') return false;
     if (Math.hypot(civilian.position.x - officer.position.x, civilian.position.y - officer.position.y) > 80) {
       return false;
     }
@@ -179,16 +241,8 @@ export class Simulation {
     const civilGrid = this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid;
     for (const civilian of this.civilians) {
       if (civilian.state !== 'following') continue;
-      let escort = this.officers.find((officer) => officer.id === civilian.escortId && !officer.isIncapacitated);
-      if (!escort) {
-        escort = this.officers
-          .filter((officer) => !officer.isIncapacitated)
-          .sort((a, b) =>
-            Math.hypot(a.position.x - civilian.position.x, a.position.y - civilian.position.y) -
-            Math.hypot(b.position.x - civilian.position.x, b.position.y - civilian.position.y))[0];
-        if (!escort) continue;
-        civilian.assignEscort(escort.id);
-      }
+      const escort = this.officers.find((officer) => officer.id === civilian.escortId && !officer.isIncapacitated);
+      if (!escort) continue;
       const target = {
         x: escort.position.x - Math.cos(escort.facingAngle) * 28,
         y: escort.position.y - Math.sin(escort.facingAngle) * 28,
@@ -198,6 +252,13 @@ export class Simulation {
       if (Math.hypot(position.x - this.extractionZone.x, position.y - this.extractionZone.y) <= this.extractionZone.radius) {
         civilian.extract();
       }
+    }
+  }
+
+  private updateCivilianAwareness(dt: number, map: GridMap): void {
+    const threats = this.infected.filter((infected) => !infected.isDead).map((infected) => infected.position);
+    for (const civilian of this.civilians) {
+      civilian.updateAwareness(dt, this.tileSize, map, this.officers, threats);
     }
   }
 
@@ -217,7 +278,8 @@ export class Simulation {
   }
 
   isMissionDefeated(): boolean {
-    return this.officers.every((officer) => officer.isIncapacitated);
+    return this.officers.every((officer) => officer.isIncapacitated) ||
+      (this.requireCivilianExtraction && this.civilians.every((civilian) => civilian.isIncapacitated));
   }
 
   isMissionVictory(): boolean {
@@ -339,7 +401,8 @@ export class Simulation {
     }
     this.updateCivilianEscorts(dt);
     if (this.worldGrid) {
-      const infectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
+      const baseInfectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
+      const infectedGrid = this.deployableSystem?.getInfectedNavigationGrid(baseInfectedGrid) ?? baseInfectedGrid;
       const policeGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
       const accessStatesBefore = new Map(
         this.buildingSystem?.getSnapshots().map((access) => [access.id, access.state] as const) ?? [],
@@ -352,8 +415,11 @@ export class Simulation {
         const heardStimuli = this.stimuli.filter((stimulus) =>
           Math.hypot(infected.position.x - stimulus.position.x, infected.position.y - stimulus.position.y) <= stimulus.radius,
         );
-        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli);
+        infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli, this.civilians, this.additionalHumanTargets);
       }
+      this.updateCivilianAwareness(dt, this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid);
+      this.deployableSystem?.update(dt, this.infected);
+
       const accessChanged = this.buildingSystem?.getSnapshots().some(
         (access) => accessStatesBefore.get(access.id) !== access.state,
       ) ?? false;
@@ -381,7 +447,7 @@ export class Simulation {
       });
     });
     if (this.waveSystem?.getState().phase === 'completed' && this.infected.length === 0 &&
-        this.civilians.every((civilian) => civilian.isRescued)) {
+        (!this.requireCivilianExtraction || this.civilians.every((civilian) => civilian.isRescued))) {
       this.missionStatus = 'victory';
     }
   }

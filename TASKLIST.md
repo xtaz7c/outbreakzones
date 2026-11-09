@@ -201,6 +201,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** ciclo completo de missão, do início ao resultado, com pausa funcional.
 
+**Issue #26 — implementação de código concluída na PR #33:** (1) infectados entram de fora do mapa; (2) Missão 0 — O Resgate e Missão 1 — Refúgio têm objetivos/ondas separados e escolha de campanha após o tutorial; (3) aquisição de alvos usa contrato `HumanTarget` extensível, com policiais/civis, pânico, fuga, adesão automática e perda de escolta; (4) escala do HUD persistente (80%–120%), independente do zoom; (5) abrigo, tenda de recursos, posto sniper e barricada têm custos, barra de posicionamento, persistência, desmontagem, produção, tiro automático, bloqueio/dano e capacidade habitacional. Testes unitários/de integração adicionados. Issue permanece aberta até QA de gameplay/navegador e revisão do balanceamento.
+
 ### Fase 9 — Interface e experiência
 
 - [ ] **T084 — P0** Criar página inicial de Outbreak Zones, exibida antes de carregar/iniciar a missão.
@@ -215,11 +217,15 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T093 — P0** Permitir reiniciar a missão.
 - [ ] **T094 — P1** Garantir legibilidade e usabilidade em diferentes resoluções desktop.
 
-**Implementação em andamento na branch `feat/hud-civilian-status-t088`:** o painel da missão passa a resumir quantos civis aguardam resgate, quantos estão em escolta e quantos foram extraídos, além do progresso total. T088 permanece desmarcada até CI e QA visual.
+**PR #31 merged:** HUD exibe civis aguardando, em escolta e extraídos, além do progresso total. T088 permanece desmarcada até QA visual no navegador.
 
-**Implementação em andamento na PR #30:** o HUD/minimapa está sendo corrigido para permanecer em coordenadas de viewport durante scroll/zoom. A equipe também passa a exibir vida e munição/recarga de cada policial (T086). T085–T086 continuam desmarcadas até CI e QA no navegador.
+**PR #30 merged:** HUD/minimapa e controles estão ancorados à viewport, com vida e munição/recarga por policial. T085–T086 continuam desmarcadas até QA visual/interativo no navegador.
 
 **Saída da fase:** jogador entende o estado da missão e consegue executar todas as ações necessárias pela interface.
+
+**Tarefa T085 / Issue #26:** escala do HUD implementada com contêiner de viewport, persistência em `localStorage` e limites seguros de 80%–120%, ajustável no menu de pausa. A validação visual em resoluções diferentes ainda está pendente.
+
+**Issue #26 — estruturas implantáveis:** sistema de domínio e barra de construção adicionados. Abrigo, tenda de recursos, posto sniper e barricada têm custos e vida próprios; posicionamento é feito clicando no mapa, estruturas persistem por missão, podem ser selecionadas/desmontadas com `Delete`, e a barricada pode ser destruída por infectados.
 
 ### Fase 10 — Arte, áudio e acabamento
 
@@ -236,6 +242,10 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 **Áudio adicionado ao repositório pelo usuário:** 4 variações de disparo, 4 faixas de suspense e 4 vocalizações de infectados em `public/audio/`. A integração na branch `feat/audio-assets-and-issue-26-progress` registra preload com nomes/URLs codificados e seleção aleatória de variantes no `AudioManager`. T102/T103 aguardam CI e QA auditivo no navegador; confirmar também comportamento de autoplay/mute.
 
 **Saída da fase:** identidade visual coerente e feedback suficiente para interpretar as ações.
+
+**PR #32 aberta:** os 12 WAVs enviados foram conectados ao preload e ao `AudioManager`, com quatro variações por grupo (disparos, suspense e infectados). CI passou; T102/T103 permanecem desmarcadas até QA auditivo no navegador e integração na `main`.
+
+**Áudio — PR #32 aberta:** 12 WAVs enviados ao repositório estão ligados ao `BootScene`/`AudioManager` (4 variações de disparo, 4 faixas de suspense e 4 vocalizações). CI passou; T102/T103 continuam desmarcadas até QA auditivo no navegador e integração na `main`.
 
 ### Fase 11 — Testes, estabilidade e entrega web
 
@@ -351,4 +361,4 @@ Uma tarefa só pode ser marcada como concluída quando:
 - [ ] O resultado foi revisado no navegador, quando envolve gameplay ou interface.
 
 
-**Ajuste de interface pendente na `main`:** a implementação da PR #28 posicionou os painéis do HUD/minimapa em coordenadas do mundo, fazendo-os sair do enquadramento durante o deslocamento da câmera. O requisito correto é HUD fixo à viewport; a branch `fix/tactical-hud-viewport-anchor-t085` corrige o `scrollFactor` e a detecção de cliques para coordenadas de tela. A validação visual e em diferentes resoluções continua pendente.
+**Correção integrada na PR #30:** o HUD/minimapa agora permanece fixo à viewport durante scroll/zoom. O ajuste de escala responsiva está na PR #33; validação visual em diferentes resoluções continua pendente.

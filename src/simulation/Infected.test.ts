@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Infected } from './Infected';
+import { Civilian } from './Civilian';
 import { PoliceOfficer } from './PoliceOfficer';
 import { GridMap } from './world/GridMap';
 
@@ -21,6 +22,17 @@ describe('Infected', () => {
     infected.update(1, 32, map, []);
     expect(infected.state).toBe('moving');
     expect(infected.position).not.toEqual({ x: 16, y: 16 });
+  });
+
+  it('approaches the assigned entry tile from outside the world before pathfinding', () => {
+    const infected = new Infected({
+      id: 1, x: -48, y: 48, entryTile: { column: 2, row: 4 }, moveSpeed: 64,
+    });
+    infected.update(0.5, 32, map, []);
+    expect(infected.state).toBe('moving');
+    expect(infected.position.x).toBeGreaterThan(-48);
+    expect(infected.position.x).toBeLessThan(0);
+    expect(infected.position.y).toBeGreaterThan(48);
   });
 
   it('investigates a heard stimulus before resuming patrol', () => {
@@ -79,6 +91,34 @@ describe('Infected', () => {
     expect(infected.position).not.toEqual({ x: 16, y: 16 });
   });
 
+  it('detects and attacks civilians as human targets', () => {
+    const infected = new Infected({
+      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      detectionRange: 100, attackRange: 30, attackInterval: 0.5, damage: 12,
+    });
+    const civilian = new Civilian({ id: 1, x: 40, y: 16 });
+    infected.update(0.5, 32, map, [], undefined, [], [civilian]);
+    expect(infected.state).toBe('attacking');
+    expect(civilian.health).toBe(48);
+    expect(civilian.mood).toBe('panicked');
+  });
+
+  it('supports future human roles through the generic target contract', () => {
+    const infected = new Infected({
+      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      detectionRange: 100, attackRange: 30, attackInterval: 0.5, damage: 12,
+    });
+    const survivor = {
+      id: 99,
+      position: { x: 40, y: 16 },
+      isIncapacitated: false,
+      takeDamage: vi.fn(() => 12),
+    };
+    infected.update(0.5, 32, map, [], undefined, [], [], [survivor]);
+    expect(survivor.takeDamage).toHaveBeenCalledWith(12);
+    expect(infected.state).toBe('attacking');
+  });
+
   it('closes the remaining distance when target shares its current tile', () => {
     const infected = new Infected({
       id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
@@ -107,7 +147,7 @@ describe('Infected', () => {
         return applied;
       },
     };
-    infected.update(0.5, 32, map, [], structure);
+    infected.update(0.5, 32, new GridMap(40, 20), [], structure);
     expect(infected.state).toBe('attacking');
     expect(health).toBe(13);
   });
