@@ -125,7 +125,14 @@ export class BuildingMaintenanceSystem {
       job.remaining = 0;
       const access = this.buildings.getAccess(job.accessId);
       const success = access ? this.complete(access, job.action) : false;
-      if (success) completed.push(job.accessId);
+      if (success) {
+        completed.push(job.accessId);
+      } else {
+        // The target may have changed while the job was running. Never consume
+        // materials for an operation that could not be applied.
+        this.scrap += job.cost.scrap;
+        this.parts += job.cost.parts;
+      }
       this.jobs.splice(index, 1);
     }
     return completed;
