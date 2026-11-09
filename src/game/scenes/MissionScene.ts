@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { AudioManager } from '../audio/AudioManager';
+import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
 import { Simulation } from '../../simulation/Simulation';
 import type { CombatEvent } from '../../simulation/CombatSystem';
 import { GridMap } from '../../simulation/world/GridMap';
@@ -45,6 +46,7 @@ interface MinimapVisibility {
 }
 
 const MINIMAP_CONFIG_KEY = 'outbreakzones:minimap-visibility';
+const HUD_SCALE_STORAGE_KEY = 'outbreakzones:hud-scale';
 const HUD_COLORS = {
   ink: 0x111415,
   panel: 0x1b2021,
@@ -86,6 +88,10 @@ export class MissionScene extends Phaser.Scene {
   private resultShown = false;
   private lastPersistedBuildingState = '';
   private lastPersistedMaintenanceState = '';
+  private hudRoot!: Phaser.GameObjects.Container;
+  private hudScale = DEFAULT_HUD_SCALE;
+  private hudScaleDownButton!: Phaser.GameObjects.Text;
+  private hudScaleUpButton!: Phaser.GameObjects.Text;
   private hudPanels!: Phaser.GameObjects.Graphics;
   private minimapGraphics!: Phaser.GameObjects.Graphics;
   private missionText!: Phaser.GameObjects.Text;
@@ -132,6 +138,7 @@ export class MissionScene extends Phaser.Scene {
     this.selectedOfficerIds.clear();
     this.debugInfectedSpawnIndex = 0;
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
+    this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
     this.simulation = new Simulation();
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
@@ -428,6 +435,7 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.team.y = mapY + 364;
 
     // Tactical HUD elements are viewport-space UI and must ignore world camera movement.
+    const hudLabels: Phaser.GameObjects.Text[] = [];
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
     this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
@@ -483,23 +491,23 @@ export class MissionScene extends Phaser.Scene {
       wordWrap: { width: 244 },
     }).setScrollFactor(0).setDepth(1505);
 
-    this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
+    hudLabels.push(this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
       fontFamily: 'Arial, sans-serif',
       fontSize: '9px',
       fontStyle: 'bold',
       color: '#b9b9b0',
       letterSpacing: 1.4,
-    }).setScrollFactor(0).setDepth(1505);
+    }).setScrollFactor(0).setDepth(1505));
     [
       { x: mapX + 28, label: 'POLICIAIS' },
       { x: mapX + 122, label: 'CIVIS' },
       { x: mapX + 204, label: 'INFECTADOS' },
     ].forEach(({ x, label }) => {
-      this.add.text(x, mapY + 211, label, {
+      hudLabels.push(this.add.text(x, mapY + 211, label, {
         fontFamily: 'Arial, sans-serif',
         fontSize: '7px',
         color: '#858a87',
-      }).setScrollFactor(0).setDepth(1505);
+      }).setScrollFactor(0).setDepth(1505));
     });
 
     this.teamText = this.add.text(mapX + 12, mapY + 376, '', {
@@ -514,6 +522,15 @@ export class MissionScene extends Phaser.Scene {
       .setScrollFactor(0).setDepth(1507)
       .setInteractive({ useHandCursor: true });
     teamHitArea.on('pointerdown', () => this.selectAllOfficers());
+
+    // Group only the tactical HUD so its scale remains independent of world-camera zoom.
+    this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
+    this.hudRoot.add([
+      this.hudPanels, this.minimapGraphics, this.settingsButton, this.fullscreenButton,
+      this.missionText, this.teamText, teamHitArea, ...hudLabels,
+    ]);
+    this.applyHudScale();
+    this.scale.on('resize', () => this.applyHudScale());
 
     this.pauseOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x080a0a, 0.72)
       .setScrollFactor(0).setDepth(1900).setVisible(false);
@@ -533,9 +550,11 @@ export class MissionScene extends Phaser.Scene {
       letterSpacing: 1.4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
 
-    this.officerToggle = this.createPauseToggle(width / 2, height / 2 - 64, 'POLICIAIS', 'officers');
-    this.civilianToggle = this.createPauseToggle(width / 2, height / 2 - 8, 'CIVIS', 'civilians');
-    this.infectedToggle = this.createPauseToggle(width / 2, height / 2 + 48, 'INFECTADOS', 'infected');
+    this.hudScaleDownButton = this.createPauseAction(width / 2, height / 2 - 108, '', () => this.adjustHudScale(-0.05));
+    this.hudScaleUpButton = this.createPauseAction(width / 2, height / 2 - 56, '', () => this.adjustHudScale(0.05));
+    this.officerToggle = this.createPauseToggle(width / 2, height / 2 + 2, 'POLICIAIS', 'officers');
+    this.civilianToggle = this.createPauseToggle(width / 2, height / 2 + 52, 'CIVIS', 'civilians');
+    this.infectedToggle = this.createPauseToggle(width / 2, height / 2 + 102, 'INFECTADOS', 'infected');
 
     this.resumeButton = this.createPauseAction(width / 2, height / 2 - 92, 'RETOMAR', () => this.closePauseMenu());
     this.resetButton = this.createPauseAction(width / 2, height / 2 - 24, 'RESETAR', () => this.restartMission());
@@ -544,7 +563,7 @@ export class MissionScene extends Phaser.Scene {
       this.setPauseMenuVisible(true);
     });
     this.homeButton = this.createPauseAction(width / 2, height / 2 + 112, 'VOLTAR À TELA INICIAL', () => this.returnToHome());
-    this.settingsBackButton = this.createPauseAction(width / 2, height / 2 + 128, 'VOLTAR', () => {
+    this.settingsBackButton = this.createPauseAction(width / 2, height / 2 + 160, 'VOLTAR', () => {
       this.pauseSettingsOpen = false;
       this.setPauseMenuVisible(true);
     });
@@ -668,6 +687,23 @@ export class MissionScene extends Phaser.Scene {
     this.officerToggle.setText(label('POLICIAIS', this.minimapVisibility.officers));
     this.civilianToggle.setText(label('CIVIS', this.minimapVisibility.civilians));
     this.infectedToggle.setText(label('INFECTADOS', this.minimapVisibility.infected));
+    const percentage = Math.round(this.hudScale * 100);
+    this.hudScaleDownButton.setText(`HUD ${percentage}%  /  DIMINUIR`);
+    this.hudScaleUpButton.setText(`HUD ${percentage}%  /  AUMENTAR`);
+  }
+
+  private applyHudScale(): void {
+    if (!this.hudRoot) return;
+    const offsetX = (this.scale.width * (1 - this.hudScale)) / 2;
+    const offsetY = (this.scale.height * (1 - this.hudScale)) / 2;
+    this.hudRoot.setScale(this.hudScale).setPosition(offsetX, offsetY);
+  }
+
+  private adjustHudScale(delta: number): void {
+    this.hudScale = normalizeHudScale(this.hudScale + delta);
+    this.writeStorage(HUD_SCALE_STORAGE_KEY, String(this.hudScale));
+    this.applyHudScale();
+    this.refreshPauseMenuLabels();
   }
 
   private openPauseMenu(): void {
@@ -696,11 +732,12 @@ export class MissionScene extends Phaser.Scene {
     ].forEach((object) => object.setVisible(visible));
     const mainActions = [this.resumeButton, this.resetButton, this.settingsMenuButton, this.homeButton];
     const settingsActions = [
+      this.hudScaleDownButton, this.hudScaleUpButton,
       this.officerToggle, this.civilianToggle, this.infectedToggle, this.settingsBackButton,
     ];
     mainActions.forEach((object) => object.setVisible(visible && !this.pauseSettingsOpen));
     settingsActions.forEach((object) => object.setVisible(visible && this.pauseSettingsOpen));
-    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'CONFIGURAÇÕES DO MINIMAPA' : 'ESCOLHA UMA AÇÃO');
+    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'ESCALA DO HUD E VISIBILIDADE DO MINIMAPA' : 'ESCOLHA UMA AÇÃO');
   }
 
   private setPausedFromKeyboard(): void {
@@ -720,9 +757,11 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private isHudPoint(x: number, y: number): boolean {
+    const localX = (x - this.hudRoot.x) / this.hudScale;
+    const localY = (y - this.hudRoot.y) / this.hudScale;
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
-      x >= rect.x && x <= rect.x + rect.width &&
-      y >= rect.y && y <= rect.y + rect.height;
+      localX >= rect.x && localX <= rect.x + rect.width &&
+      localY >= rect.y && localY <= rect.y + rect.height;
     return inside(this.hudBounds.settings) || inside(this.hudBounds.mission) ||
       inside(this.hudBounds.minimap) || inside(this.hudBounds.team) ||
       this.pauseMenuOpen;
