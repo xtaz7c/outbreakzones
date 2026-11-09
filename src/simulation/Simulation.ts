@@ -106,14 +106,20 @@ export class Simulation {
 
   interactWithAccess(accessId: string, actor: ActorKind, hasKey = false): boolean {
     const changed = this.buildingSystem?.interact(accessId, actor, hasKey) ?? false;
-    if (changed) this.replanOfficerRoutes();
+    if (changed) {
+      this.replanOfficerRoutes();
+      this.replanCivilianEscorts();
+    }
     return changed;
   }
 
   damageAccess(accessId: string, amount: number): number {
     const before = this.buildingSystem?.getAccess(accessId)?.state;
     const applied = this.buildingSystem?.damage(accessId, amount) ?? 0;
-    if (applied > 0 && this.buildingSystem?.getAccess(accessId)?.state !== before) this.replanOfficerRoutes();
+    if (applied > 0 && this.buildingSystem?.getAccess(accessId)?.state !== before) {
+      this.replanOfficerRoutes();
+      this.replanCivilianEscorts();
+    }
     return applied;
   }
 
