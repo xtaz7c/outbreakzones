@@ -46,17 +46,17 @@ describe('world and tile coordinate conversion', () => {
   it('converts world coordinates to the expected tile', () => {
     expect(worldToTile({ x: 0, y: 0 })).toEqual({ column: 0, row: 0 });
     expect(worldToTile({ x: 63, y: 95 })).toEqual({ column: 1, row: 2 });
-    expect(worldToTile({ x: 2047, y: 1279 })).toEqual({ column: 79, row: 44 });
+    expect(worldToTile({ x: 2559, y: 1439 })).toEqual({ column: 79, row: 44 });
   });
 
   it('returns null for positions outside the world', () => {
-    expect(worldToTile({ x: 2048, y: 0 })).toBeNull();
-    expect(worldToTile({ x: 0, y: 1280 })).toBeNull();
+    expect(worldToTile({ x: 2560, y: 0 })).toBeNull();
+    expect(worldToTile({ x: 0, y: 1440 })).toBeNull();
   });
 
   it('returns the center of a valid tile', () => {
     expect(tileToWorldCenter({ column: 0, row: 0 })).toEqual({ x: 16, y: 16 });
-    expect(tileToWorldCenter({ column: 63, row: 39 })).toEqual({ x: 2544, y: 1424 });
+    expect(tileToWorldCenter({ column: 79, row: 44 })).toEqual({ x: 2544, y: 1424 });
   });
 
   it('rejects invalid tile coordinates', () => {
