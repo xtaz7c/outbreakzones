@@ -145,6 +145,42 @@ describe('BuildingMaintenanceSystem', () => {
     expect(maintenance.getState().resources).toEqual({ scrap: 40, parts: 12 });
   });
 
+  it('refunds all materials when an access changes before a job completes', () => {
+    const { buildings, maintenance } = createSystems();
+    const initialResources = maintenance.getState().resources;
+
+    expect(maintenance.start('front-door', 'barricade')).toBe(true);
+    expect(maintenance.getState().resources).not.toEqual(initialResources);
+
+    // A police officer opens the door while the barricade is being installed.
+    expect(buildings.interact('front-door', 'police')).toBe(true);
+    expect(buildings.getAccess('front-door')?.state).toBe('open');
+
+    maintenance.update(8);
+
+    expect(buildings.getAccess('front-door')?.barricadeLevel).toBe(0);
+    expect(maintenance.getState().jobs).toHaveLength(0);
+    expect(maintenance.getState().resources).toEqual(initialResources);
+  });
+
+  it('persists a window that is generated in the broken state', () => {
+    const brokenWindow = [{
+      id: 'broken-window', kind: 'window' as const, x: 32, y: 32, width: 32, height: 32,
+      weights: { open: 0, closed: 0, barricaded: 0, broken: 1 },
+    }];
+    const buildings = new BuildingSystem(brokenWindow, new GridMap(8, 8), 32, 1);
+    const access = buildings.getAccess('broken-window')!;
+
+    expect(access.state).toBe('broken');
+    expect(access.health).toBe(0);
+
+    const saved = buildings.exportState();
+    const restored = new BuildingSystem(brokenWindow, new GridMap(8, 8), 32, 99);
+    expect(() => restored.restoreState(saved)).not.toThrow();
+    expect(restored.getAccess('broken-window')?.state).toBe('broken');
+    expect(restored.getAccess('broken-window')?.health).toBe(0);
+  });
+
   it('persists upgrade levels and the upgraded health ceiling', () => {
     const { buildings, maintenance } = createSystems();
     expect(maintenance.start('front-door', 'reinforce')).toBe(true);
