@@ -152,9 +152,10 @@ export class BuildingSystem {
   getSnapshots(): AccessSnapshot[] { return this.accesses.map((access) => access.snapshot()); }
   getNavigationGrid(actor: ActorKind): GridMap {
     const grid = this.baseGrid.clone();
-    for (const access of this.accesses)
-      if (!access.canTraverse(actor))
-        for (const cell of access.cells) grid.setBlocked(cell);
+    for (const access of this.accesses) {
+      const blocked = !access.canTraverse(actor);
+      for (const cell of access.cells) grid.setBlocked(cell, blocked);
+    }
     return grid;
   }
   interact(id: string, actor: ActorKind, hasKey = false): boolean {
