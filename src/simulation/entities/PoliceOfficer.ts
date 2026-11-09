@@ -1,6 +1,6 @@
 import type { TilePosition } from '../world/WorldConfig';
 import { GridMap } from '../world/GridMap';
-import { findPath } from '../world/Pathfinder';
+import { findPath } from '../systems/navigation/Pathfinder';
 
 export type PoliceOfficerState = 'idle' | 'moving' | 'attacking' | 'incapacitated';
 export type TacticalPosture = 'engage' | 'hold_fire';

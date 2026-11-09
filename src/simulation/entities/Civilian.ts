@@ -2,7 +2,7 @@ import type { PoliceOfficer } from './PoliceOfficer';
 import { hasLineOfSight } from '../CombatSystem';
 import type { TilePosition } from '../world/WorldConfig';
 import { GridMap } from '../world/GridMap';
-import { findPath } from '../world/Pathfinder';
+import { findPath } from '../systems/navigation/Pathfinder';
 
 export type CivilianState = 'sheltered' | 'following' | 'extracted' | 'incapacitated';
 export type CivilianMood = 'calm' | 'panicked';
