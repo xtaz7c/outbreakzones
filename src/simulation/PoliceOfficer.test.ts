@@ -90,3 +90,18 @@ describe('PoliceOfficer', () => {
   });
 
 });
+
+
+describe('PoliceOfficer dynamic navigation', () => {
+  it('replans an active route when a previously blocked access opens', () => {
+    const map = new GridMap(5, 3);
+    for (let row = 0; row < 3; row += 1) map.setBlocked({ column: 2, row });
+    const officer = new PoliceOfficer({ id: 1, x: 48, y: 48 });
+    expect(officer.issueMoveOrder({ column: 4, row: 1 }, map, 32)).toBe(false);
+    map.setBlocked({ column: 2, row: 1 }, false);
+    expect(officer.issueMoveOrder({ column: 4, row: 1 }, map, 32)).toBe(true);
+    map.setBlocked({ column: 2, row: 1 });
+    expect(officer.replanMoveOrder(map, 32)).toBe(false);
+    expect(officer.state).toBe('idle');
+  });
+});

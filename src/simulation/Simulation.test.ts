@@ -302,6 +302,37 @@ describe('Simulation', () => {
   });
 
 
+  it('spawns configured waves and declares victory after the final infected is defeated', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.configureWaves([
+      { id: 'west', x: 64, y: 640, entryTile: { column: 21, row: 18 } },
+    ], [{ infectedCount: 1, spawnInterval: 1 }], 0);
+    sim.update(FIXED_DT);
+    expect(sim.getState().infectedCount).toBe(1);
+    expect(sim.getState().wavePhase).toBe('active');
+    sim.getInfected()[0]!.takeDamage(1000);
+    sim.update(FIXED_DT);
+    expect(sim.getState().missionStatus).toBe('victory');
+    expect(sim.isMissionVictory()).toBe(true);
+  });
+
+  it('declares defeat as soon as all officers are incapacitated', () => {
+    for (const officer of sim.getOfficers()) sim.damageOfficer(officer.id, 100);
+    sim.update(FIXED_DT);
+    expect(sim.getState().missionStatus).toBe('defeat');
+  });
+
+  it('does not advance waves while paused', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.configureWaves([
+      { id: 'west', x: 64, y: 640, entryTile: { column: 21, row: 18 } },
+    ], [{ infectedCount: 1, spawnInterval: 1 }], 0);
+    sim.setPaused(true);
+    sim.update(FIXED_DT * 10);
+    expect(sim.getState().infectedCount).toBe(0);
+    expect(sim.getState().wavePhase).toBe('preparing');
+  });
+
   it('starts with two sheltered civilians inside the tutorial house', () => {
     const civilians = sim.getCivilians();
     expect(civilians.map((civilian) => civilian.id)).toEqual([1, 2]);
