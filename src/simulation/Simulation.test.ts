@@ -129,6 +129,7 @@ describe('Simulation', () => {
     const grid = new GridMap(80, 45);
     sim.setWorldGrid(grid, 32);
     const civilian = sim.getCivilians()[0]!;
+    civilian.beginFollowing(1);
     civilian.updatePosition({ x: 1000, y: 1072 });
     const infected = sim.spawnInfected({
       x: 980, y: 1072, entryTile: { column: 30, row: 33 },
