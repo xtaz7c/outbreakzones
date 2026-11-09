@@ -191,8 +191,8 @@ export class BuildingAccess {
         !Number.isInteger(reinforcementLevel) || reinforcementLevel < 0 || reinforcementLevel > 2 ||
         !Number.isInteger(barricadeLevel) || barricadeLevel < 0 || barricadeLevel > 1 ||
         !Number.isInteger(lockLevel) || lockLevel < 0 || lockLevel > 2 ||
-        (health === 0 && state !== 'broken') ||
-        (state === 'barricaded' && barricadeLevel === 0)) {
+        ((health === 0) !== (state === 'broken')) ||
+        ((state === 'barricaded') !== (barricadeLevel === 1))) {
       throw new RangeError(`Invalid persisted state for access ${this.id}.`);
     }
     let restoredMaxHealth = this.baseMaxHealth;
@@ -277,8 +277,8 @@ export class BuildingSystem {
           !Number.isInteger(reinforcementLevel) || reinforcementLevel < 0 || reinforcementLevel > 2 ||
           !Number.isInteger(barricadeLevel) || barricadeLevel < 0 || barricadeLevel > 1 ||
           !Number.isInteger(lockLevel) || lockLevel < 0 || lockLevel > 2 ||
-          (saved.state === 'barricaded' && barricadeLevel === 0) ||
-          (saved.health === 0 && saved.state !== 'broken')) {
+          ((saved.state === 'barricaded') !== (barricadeLevel === 1)) ||
+          ((saved.health === 0) !== (saved.state === 'broken'))) {
         throw new RangeError(`Invalid persisted state for access ${access.id}.`);
       }
     }
