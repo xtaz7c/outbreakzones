@@ -72,7 +72,7 @@ describe('CombatSystem', () => {
     const officer = new PoliceOfficer({
       id: 1, x: 16, y: 16, attackRange: 80, fireInterval: 1, accuracy: 0,
     });
-    const infected = new Infected({ id: 1, x: 80, y: 16 });
+    const infected = new Infected({ id: 1, x: 80, y: 16, entryTile: { column: 2, row: 0 } });
     const combat = new CombatSystem({ random: () => 0.5 });
     expect(combat.update(0.5, [officer], [infected], map, 32)).toHaveLength(0);
     const miss = combat.update(0.5, [officer], [infected], map, 32);
