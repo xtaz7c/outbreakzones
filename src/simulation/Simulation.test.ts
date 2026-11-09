@@ -353,7 +353,7 @@ describe('Simulation', () => {
   it('lets infected attack civilians and makes them flee from visible threats', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     const civilian = sim.getCivilians()[0]!;
-    const infected = sim.spawnInfected({
+    sim.spawnInfected({
       x: 816, y: 480, entryTile: { column: 25, row: 15 },
       detectionRange: 200, attackRange: 40, attackInterval: 0.25, damage: 10,
     });
