@@ -7,7 +7,7 @@
 import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
 import { Civilian } from './Civilian';
 import { Infected } from './Infected';
-import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
+import { CombatSystem, hasLineOfSight, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { HumanTarget, InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
@@ -161,25 +161,19 @@ export class Simulation {
   private updateCivilianEscorts(dt: number): void {
     if (!this.worldGrid) return;
     const civilGrid = this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid;
+    const livingOfficers = this.officers.filter((officer) => !officer.isIncapacitated);
+    const livingInfected = this.infected.filter((infected) => !infected.isDead);
     for (const civilian of this.civilians) {
-      if (civilian.state !== 'following') continue;
-      let escort = this.officers.find((officer) => officer.id === civilian.escortId && !officer.isIncapacitated);
-      if (!escort) {
-        escort = this.officers
-          .filter((officer) => !officer.isIncapacitated)
-          .sort((a, b) =>
-            Math.hypot(a.position.x - civilian.position.x, a.position.y - civilian.position.y) -
-            Math.hypot(b.position.x - civilian.position.x, b.position.y - civilian.position.y))[0];
-        if (!escort) continue;
-        civilian.assignEscort(escort.id);
-      }
-      const target = {
-        x: escort.position.x - Math.cos(escort.facingAngle) * 28,
-        y: escort.position.y - Math.sin(escort.facingAngle) * 28,
-      };
-      civilian.updateFollowing(dt, this.tileSize, civilGrid, target);
+      const threats = livingInfected
+        .filter((infected) =>
+          Math.hypot(infected.position.x - civilian.position.x, infected.position.y - civilian.position.y) <= 280 &&
+          hasLineOfSight(civilGrid, civilian.position, infected.position, this.tileSize),
+        )
+        .map((infected) => infected.position);
+      civilian.updateAutonomous(dt, this.tileSize, civilGrid, livingOfficers, threats, () => this.nextRandom());
       const position = civilian.position;
-      if (Math.hypot(position.x - this.extractionZone.x, position.y - this.extractionZone.y) <= this.extractionZone.radius) {
+      if (civilian.state === 'following' &&
+          Math.hypot(position.x - this.extractionZone.x, position.y - this.extractionZone.y) <= this.extractionZone.radius) {
         civilian.extract();
       }
     }
