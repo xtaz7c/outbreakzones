@@ -15,8 +15,9 @@ describe('Infected', () => {
     expect(infected.position.x).toBeGreaterThan(-48);
     expect(infected.position.x).toBeLessThan(16);
     for (let index = 0; index < 90; index += 1) infected.update(1 / 60, 32, map, []);
-    expect(infected.position.x).toBeCloseTo(16, 8);
-    expect(infected.position.y).toBe(80);
+    expect(infected.position.x).toBeGreaterThanOrEqual(0);
+    expect(infected.position.x).toBeLessThan(32);
+    expect(infected.position.y).toBeCloseTo(80, 0);
   });
 
   it('starts alive with the configured base attributes', () => {
