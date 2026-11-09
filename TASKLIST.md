@@ -201,7 +201,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** ciclo completo de missão, do início ao resultado, com pausa funcional.
 
-**Issue #26 — incremento em andamento:** os pontos das ondas foram deslocados para fora dos quatro limites do mapa. `Infected` agora executa uma aproximação visual até o tile de entrada antes de ativar pathfinding/percepção normais; teste unitário cobre o spawn externo. Ainda faltam IA civil/NPC genérica, fluxo de campanha, estruturas implantáveis e escala persistente do HUD.
+**Issue #26 — incrementos em andamento:** (1) infectados das ondas surgem além dos quatro limites do mapa e caminham até o tile de entrada, com teste unitário; (2) o fluxo de missão separa Missão 0 — O Resgate (vitória exige extração dos civis) de Missão 1 — Refúgio (campanha com quatro ondas e vitória por defesa), e a conclusão do tutorial oferece retorno ao início ou início da campanha. A campanha desbloqueia após a vitória do tutorial. Ainda faltam IA civil/NPC genérica, quatro estruturas implantáveis com custos/persistência/dano e escala persistente do HUD. QA de navegador continua pendente.
 
 ### Fase 9 — Interface e experiência
 
