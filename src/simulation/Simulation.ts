@@ -64,6 +64,7 @@ export class Simulation {
   private tileSize = WORLD_TILE_SIZE;
   private waveSystem: WaveSystem | null = null;
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
+  private tutorialMode = false;
   private extractionZone = { x: 1024, y: 1120, radius: 72 };
 
   constructor(combatOptions: CombatSystemOptions = {}) {
@@ -93,6 +94,12 @@ export class Simulation {
 
   setBuildingSystem(system: BuildingSystem): void {
     this.buildingSystem = system;
+  }
+
+  setTutorialMode(enabled: boolean): void {
+    this.tutorialMode = enabled;
+    this.waveSystem = null;
+    this.missionStatus = 'playing';
   }
 
   configureWaves(spawnPoints: readonly WaveSpawnPoint[], waves: readonly WaveDefinition[], preparationDuration = 8): void {
@@ -354,8 +361,11 @@ export class Simulation {
         damage: 8 + (waveNumber - 1),
       });
     });
-    if (this.waveSystem?.getState().phase === 'completed' && this.infected.length === 0 &&
+    if (this.tutorialMode && this.civilians.length > 0 &&
         this.civilians.every((civilian) => civilian.isRescued)) {
+      this.missionStatus = 'victory';
+    } else if (!this.tutorialMode && this.waveSystem?.getState().phase === 'completed' &&
+        this.infected.length === 0 && this.civilians.every((civilian) => civilian.isRescued)) {
       this.missionStatus = 'victory';
     }
   }
