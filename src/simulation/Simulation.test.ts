@@ -301,4 +301,42 @@ describe('Simulation', () => {
     expect(infected.state).toBe('attacking');
   });
 
+
+  it('starts with two sheltered civilians inside the tutorial house', () => {
+    const civilians = sim.getCivilians();
+    expect(civilians.map((civilian) => civilian.id)).toEqual([1, 2]);
+    expect(civilians.map((civilian) => civilian.state)).toEqual(['sheltered', 'sheltered']);
+    expect(civilians.map((civilian) => civilian.position)).toEqual([
+      { x: 800, y: 480 },
+      { x: 1200, y: 480 },
+    ]);
+  });
+
+  it('tracks the rescue state of civilians independently', () => {
+    const [first, second] = sim.getCivilians();
+    expect(first!.beginFollowing()).toBe(true);
+    expect(first!.extract()).toBe(true);
+    expect(first!.state).toBe('extracted');
+    expect(second!.state).toBe('sheltered');
+    expect(sim.getState().rescuedCivilianCount).toBe(1);
+  });
+
+  it('validates civilian identity and coordinates', () => {
+    expect(() => new Civilian({ id: 0, x: 10, y: 10 })).toThrow(RangeError);
+    expect(() => new Civilian({ id: 1, x: Number.NaN, y: 10 })).toThrow(RangeError);
+  });
+
+  it('only allows a following civilian to change position or be extracted', () => {
+    const civilian = new Civilian({ id: 1, x: 10, y: 20 });
+    expect(civilian.updatePosition({ x: 20, y: 30 })).toBe(false);
+    expect(civilian.beginFollowing()).toBe(true);
+    expect(civilian.updatePosition({ x: 20, y: 30 })).toBe(true);
+    expect(civilian.position).toEqual({ x: 20, y: 30 });
+    expect(civilian.updatePosition({ x: Number.NaN, y: 30 })).toBe(false);
+    expect(civilian.extract()).toBe(true);
+    expect(civilian.beginFollowing()).toBe(false);
+    expect(civilian.updatePosition({ x: 40, y: 50 })).toBe(false);
+    expect(civilian.extract()).toBe(false);
+  });
+
 });
