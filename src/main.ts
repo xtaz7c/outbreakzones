@@ -27,6 +27,15 @@ startButton.addEventListener('click', () => {
   (window as unknown as { game: Phaser.Game }).game = game;
 });
 
+window.addEventListener('outbreakzones:return-home', () => {
+  game?.destroy(true);
+  game = null;
+  gameContainer.hidden = true;
+  homeScreen.hidden = false;
+  startButton.disabled = false;
+  startButton.textContent = 'INICIAR OPERAÇÃO';
+});
+
 controlsButton.addEventListener('click', () => {
   controlsDialog.showModal();
 });
