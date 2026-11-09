@@ -148,10 +148,12 @@ export class BuildingAccess {
     }
     return applied;
   }
-  repair(): number {
-    const restored = this.currentMaxHealth - this.currentHealth;
+  repair(maxAmount = Number.POSITIVE_INFINITY): number {
+    if (!Number.isFinite(maxAmount) && maxAmount !== Number.POSITIVE_INFINITY || maxAmount <= 0) return 0;
+    const missing = this.currentMaxHealth - this.currentHealth;
+    const restored = Math.min(missing, maxAmount);
     if (restored <= 0) return 0;
-    this.currentHealth = this.currentMaxHealth;
+    this.currentHealth += restored;
     if (this.currentState === 'broken') this.currentState = 'closed';
     return restored;
   }
@@ -272,19 +274,26 @@ export class BuildingSystem {
           maximumHealth += Math.ceil(maximumHealth * 0.2);
         }
       }
+      const legacyBrokenHealth = saved.state === 'broken' &&
+        saved.reinforcementLevel === undefined && saved.barricadeLevel === undefined &&
+        saved.lockLevel === undefined && saved.health === access.maxHealth;
+      const normalizedHealth = legacyBrokenHealth ? 0 : saved.health;
       if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(saved.state) ||
-          !Number.isFinite(saved.health) || saved.health < 0 || saved.health > maximumHealth ||
+          !Number.isFinite(normalizedHealth) || normalizedHealth < 0 || normalizedHealth > maximumHealth ||
           !Number.isInteger(reinforcementLevel) || reinforcementLevel < 0 || reinforcementLevel > 2 ||
           !Number.isInteger(barricadeLevel) || barricadeLevel < 0 || barricadeLevel > 1 ||
           !Number.isInteger(lockLevel) || lockLevel < 0 || lockLevel > 2 ||
           ((saved.state === 'barricaded') !== (barricadeLevel === 1)) ||
-          ((saved.health === 0) !== (saved.state === 'broken'))) {
+          ((normalizedHealth === 0) !== (saved.state === 'broken'))) {
         throw new RangeError(`Invalid persisted state for access ${access.id}.`);
       }
     }
     for (const access of this.accesses) {
       const saved = byId.get(access.id)!;
-      access.restoreState(saved.state, saved.health, saved);
+      const legacyBrokenHealth = saved.state === 'broken' &&
+        saved.reinforcementLevel === undefined && saved.barricadeLevel === undefined &&
+        saved.lockLevel === undefined && saved.health === access.maxHealth;
+      access.restoreState(saved.state, legacyBrokenHealth ? 0 : saved.health, saved);
     }
   }
   getNavigationGrid(actor: ActorKind): GridMap {
