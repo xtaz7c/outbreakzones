@@ -750,8 +750,10 @@ export class MissionScene extends Phaser.Scene {
     const fps = dt > 0 ? (1 / dt).toFixed(0) : '—';
     const followingCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'following').length;
     const shelteredCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'sheltered').length;
-    const tutorialHint = this.selectedOfficerIds.size === 0
-      ? 'Tutorial: select a police officer with left-click or keys 1-3.'
+    const hasActiveSelection = this.simulation.getOfficers().some((officer) =>
+      this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
+    const tutorialHint = !hasActiveSelection
+      ? 'Tutorial: select an active police officer with left-click or keys 1-3.'
       : shelteredCount > 0
         ? 'Rescue: approach a civilian and press E. Open doors with E; civilians cannot use windows.'
         : followingCount > 0
