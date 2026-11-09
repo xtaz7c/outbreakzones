@@ -740,7 +740,7 @@ export class MissionScene extends Phaser.Scene {
     this.isPaused = true;
     this.resultPanel.setVisible(true).setPosition(this.scale.width / 2, this.scale.height / 2);
     this.resultText
-      .setText(status === 'victory' ? 'MISSION COMPLETE\nAll waves eliminated\n\nPress R to restart' : 'MISSION FAILED\nAll officers incapacitated\n\nPress R to restart')
+      .setText(status === 'victory' ? 'MISSION COMPLETE\nAll civilians rescued\nAll waves eliminated\n\nPress R to restart' : 'MISSION FAILED\nAll officers incapacitated\n\nPress R to restart')
       .setPosition(this.scale.width / 2, this.scale.height / 2)
       .setVisible(true);
   }
