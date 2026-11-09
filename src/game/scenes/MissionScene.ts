@@ -235,14 +235,14 @@ export class MissionScene extends Phaser.Scene {
     this.simulation.setBuildingSystem(this.buildingSystem);
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
-    this.simulation.setExtractionZone({ x: 1024, y: 1120, radius: 72 });
+    this.simulation.setExtractionZone({ x: 1280, y: 720, radius: 72 });
     this.add.circle(1024, 1120, 72, 0x55c878, 0.08)
       .setStrokeStyle(3, 0x55c878, 0.85).setDepth(70);
     const spawnPoints: WaveSpawnPoint[] = [
       { id: 'west', x: 128, y: 640, entryTile: { column: 21, row: 18 } },
-      { id: 'east', x: 1920, y: 640, entryTile: { column: 42, row: 18 } },
+      { id: 'east', x: 2496, y: 720, entryTile: { column: 77, row: 22 } },
       { id: 'north', x: 1024, y: 64, entryTile: { column: 32, row: 9 } },
-      { id: 'south', x: 1024, y: 1216, entryTile: { column: 32, row: 28 } },
+      { id: 'south', x: 1280, y: 1408, entryTile: { column: 40, row: 43 } },
     ];
     this.simulation.configureWaves(spawnPoints, [
       { infectedCount: 3, spawnInterval: 1.4 },
@@ -568,11 +568,7 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private returnToHome(): void {
-    const homeScreen = document.querySelector<HTMLElement>('#home-screen');
-    const gameContainer = document.querySelector<HTMLElement>('#game-container');
-    this.game.destroy(true);
-    if (gameContainer) gameContainer.hidden = true;
-    if (homeScreen) homeScreen.hidden = false;
+    window.dispatchEvent(new Event('outbreakzones:return-home'));
   }
 
   private closePauseMenu(): void {
@@ -655,7 +651,7 @@ export class MissionScene extends Phaser.Scene {
     const mapY = this.hudBounds.minimap.y + 30;
     const mapWidth = 296;
     const mapHeight = 296;
-    const markerInset = 8;
+    const markerInset = 14;
     this.minimapGraphics.fillStyle(0x101516, 1);
     this.minimapGraphics.fillRoundedRect(mapX, mapY, mapWidth, mapHeight, 12);
     this.minimapGraphics.lineStyle(1, HUD_COLORS.metal, 0.3);
