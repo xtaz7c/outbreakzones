@@ -1,5 +1,6 @@
 import type { PoliceOfficer } from './PoliceOfficer';
 import type { Civilian } from './Civilian';
+import type { HumanTarget } from './HumanTarget';
 import type { GridMap } from './world/GridMap';
 import { findPath } from './world/Pathfinder';
 import { hasLineOfSight } from './CombatSystem';
@@ -49,7 +50,7 @@ export interface InfectedStructureTarget {
 }
 
 type Target =
-  | { readonly kind: 'human'; readonly human: PoliceOfficer | Civilian; readonly position: InfectedPosition }
+  | { readonly kind: 'human'; readonly human: HumanTarget; readonly position: InfectedPosition }
   | { readonly kind: 'structure'; readonly structure: InfectedStructureTarget; readonly position: InfectedPosition; readonly tile: TilePosition }
   | { readonly kind: 'entry'; readonly position: InfectedPosition; readonly tile: TilePosition };
 
@@ -167,6 +168,7 @@ export class Infected {
     structureTarget?: InfectedStructureTarget,
     stimuli: readonly InfectedStimulus[] = [],
     civilians: readonly Civilian[] = [],
+    additionalHumanTargets: readonly HumanTarget[] = [],
   ): void {
     if (this.isDead || !Number.isFinite(dt) || dt <= 0) return;
     if (!Number.isFinite(tileSize) || tileSize <= 0) {
@@ -198,7 +200,7 @@ export class Infected {
       return;
     }
 
-    const target = this.chooseTarget(officers, civilians, structureTarget, tileSize, map, stimuli, dt);
+    const target = this.chooseTarget(officers, civilians, additionalHumanTargets, structureTarget, tileSize, map, stimuli, dt);
     const distance = this.distanceTo(target.position);
 
     if (target.kind !== 'entry' && distance <= this.attackRange) {
@@ -256,16 +258,17 @@ export class Infected {
   private chooseTarget(
     officers: readonly PoliceOfficer[],
     civilians: readonly Civilian[],
+    additionalHumanTargets: readonly HumanTarget[],
     structureTarget: InfectedStructureTarget | undefined,
     tileSize: number,
     map: GridMap,
     stimuli: readonly InfectedStimulus[],
     dt: number,
   ): Target {
-    let nearestHuman: PoliceOfficer | Civilian | undefined;
+    let nearestHuman: HumanTarget | undefined;
     let nearestDistance = this.detectionRange;
-    for (const human of [...officers, ...civilians]) {
-      if (human.isIncapacitated || ('isRescued' in human && human.isRescued)) continue;
+    for (const human of [...officers, ...civilians, ...additionalHumanTargets]) {
+      if (human.isIncapacitated || human.isRescued) continue;
       const distance = this.distanceTo(human.position);
       if (distance <= nearestDistance && hasLineOfSight(map, this.currentPosition, human.position, tileSize)) {
         nearestHuman = human;
