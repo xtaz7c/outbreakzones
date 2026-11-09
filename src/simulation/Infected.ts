@@ -1,4 +1,5 @@
 import type { PoliceOfficer } from './PoliceOfficer';
+import type { Civilian } from './Civilian';
 import type { GridMap } from './world/GridMap';
 import { findPath } from './world/Pathfinder';
 import { hasLineOfSight } from './CombatSystem';
@@ -48,7 +49,7 @@ export interface InfectedStructureTarget {
 }
 
 type Target =
-  | { readonly kind: 'officer'; readonly officer: PoliceOfficer; readonly position: InfectedPosition }
+  | { readonly kind: 'human'; readonly human: PoliceOfficer | Civilian; readonly position: InfectedPosition }
   | { readonly kind: 'structure'; readonly structure: InfectedStructureTarget; readonly position: InfectedPosition; readonly tile: TilePosition }
   | { readonly kind: 'entry'; readonly position: InfectedPosition; readonly tile: TilePosition };
 
@@ -165,6 +166,7 @@ export class Infected {
     officers: readonly PoliceOfficer[],
     structureTarget?: InfectedStructureTarget,
     stimuli: readonly InfectedStimulus[] = [],
+    civilians: readonly Civilian[] = [],
   ): void {
     if (this.isDead || !Number.isFinite(dt) || dt <= 0) return;
     if (!Number.isFinite(tileSize) || tileSize <= 0) {
@@ -196,7 +198,7 @@ export class Infected {
       return;
     }
 
-    const target = this.chooseTarget(officers, structureTarget, tileSize, map, stimuli, dt);
+    const target = this.chooseTarget(officers, civilians, structureTarget, tileSize, map, stimuli, dt);
     const distance = this.distanceTo(target.position);
 
     if (target.kind !== 'entry' && distance <= this.attackRange) {
@@ -207,10 +209,10 @@ export class Infected {
       this.attackTimer += dt;
       while (this.attackTimer >= this.attackInterval) {
         this.attackTimer -= this.attackInterval;
-        if (target.kind === 'officer') target.officer.takeDamage(this.damage);
+        if (target.kind === 'human') target.human.takeDamage(this.damage);
         else target.structure.takeDamage(this.damage);
         if (target.kind === 'structure' && target.structure.isDestroyed) break;
-        if (target.kind === 'officer' && target.officer.isIncapacitated) break;
+        if (target.kind === 'human' && target.human.isIncapacitated) break;
       }
       return;
     }
@@ -253,27 +255,28 @@ export class Infected {
 
   private chooseTarget(
     officers: readonly PoliceOfficer[],
+    civilians: readonly Civilian[],
     structureTarget: InfectedStructureTarget | undefined,
     tileSize: number,
     map: GridMap,
     stimuli: readonly InfectedStimulus[],
     dt: number,
   ): Target {
-    let nearest: PoliceOfficer | undefined;
+    let nearestHuman: PoliceOfficer | Civilian | undefined;
     let nearestDistance = this.detectionRange;
-    for (const officer of officers) {
-      if (officer.isIncapacitated) continue;
-      const distance = this.distanceTo(officer.position);
-      if (distance <= nearestDistance && hasLineOfSight(map, this.currentPosition, officer.position, tileSize)) {
-        nearest = officer;
+    for (const human of [...officers, ...civilians]) {
+      if (human.isIncapacitated || ('isRescued' in human && human.isRescued)) continue;
+      const distance = this.distanceTo(human.position);
+      if (distance <= nearestDistance && hasLineOfSight(map, this.currentPosition, human.position, tileSize)) {
+        nearestHuman = human;
         nearestDistance = distance;
       }
     }
-    if (nearest) {
+    if (nearestHuman) {
       this.investigationTarget = null;
       this.investigationRemaining = 0;
       this.patrolTarget = null;
-      return { kind: 'officer', officer: nearest, position: nearest.position };
+      return { kind: 'human', human: nearestHuman, position: nearestHuman.position };
     }
 
     let strongestStimulus: InfectedStimulus | undefined;
