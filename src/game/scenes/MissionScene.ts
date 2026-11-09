@@ -748,6 +748,15 @@ export class MissionScene extends Phaser.Scene {
   private updateStatusText(dt: number): void {
     const state = this.simulation.getState();
     const fps = dt > 0 ? (1 / dt).toFixed(0) : '—';
+    const followingCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'following').length;
+    const shelteredCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'sheltered').length;
+    const tutorialHint = this.selectedOfficerIds.size === 0
+      ? 'Tutorial: select a police officer with left-click or keys 1-3.'
+      : shelteredCount > 0
+        ? 'Rescue: approach a civilian and press E. Open doors with E; civilians cannot use windows.'
+        : followingCount > 0
+          ? 'Escort: lead civilians to the green extraction zone. Keep a valid door route open.'
+          : 'Rescue complete: eliminate every infected wave to finish the tutorial.';
     this.statusText.setText(
       [
         'Outbreak Zones — Mission',
@@ -758,6 +767,7 @@ export class MissionScene extends Phaser.Scene {
         `Wave: ${state.waveNumber}/${state.totalWaves} | ${state.wavePhase.toUpperCase()} | Spawn queue: ${state.remainingToSpawn}`,
         state.wavePhase === 'preparing' ? `Next wave in: ${state.preparationRemaining.toFixed(1)}s` : `Mission: ${state.missionStatus.toUpperCase()}`,
         `Civilians: ${state.rescuedCivilianCount}/${state.civilianCount} extracted`,
+        tutorialHint,
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
