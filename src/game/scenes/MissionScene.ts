@@ -64,6 +64,10 @@ export class MissionScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Scene restarts reuse this scene instance; discard entity visuals keyed by old simulation IDs.
+    this.infectedVisuals.clear();
+    this.civilianVisuals.clear();
+    this.officers = [];
     this.isPaused = false;
     this.resultShown = false;
     this.selectedOfficerIds.clear();
