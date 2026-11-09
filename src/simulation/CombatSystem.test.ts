@@ -33,8 +33,8 @@ describe('CombatSystem', () => {
 
   it('automatically acquires the nearest visible infected and applies damage', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, attackRange: 180, fireInterval: 0.5 });
-    const far = new Infected({ id: 1, x: 120, y: 16 });
-    const near = new Infected({ id: 2, x: 80, y: 16 });
+    const far = new Infected({ id: 1, x: 120, y: 16, entryTile: { column: 3, row: 0 } });
+    const near = new Infected({ id: 2, x: 80, y: 16, entryTile: { column: 2, row: 0 } });
     const combat = new CombatSystem({ random: () => 0, damagePerShot: 20 });
 
     const events = combat.update(0.5, [officer], [far, near], map, 32);
@@ -48,7 +48,7 @@ describe('CombatSystem', () => {
 
   it('does not fire through a blocked intermediate cell', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, attackRange: 180, fireInterval: 0.1 });
-    const infected = new Infected({ id: 1, x: 112, y: 16 });
+    const infected = new Infected({ id: 1, x: 112, y: 16, entryTile: { column: 3, row: 0 } });
     map.setBlocked({ column: 2, row: 0 });
     const combat = new CombatSystem({ random: () => 0 });
     expect(combat.update(1, [officer], [infected], map, 32)).toHaveLength(0);
@@ -58,8 +58,8 @@ describe('CombatSystem', () => {
 
   it('honors a player target priority over a nearer target', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, attackRange: 180, fireInterval: 0.5 });
-    const near = new Infected({ id: 1, x: 64, y: 16 });
-    const priority = new Infected({ id: 2, x: 112, y: 16 });
+    const near = new Infected({ id: 1, x: 64, y: 16, entryTile: { column: 2, row: 0 } });
+    const priority = new Infected({ id: 2, x: 112, y: 16, entryTile: { column: 3, row: 0 } });
     const combat = new CombatSystem({ random: () => 0 });
     combat.setTargetPriority(1, 2);
     const events = combat.update(0.5, [officer], [near, priority], map, 32);
@@ -79,13 +79,13 @@ describe('CombatSystem', () => {
     expect(miss).toHaveLength(1);
     expect(miss[0]?.hit).toBe(false);
     expect(infected.health).toBe(60);
-    const outOfRange = new Infected({ id: 2, x: 200, y: 16 });
+    const outOfRange = new Infected({ id: 2, x: 200, y: 16, entryTile: { column: 6, row: 0 } });
     expect(combat.update(2, [officer], [outOfRange], map, 32)).toHaveLength(0);
   });
 
   it('preserves an explicit movement order while an infected is nearby', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, attackRange: 180 });
-    const infected = new Infected({ id: 1, x: 64, y: 16 });
+    const infected = new Infected({ id: 1, x: 64, y: 16, entryTile: { column: 2, row: 0 } });
     expect(officer.issueMoveOrder({ column: 2, row: 0 }, map, 32)).toBe(true);
     const combat = new CombatSystem({ random: () => 0 });
     expect(combat.update(0.5, [officer], [infected], map, 32)).toHaveLength(0);
@@ -97,7 +97,7 @@ describe('CombatSystem', () => {
     const officer = new PoliceOfficer({
       id: 1, x: 16, y: 16, attackRange: 180, fireInterval: 0.1,
     });
-    const infected = new Infected({ id: 1, x: 64, y: 16 });
+    const infected = new Infected({ id: 1, x: 64, y: 16, entryTile: { column: 2, row: 0 } });
     const combat = new CombatSystem({
       random: () => 0,
       magazineSize: 1,
@@ -117,7 +117,7 @@ describe('CombatSystem', () => {
 
   it('clears a priority when its target dies', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16 });
-    const infected = new Infected({ id: 1, x: 64, y: 16 });
+    const infected = new Infected({ id: 1, x: 64, y: 16, entryTile: { column: 2, row: 0 } });
     const combat = new CombatSystem();
     combat.setTargetPriority(1, 1);
     infected.takeDamage(100);
