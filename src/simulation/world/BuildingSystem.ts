@@ -183,6 +183,14 @@ export class BuildingSystem {
     for (const access of this.accesses) {
       const saved = byId.get(access.id);
       if (!saved) throw new RangeError(`Persisted state is missing access ${access.id}.`);
+      if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(saved.state) ||
+          !Number.isFinite(saved.health) || saved.health < 0 || saved.health > access.maxHealth ||
+          (saved.health === 0 && saved.state !== 'broken')) {
+        throw new RangeError(`Invalid persisted state for access ${access.id}.`);
+      }
+    }
+    for (const access of this.accesses) {
+      const saved = byId.get(access.id)!;
       access.restoreState(saved.state, saved.health);
     }
   }
