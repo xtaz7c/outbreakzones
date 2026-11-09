@@ -302,7 +302,7 @@ describe('Simulation', () => {
   });
 
 
-  it('spawns configured waves and declares victory after the final infected is defeated', () => {
+  it('requires all civilians to be extracted before declaring wave victory', () => {
     sim.setWorldGrid(new GridMap(64, 40), 32);
     sim.configureWaves([
       { id: 'west', x: 64, y: 640, entryTile: { column: 21, row: 18 } },
@@ -311,6 +311,12 @@ describe('Simulation', () => {
     expect(sim.getState().infectedCount).toBe(1);
     expect(sim.getState().wavePhase).toBe('active');
     sim.getInfected()[0]!.takeDamage(1000);
+    sim.update(FIXED_DT);
+    expect(sim.getState().missionStatus).toBe('playing');
+    for (const civilian of sim.getCivilians()) {
+      civilian.beginFollowing();
+      civilian.extract();
+    }
     sim.update(FIXED_DT);
     expect(sim.getState().missionStatus).toBe('victory');
     expect(sim.isMissionVictory()).toBe(true);
@@ -341,6 +347,26 @@ describe('Simulation', () => {
       { x: 800, y: 480 },
       { x: 1200, y: 480 },
     ]);
+  });
+
+  it('rescues a nearby civilian, escorts them through the civil grid, and extracts them', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const officer = sim.getOfficers()[0]!;
+    const civilian = sim.getCivilians()[0]!;
+
+    expect(sim.rescueCivilian(civilian.id, officer.id)).toBe(false);
+    expect(sim.issueMoveOrder(officer.id, { column: 25, row: 15 })).toBe(true);
+    for (let index = 0; index < 500; index += 1) sim.update(FIXED_DT);
+
+    expect(sim.rescueCivilian(civilian.id, officer.id)).toBe(true);
+    expect(civilian.state).toBe('following');
+    expect(civilian.escortId).toBe(officer.id);
+
+    expect(sim.issueMoveOrder(officer.id, { column: 32, row: 35 })).toBe(true);
+    for (let index = 0; index < 1000; index += 1) sim.update(FIXED_DT);
+
+    expect(civilian.state).toBe('extracted');
+    expect(sim.getState().rescuedCivilianCount).toBe(1);
   });
 
   it('tracks the rescue state of civilians independently', () => {

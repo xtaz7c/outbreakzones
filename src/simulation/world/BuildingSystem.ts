@@ -22,6 +22,11 @@ export interface AccessDefinition {
   readonly maxHealth?: number;
   readonly weights?: AccessWeights;
 }
+export interface AccessPersistentState {
+  readonly id: string;
+  readonly state: AccessState;
+  readonly health: number;
+}
 export interface AccessSnapshot {
   readonly id: string;
   readonly kind: AccessKind;
@@ -120,6 +125,15 @@ export class BuildingAccess {
     if (this.currentHealth === 0) this.currentState = 'broken';
     return applied;
   }
+  restoreState(state: AccessState, health: number): void {
+    if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(state) ||
+        !Number.isFinite(health) || health < 0 || health > this.maxHealth ||
+        (health === 0 && state !== 'broken')) {
+      throw new RangeError(`Invalid persisted state for access ${this.id}.`);
+    }
+    this.currentState = state;
+    this.currentHealth = health;
+  }
   snapshot(): AccessSnapshot {
     return { id: this.id, kind: this.kind, state: this.currentState, health: this.currentHealth,
       maxHealth: this.maxHealth, cells: this.cells.map((cell) => ({ ...cell })) };
@@ -150,6 +164,36 @@ export class BuildingSystem {
   }
   getAccess(id: string): BuildingAccess | undefined { return this.byId.get(id); }
   getSnapshots(): AccessSnapshot[] { return this.accesses.map((access) => access.snapshot()); }
+  exportState(): AccessPersistentState[] {
+    return this.accesses.map((access) => ({
+      id: access.id,
+      state: access.state,
+      health: access.health,
+    }));
+  }
+  restoreState(states: readonly AccessPersistentState[]): void {
+    if (states.length !== this.accesses.length) {
+      throw new RangeError('Persisted building state does not match the current map.');
+    }
+    const byId = new Map<string, AccessPersistentState>();
+    for (const state of states) {
+      if (!state.id || byId.has(state.id)) throw new RangeError('Persisted building state contains invalid or duplicate ids.');
+      byId.set(state.id, state);
+    }
+    for (const access of this.accesses) {
+      const saved = byId.get(access.id);
+      if (!saved) throw new RangeError(`Persisted state is missing access ${access.id}.`);
+      if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(saved.state) ||
+          !Number.isFinite(saved.health) || saved.health < 0 || saved.health > access.maxHealth ||
+          (saved.health === 0 && saved.state !== 'broken')) {
+        throw new RangeError(`Invalid persisted state for access ${access.id}.`);
+      }
+    }
+    for (const access of this.accesses) {
+      const saved = byId.get(access.id)!;
+      access.restoreState(saved.state, saved.health);
+    }
+  }
   getNavigationGrid(actor: ActorKind): GridMap {
     const grid = this.baseGrid.clone();
     for (const access of this.accesses) {

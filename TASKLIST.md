@@ -178,7 +178,9 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Base técnica anterior:** a branch `feat/shelter-roaming-t066-t071` usa colisões estáticas e a regra antiga de casa inacessível. Essa lógica deve ser substituída por edifícios com interior e acessos dinâmicos.
 
-**Progresso integrado em `main`:** `BuildingSystem` oferece acessos independentes, probabilidades reproduzíveis por seed, integridade, interação/dano e grades por tipo de ator. A IA possui patrulha, percepção visual de policiais, investigação de ruídos e ataque a acessos atraentes. Esta branch acrescenta replanejamento de rotas dos policiais quando um acesso muda de estado. Ainda falta completar e validar a travessia interior/exterior de civis e todos os tipos de NPC. Estados dos acessos permanecem em memória durante a instância da missão e não são sorteados novamente por frame. T070/T124 seguem sujeitos à validação integrada.
+**Progresso integrado em `main`:** `BuildingSystem` oferece acessos independentes, probabilidades reproduzíveis por seed, integridade, interação/dano e grades por tipo de ator. A IA possui patrulha, percepção visual de policiais, investigação de ruídos e ataque a acessos atraentes. A PR #18 acrescenta replanejamento de rotas policiais após mudanças de acesso.
+
+**Incremento em `feat/phase-7-civilian-navigation-persistence`:** civis agora podem ser resgatados com E quando um policial selecionado está próximo, escoltam o policial usando A* sobre a grade específica de civis e são extraídos ao alcançar a zona marcada fora da casa. A grade civil bloqueia janelas mesmo quando abertas; portas e garagem só permitem travessia quando passáveis. Rotas de escolta são recalculadas quando um acesso muda. O `BuildingSystem` exporta/restaura estado e integridade dos acessos; a cena persiste seed e estado em `localStorage`, recuperando-os após reload. Reiniciar a missão com R limpa o estado salvo para iniciar uma nova tentativa. Testes de navegação, resgate, extração e persistência foram adicionados. T070/T124 permanecem desmarcadas até CI e validação manual integrada.
 
 ### Fase 8 — Ondas e fluxo da missão
 
@@ -247,7 +249,9 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 ### Fase 12 — Civis e tutorial de resgate
 
-**Progresso parcial (PR #17, branch `feat/phase-12-civilian-rescue`):** criada a entidade `Civilian`, independente do Phaser, com estados `sheltered`, `following` e `extracted`; dois civis são inicializados dentro da casa e renderizados na cena; o Dev Hub exibe o progresso de extração. Testes cobrem validação, ciclo de estados e posições iniciais. A CI da PR passou (`npm ci`, testes, lint e build). T116–T117 ainda não foram marcadas como concluídas porque falta validar o comportamento visual no navegador; interação de resgate, escolta com navegação por acessos válidos e zona de extração ainda não foram implementadas.
+**Progresso integrado em `main` (PR #17):** criada a entidade `Civilian`, independente do Phaser, com estados `sheltered`, `following` e `extracted`; dois civis começam dentro da casa e são renderizados na cena. A PR #17 foi integrada.
+
+**Implementação em `feat/phase-7-civilian-navigation-persistence` (PR #19):** E resgata um civil próximo do policial selecionado; civis seguem o policial por A* na grade de navegação civil, não atravessam janelas e aguardam/recalculam rota quando portas ou garagem estão bloqueadas; ao alcançar a zona verde de extração são extraídos. A vitória do tutorial exige os dois civis extraídos e todas as ondas eliminadas. O Dev Hub apresenta instruções contextuais para seleção, resgate, abertura de acessos, escolta e conclusão. T118–T120 estão implementadas nesta branch; T116–T120 permanecem desmarcadas até validação visual/manual no navegador.
 
 - [ ] **T116 — P0** Criar entidades civis com estados de aguardando, seguindo e resgatado.
 - [ ] **T117 — P0** Posicionar dois civis no interior da casa no início do tutorial.
