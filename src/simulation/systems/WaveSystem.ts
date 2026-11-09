@@ -1,4 +1,4 @@
-import type { TilePosition } from './world/WorldConfig';
+import type { TilePosition } from '../world/WorldConfig';
 
 export interface WaveSpawnPoint {
   readonly id: string;
