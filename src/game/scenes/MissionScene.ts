@@ -58,8 +58,6 @@ export class MissionScene extends Phaser.Scene {
   private simulation!: Simulation;
   private audio!: AudioManager;
   private readonly playedCombatEvents = new WeakSet<CombatEvent>();
-  private statusText!: Phaser.GameObjects.Text;
-  private fullscreenText!: Phaser.GameObjects.Text;
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
   private selectionGraphics!: Phaser.GameObjects.Graphics;
   private combatGraphics!: Phaser.GameObjects.Graphics;
@@ -147,7 +145,6 @@ export class MissionScene extends Phaser.Scene {
       this.setPausedFromKeyboard();
     });
 
-    this.updateStatusText(0);
     this.updateHud();
   }
 
@@ -164,7 +161,6 @@ export class MissionScene extends Phaser.Scene {
     this.updateInfectedVisuals();
     this.updateCivilianVisuals();
     this.updateAccessVisuals();
-    this.updateStatusText(dt);
     this.updateHud();
   }
 
@@ -365,14 +361,6 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.team.x = mapX;
     this.hudBounds.team.y = mapY + 170;
 
-    // Keep developer diagnostics available to the scene without rendering them over the game.
-    this.statusText = this.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: '1px' })
-      .setVisible(false);
-    this.fullscreenText = this.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: '1px' })
-      .setVisible(false);
-    this.scale.on('enterfullscreen', () => this.fullscreenText.setText(''));
-    this.scale.on('leavefullscreen', () => this.fullscreenText.setText(''));
-
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
     this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
@@ -519,7 +507,7 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private refreshPauseMenuLabels(): void {
-    const label = (name: string, enabled: boolean) => `${name}     [${enabled ? 'EXIBIR' : 'OCULTAR'}]`;
+    const label = (name: string, enabled: boolean) => `${name}     [${enabled ? 'ATIVO' : 'OCULTO'}]`;
     this.officerToggle.setText(label('POLICIAIS', this.minimapVisibility.officers));
     this.civilianToggle.setText(label('CIVIS', this.minimapVisibility.civilians));
     this.infectedToggle.setText(label('INFECTADOS', this.minimapVisibility.infected));
@@ -1058,40 +1046,5 @@ export class MissionScene extends Phaser.Scene {
       .setVisible(true);
   }
 
-  private updateStatusText(dt: number): void {
-    const state = this.simulation.getState();
-    const fps = dt > 0 ? (1 / dt).toFixed(0) : '—';
-    const followingCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'following').length;
-    const shelteredCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'sheltered').length;
-    const hasActiveSelection = this.simulation.getOfficers().some((officer) =>
-      this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
-    const tutorialHint = !hasActiveSelection
-      ? 'Tutorial: select an active police officer with left-click or keys 1-3.'
-      : shelteredCount > 0
-        ? 'Rescue: approach a civilian and press E. Open doors with E; civilians cannot use windows.'
-        : followingCount > 0
-          ? 'Escort: lead civilians to the green extraction zone. Keep a valid door route open.'
-          : 'Rescue complete: eliminate every infected wave to finish the tutorial.';
-    this.statusText.setText(
-      [
-        'Outbreak Zones — Mission',
-        `Paused: ${state.paused ? 'YES' : 'NO'}  (Space) | Audio: ${this.audio.isMuted ? 'OFF' : 'ON'} (M)`,
-        `Sim time: ${state.elapsed.toFixed(2)}s | Seed: ${this.registry.get('missionSeed')}`,
-        `Approx FPS: ${fps}`,
-        `Officers: ${state.activeOfficerCount}/${state.officerCount}  |  Infected: ${state.infectedCount}`,
-        `Wave: ${state.waveNumber}/${state.totalWaves} | ${state.wavePhase.toUpperCase()} | Spawn queue: ${state.remainingToSpawn}`,
-        state.wavePhase === 'preparing' ? `Next wave in: ${state.preparationRemaining.toFixed(1)}s` : `Mission: ${state.missionStatus.toUpperCase()}`,
-        `Civilians: ${state.rescuedCivilianCount}/${state.civilianCount} extracted`,
-        tutorialHint,
-        `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
-        ...this.simulation.getOfficers().map((officer) => {
-          const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
-          const posture = officer.tacticalPosture === 'hold_fire' ? 'HOLD FIRE' : 'ENGAGE';
-          return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''} | ${posture}`;
-        }),
-        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: rescue/open access | B: breach',
-        'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority | R: restart after result',
-      ].join('\n'),
-    );
-  }
+
 }
