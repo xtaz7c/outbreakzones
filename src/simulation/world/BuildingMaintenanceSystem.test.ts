@@ -78,7 +78,7 @@ describe('BuildingMaintenanceSystem', () => {
     expect(door.barricadeLevel).toBe(1);
     expect(maintenance.start('front-door', 'barricade')).toBe(false);
 
-    expect(door.removeBarricade()).toBe(true);
+    expect(buildings.interact('front-door', 'police')).toBe(true);
     expect(maintenance.start('front-door', 'upgrade-lock')).toBe(true);
     maintenance.update(8);
     expect(door.state).toBe('locked');
