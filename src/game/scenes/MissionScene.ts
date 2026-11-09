@@ -147,6 +147,9 @@ export class MissionScene extends Phaser.Scene {
     this.resultShown = false;
     this.selectedOfficerIds.clear();
     this.debugInfectedSpawnIndex = 0;
+    this.placementMode = null;
+    this.selectedDeployableId = null;
+    this.buildStatus = '';
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
     this.simulation = new Simulation();
@@ -566,10 +569,10 @@ export class MissionScene extends Phaser.Scene {
     }).setScrollFactor(0).setDepth(1505);
     hudLabels.push(buildTitle);
     this.buildButtons.splice(0, this.buildButtons.length,
-      this.createBuildButton(viewX + 76, height - 47, 'ABRIGO', 'shelter-tent'),
-      this.createBuildButton(viewX + 184, height - 47, 'SUPRIMENTOS', 'resource-tent'),
-      this.createBuildButton(viewX + 292, height - 47, 'SNIPER', 'sniper-post'),
-      this.createBuildButton(viewX + 400, height - 47, 'BARREIRA', 'barricade'),
+      this.createBuildButton(viewX + 76, height - 47, 'ABRIGO 30/8', 'shelter-tent'),
+      this.createBuildButton(viewX + 184, height - 47, 'SUPR. 20/5', 'resource-tent'),
+      this.createBuildButton(viewX + 292, height - 47, 'SNIPER 45/20', 'sniper-post'),
+      this.createBuildButton(viewX + 400, height - 47, 'BARREIRA 12/3', 'barricade'),
     );
 
     const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
