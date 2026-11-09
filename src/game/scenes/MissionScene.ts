@@ -375,6 +375,12 @@ export class MissionScene extends Phaser.Scene {
     this.hudPanels.strokeRoundedRect(20, 88, 276, 142, 8);
     this.hudPanels.fillRoundedRect(mapX, mapY, 236, 160, 8);
     this.hudPanels.strokeRoundedRect(mapX, mapY, 236, 160, 8);
+    this.hudPanels.fillStyle(HUD_COLORS.officer, 1);
+    this.hudPanels.fillCircle(mapX + 14, mapY + 151, 3);
+    this.hudPanels.fillStyle(HUD_COLORS.civilian, 1);
+    this.hudPanels.fillCircle(mapX + 82, mapY + 151, 3);
+    this.hudPanels.fillStyle(HUD_COLORS.infected, 1);
+    this.hudPanels.fillCircle(mapX + 143, mapY + 151, 3);
     this.hudPanels.fillRoundedRect(mapX, mapY + 170, 236, 154, 8);
     this.hudPanels.strokeRoundedRect(mapX, mapY + 170, 236, 154, 8);
 
@@ -401,6 +407,17 @@ export class MissionScene extends Phaser.Scene {
       color: '#b9b9b0',
       letterSpacing: 1.4,
     }).setScrollFactor(0).setDepth(1505);
+    [
+      { x: mapX + 22, label: 'POLICIAIS' },
+      { x: mapX + 90, label: 'CIVIS' },
+      { x: mapX + 151, label: 'INFECTADOS' },
+    ].forEach(({ x, label }) => {
+      this.add.text(x, mapY + 145, label, {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '7px',
+        color: '#858a87',
+      }).setScrollFactor(0).setDepth(1505);
+    });
 
     this.teamText = this.add.text(mapX + 12, mapY + 180, '', {
       fontFamily: 'Arial, sans-serif',
@@ -593,7 +610,7 @@ export class MissionScene extends Phaser.Scene {
     const mapX = this.hudBounds.minimap.x + 10;
     const mapY = this.hudBounds.minimap.y + 30;
     const mapWidth = 216;
-    const mapHeight = 120;
+    const mapHeight = 102;
     this.minimapGraphics.fillStyle(0x101516, 1);
     this.minimapGraphics.fillRoundedRect(mapX, mapY, mapWidth, mapHeight, 4);
     this.minimapGraphics.lineStyle(1, HUD_COLORS.metal, 0.15);
