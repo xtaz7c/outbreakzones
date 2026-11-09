@@ -178,6 +178,37 @@ export class Infected {
       throw new RangeError('tileSize must be a positive finite number.');
     }
 
+    // Reinforcements start beyond the playable boundary and visibly walk to their edge entry tile.
+    const worldWidth = map.columns * tileSize;
+    const worldHeight = map.rows * tileSize;
+    if (
+      this.currentPosition.x < 0 || this.currentPosition.y < 0 ||
+      this.currentPosition.x >= worldWidth || this.currentPosition.y >= worldHeight
+    ) {
+      const destination = {
+        x: this.entryTile.column * tileSize + tileSize / 2,
+        y: this.entryTile.row * tileSize + tileSize / 2,
+      };
+      const dx = destination.x - this.currentPosition.x;
+      const dy = destination.y - this.currentPosition.y;
+      const distance = Math.hypot(dx, dy);
+      const travel = this.moveSpeed * dt;
+      if (distance <= travel || distance === 0) {
+        this.currentPosition = destination;
+        this.currentState = 'idle';
+      } else {
+        this.currentPosition = {
+          x: this.currentPosition.x + dx / distance * travel,
+          y: this.currentPosition.y + dy / distance * travel,
+        };
+        this.currentState = 'moving';
+      }
+      this.path = [];
+      this.waypointIndex = 0;
+      this.pathTargetKey = '';
+      return;
+    }
+
     const target = this.chooseTarget(humans, structureTarget, tileSize, map, stimuli, dt);
     const distance = this.distanceTo(target.position);
 
