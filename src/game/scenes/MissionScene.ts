@@ -486,9 +486,10 @@ export class MissionScene extends Phaser.Scene {
 
     this.teamText = this.add.text(mapX + 12, mapY + 376, '', {
       fontFamily: 'Arial, sans-serif',
-      fontSize: '10px',
+      fontSize: '9px',
       color: '#e8e3d8',
-      lineSpacing: 8,
+      lineSpacing: 7,
+      wordWrap: { width: 296 },
     }).setScrollFactor(0).setDepth(1505);
 
     const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
@@ -700,7 +701,11 @@ export class MissionScene extends Phaser.Scene {
       const selected = this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated;
       const status = officer.isIncapacitated ? 'FORA DE COMBATE' : selected ? 'SELECIONADO' : 'OPERACIONAL';
       const health = Math.max(0, Math.round((officer.health / officer.maxHealth) * 100));
-      return `[${selected ? '◆' : ' '}]${officer.id}  ${status.padEnd(16)} ${health}%`;
+      const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
+      const ammunition = ammo.reloading
+        ? `RECARGA ${ammo.reloadRemaining.toFixed(1)}s`
+        : `MUN ${ammo.current}/${ammo.capacity}`;
+      return `[${selected ? '◆' : ' '}]${officer.id} ${status}  HP ${health}%  ${ammunition}`;
     });
     const maintenance = this.simulation.getMaintenanceState();
     const maintenanceJobs = maintenance?.jobs.map((job) =>
