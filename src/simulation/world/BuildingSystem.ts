@@ -119,6 +119,7 @@ export class BuildingAccess {
   }
   interact(actor: ActorKind, hasKey = false): boolean {
     if (this.currentState === 'broken') return false;
+    if (this.currentState === 'barricaded' && actor === 'police') return this.removeBarricade();
     if (this.isPassable) {
       this.currentState = 'closed';
       return true;
