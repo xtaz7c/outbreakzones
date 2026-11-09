@@ -25,13 +25,13 @@ describe('Infected', () => {
 
   it('approaches the assigned entry tile from outside the world before pathfinding', () => {
     const infected = new Infected({
-      id: 1, x: -48, y: 144, entryTile: { column: 2, row: 4 }, moveSpeed: 64,
+      id: 1, x: -48, y: 48, entryTile: { column: 2, row: 4 }, moveSpeed: 64,
     });
     infected.update(0.5, 32, map, []);
     expect(infected.state).toBe('moving');
     expect(infected.position.x).toBeGreaterThan(-48);
     expect(infected.position.x).toBeLessThan(0);
-    expect(infected.position.y).toBeGreaterThan(144);
+    expect(infected.position.y).toBeGreaterThan(48);
   });
 
   it('investigates a heard stimulus before resuming patrol', () => {
@@ -118,7 +118,7 @@ describe('Infected', () => {
         return applied;
       },
     };
-    infected.update(0.5, 32, map, [], structure);
+    infected.update(0.5, 32, new GridMap(40, 20), [], structure);
     expect(infected.state).toBe('attacking');
     expect(health).toBe(13);
   });
