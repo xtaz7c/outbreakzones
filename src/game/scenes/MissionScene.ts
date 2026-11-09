@@ -19,6 +19,11 @@ interface TacticalOfficer {
   readonly selectionRing: Phaser.GameObjects.Arc;
 }
 
+interface TacticalCivilian {
+  readonly id: number;
+  readonly container: Phaser.GameObjects.Container;
+}
+
 interface TacticalInfected {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
@@ -37,6 +42,7 @@ export class MissionScene extends Phaser.Scene {
   private buildingSystem!: BuildingSystem;
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
+  private readonly civilianVisuals = new Map<number, TacticalCivilian>();
   private debugInfectedSpawnIndex = 0;
   private selectedOfficerIds = new Set<number>();
   private worldGrid!: GridMap;
@@ -57,6 +63,7 @@ export class MissionScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
     this.createWorld();
     this.createOfficers();
+    this.createCivilians();
     this.createHud();
     this.createCameraControls();
     this.createSelectionControls();
@@ -86,6 +93,7 @@ export class MissionScene extends Phaser.Scene {
       this.updateOfficers(dt);
     }
     this.updateInfectedVisuals();
+    this.updateCivilianVisuals();
     this.updateAccessVisuals();
     this.updateStatusText(dt);
   }
@@ -169,6 +177,33 @@ export class MissionScene extends Phaser.Scene {
       const container = this.add.container(position.x, position.y, [ring, body, direction, label]).setDepth(100);
       return { id: officer.id, container, selectionRing: ring };
     });
+  }
+
+  private createCivilians(): void {
+    for (const civilian of this.simulation.getCivilians()) {
+      const position = civilian.position;
+      const body = this.add.circle(0, 0, 9, 0xe7c66a).setStrokeStyle(2, 0x493b1c);
+      const head = this.add.circle(0, -10, 5, 0xf1d4b1).setStrokeStyle(1, 0x493b1c);
+      const label = this.add.text(0, 13, `C${civilian.id}`, {
+        fontFamily: 'monospace',
+        fontSize: '10px',
+        color: '#ffffff',
+        backgroundColor: '#493b1c',
+        padding: { x: 3, y: 1 },
+      }).setOrigin(0.5, 0);
+      const container = this.add.container(position.x, position.y, [body, head, label])
+        .setDepth(105);
+      this.civilianVisuals.set(civilian.id, { id: civilian.id, container });
+    }
+  }
+
+  private updateCivilianVisuals(): void {
+    for (const civilian of this.simulation.getCivilians()) {
+      const visual = this.civilianVisuals.get(civilian.id);
+      if (!visual) continue;
+      visual.container.setPosition(civilian.position.x, civilian.position.y);
+      visual.container.setAlpha(civilian.state === 'extracted' ? 0.45 : 1);
+    }
   }
 
   private createHud(): void {
@@ -565,6 +600,7 @@ export class MissionScene extends Phaser.Scene {
         `Sim time: ${state.elapsed.toFixed(2)}s | Seed: ${this.registry.get('missionSeed')}`,
         `Approx FPS: ${fps}`,
         `Officers: ${state.officerCount}  |  Infected: ${state.infectedCount}`,
+        `Civilians: ${state.rescuedCivilianCount}/${state.civilianCount} extracted`,
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
