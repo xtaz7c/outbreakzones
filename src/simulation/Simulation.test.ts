@@ -337,6 +337,19 @@ describe('Simulation', () => {
     expect(sim.isMissionVictory()).toBe(true);
   });
 
+  it('allows the Refuge campaign mission to win after its waves without tutorial extraction', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.configureWaves([
+      { id: 'west', x: -48, y: 640, entryTile: { column: 21, row: 18 } },
+    ], [{ infectedCount: 1, spawnInterval: 1 }], 0, false);
+    sim.update(FIXED_DT);
+    expect(sim.getState().infectedCount).toBe(1);
+    sim.getInfected()[0]!.takeDamage(1000);
+    sim.update(FIXED_DT);
+    expect(sim.getState().missionStatus).toBe('victory');
+    expect(sim.getState().rescuedCivilianCount).toBe(0);
+  });
+
   it('declares defeat as soon as all officers are incapacitated', () => {
     for (const officer of sim.getOfficers()) sim.damageOfficer(officer.id, 100);
     sim.update(FIXED_DT);
