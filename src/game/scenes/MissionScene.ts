@@ -125,6 +125,7 @@ export class MissionScene extends Phaser.Scene {
       ? configuredSeed
       : Date.now();
     this.registry.set('missionSeed', missionSeed);
+    this.simulation.setRandomSeed(missionSeed);
     this.buildingSystem = new BuildingSystem(definitions, this.worldGrid, this.tileSize, missionSeed);
     this.simulation.setBuildingSystem(this.buildingSystem);
     this.registry.set('worldGrid', this.worldGrid);
