@@ -312,7 +312,11 @@ export class Infected {
     ) {
       this.patrolTarget = this.choosePatrolTile(map, currentTile);
     }
-    const patrolTile = this.patrolTarget ?? (map.isWalkable(this.entryTile) ? this.entryTile : currentTile);
+    const patrolTile = this.patrolTarget ?? (
+      map.isWalkable(this.entryTile) && findPath(map, currentTile, this.entryTile) !== null
+        ? this.entryTile
+        : currentTile
+    );
     return {
       kind: 'entry',
       tile: patrolTile,
@@ -332,7 +336,11 @@ export class Infected {
       column: Math.floor(position.x / tileSize),
       row: Math.floor(position.y / tileSize),
     };
-    if (map.isWalkable(desired)) {
+    const start = {
+      column: Math.floor(this.currentPosition.x / tileSize),
+      row: Math.floor(this.currentPosition.y / tileSize),
+    };
+    if (map.isWalkable(desired) && findPath(map, start, desired, { allowDiagonal: true }) !== null) {
       return {
         x: desired.column * tileSize + tileSize / 2,
         y: desired.row * tileSize + tileSize / 2,
@@ -355,11 +363,15 @@ export class Infected {
           Math.hypot(a.column - desired.column, a.row - desired.row) -
           Math.hypot(b.column - desired.column, b.row - desired.row),
         );
-        const nearest = candidates[0]!;
-        return {
-          x: nearest.column * tileSize + tileSize / 2,
-          y: nearest.row * tileSize + tileSize / 2,
-        };
+        const nearest = candidates.find((candidate) =>
+          findPath(map, start, candidate, { allowDiagonal: true }) !== null,
+        );
+        if (nearest) {
+          return {
+            x: nearest.column * tileSize + tileSize / 2,
+            y: nearest.row * tileSize + tileSize / 2,
+          };
+        }
       }
     }
     return null;
@@ -379,12 +391,15 @@ export class Infected {
         ) candidates.push(candidate);
       }
     }
-    if (candidates.length === 0) return null;
-    const value = this.random();
-    if (!Number.isFinite(value) || value < 0 || value >= 1) {
-      throw new RangeError('Infected random source must return a value in [0, 1).');
+    while (candidates.length > 0) {
+      const value = this.random();
+      if (!Number.isFinite(value) || value < 0 || value >= 1) {
+        throw new RangeError('Infected random source must return a value in [0, 1).');
+      }
+      const candidate = candidates.splice(Math.floor(value * candidates.length), 1)[0]!;
+      if (findPath(map, origin, candidate, { allowDiagonal: true }) !== null) return candidate;
     }
-    return candidates[Math.floor(value * candidates.length)]!;
+    return null;
   }
 
   private moveAlongPath(dt: number, tileSize: number): boolean {
