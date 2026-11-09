@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
-> **Status atual:** a branch `feat/phase-7-tactical-system` contém a primeira integração do sistema de acessos de edifícios, estado inicial determinístico, dano/rompimento de acessos e comandos táticos de manter posição/segurar fogo/engajar. A integração ainda não foi validada com testes, lint, build ou revisão visual; funcionalidades de IA por estímulos, ronda e navegação interior/exterior permanecem incompletas.
+> **Status atual:** a branch `feat/buildings-tactical-foundation-t066-t071` está sincronizada com `main` e contém a primeira integração do sistema de acessos de edifícios, estado inicial determinístico, dano/rompimento de acessos, atração temporária por ruído e comandos táticos de manter posição/segurar fogo/engajar. A integração ainda precisa de validação local com testes, lint, build e revisão visual; ronda geral, percepção por linha de visão/oclusão e navegação interior/exterior completa permanecem incompletas.
 
 ## 1. Visão e escopo
 
