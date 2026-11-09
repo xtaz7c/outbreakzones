@@ -539,7 +539,7 @@ export class MissionScene extends Phaser.Scene {
     const fps = dt > 0 ? (1 / dt).toFixed(0) : '—';
     this.statusText.setText(
       [
-        'Testgame — Mission',
+        'Outbreak Zones — Mission',
         `Paused: ${state.paused ? 'YES' : 'NO'}  (Space)`,
         `Sim time: ${state.elapsed.toFixed(2)}s | Seed: ${this.registry.get('missionSeed')}`,
         `Approx FPS: ${fps}`,
@@ -552,7 +552,7 @@ export class MissionScene extends Phaser.Scene {
         }),
         'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: interact | B: breach',
         'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority',
-      ].join('\\n'),
+      ].join('\n'),
     );
   }
 }
