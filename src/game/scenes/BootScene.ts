@@ -2,8 +2,7 @@ import Phaser from 'phaser';
 
 /**
  * Cena de inicialização: carrega assets e trata falhas de carregamento.
- * Por enquanto não há assets reais — a barra e o tratamento de erro
- * ficam prontos para quando assets forem adicionados.
+ * Carrega mapa, tileset e áudio original do jogo.
  */
 export class BootScene extends Phaser.Scene {
   private failedKeys: string[] = [];
@@ -58,6 +57,11 @@ export class BootScene extends Phaser.Scene {
     // Mapa e tileset originais da primeira missão.
     this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
     this.load.image('mission-tiles', '/tiles/mission-tiles.svg');
+
+    // Áudio original do projeto: ambiente, disparos e vocalização dos infectados.
+    this.load.audio('ambient-loop', '/audio/ambient-loop.wav');
+    this.load.audio('pistol-shot', '/audio/pistol-shot.wav');
+    this.load.audio('infected-groan', '/audio/infected-groan.wav');
   }
 
   create(): void {
