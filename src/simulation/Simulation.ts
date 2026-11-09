@@ -253,6 +253,9 @@ export class Simulation {
     if (this.worldGrid) {
       const infectedGrid = this.buildingSystem?.getNavigationGrid('infected') ?? this.worldGrid;
       const policeGrid = this.buildingSystem?.getNavigationGrid('police') ?? this.worldGrid;
+      const accessStatesBefore = new Map(
+        this.buildingSystem?.getSnapshots().map((access) => [access.id, access.state] as const) ?? [],
+      );
       for (let index = this.stimuli.length - 1; index >= 0; index -= 1) {
         this.stimuli[index]!.remaining -= dt;
         if (this.stimuli[index]!.remaining <= 0) this.stimuli.splice(index, 1);
@@ -263,6 +266,10 @@ export class Simulation {
         );
         infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli);
       }
+      const accessChanged = this.buildingSystem?.getSnapshots().some(
+        (access) => accessStatesBefore.get(access.id) !== access.state,
+      ) ?? false;
+      if (accessChanged) this.replanOfficerRoutes();
       const shotEvents = this.combat.update(dt, this.officers, this.infected, policeGrid, this.tileSize);
       this.combatEvents.push(...shotEvents);
       for (const event of shotEvents) {

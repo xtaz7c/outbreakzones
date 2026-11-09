@@ -167,8 +167,8 @@ export class MissionScene extends Phaser.Scene {
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
     const spawnPoints: WaveSpawnPoint[] = [
-      { id: 'west', x: 64, y: 640, entryTile: { column: 21, row: 18 } },
-      { id: 'east', x: 1984, y: 640, entryTile: { column: 42, row: 18 } },
+      { id: 'west', x: 128, y: 640, entryTile: { column: 21, row: 18 } },
+      { id: 'east', x: 1920, y: 640, entryTile: { column: 42, row: 18 } },
       { id: 'north', x: 1024, y: 64, entryTile: { column: 32, row: 9 } },
       { id: 'south', x: 1024, y: 1216, entryTile: { column: 32, row: 28 } },
     ];

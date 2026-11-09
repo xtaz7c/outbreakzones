@@ -2,7 +2,7 @@
 
 > Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
 >
- > **Status atual:** `main` já contém as fundações das Fases 2–7, inclusive mapa Tiled, câmera/controles RTS, policiais, IA de infectados, combate e acessos dinâmicos. A Fase 7 ainda precisa fechar travessia completa para civis e persistência/validação integrada. Esta branch adiciona replanejamento de rotas após mudanças de acesso e o ciclo de ondas/vitória/derrota da Fase 8. A validação de navegador continua obrigatória antes de marcar o DoD.
+**Status atual:** `main` já contém as fundações das Fases 2–7, inclusive mapa Tiled, câmera/controles RTS, policiais, IA de infectados, combate e acessos dinâmicos. A Fase 7 ainda precisa fechar travessia completa para civis e persistência/validação integrada. Esta branch adiciona replanejamento de rotas após mudanças de acesso e o ciclo de ondas/vitória/derrota da Fase 8. A validação de navegador continua obrigatória antes de marcar o DoD.
 
 ## 1. Visão e escopo
 
