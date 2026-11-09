@@ -331,6 +331,8 @@ export class MissionScene extends Phaser.Scene {
   private createCivilians(): void {
     for (const civilian of this.simulation.getCivilians()) {
       const position = civilian.position;
+      const leftLeg = this.add.rectangle(-4, 8, 5, 9, 0x66502a).setOrigin(0.5, 0.25);
+      const rightLeg = this.add.rectangle(4, 8, 5, 9, 0x66502a).setOrigin(0.5, 0.25);
       const body = this.add.circle(0, 0, 9, 0xe7c66a).setStrokeStyle(2, 0x493b1c);
       const head = this.add.circle(0, -10, 5, 0xf1d4b1).setStrokeStyle(1, 0x493b1c);
       const label = this.add.text(0, 13, `C${civilian.id}`, {
@@ -340,7 +342,7 @@ export class MissionScene extends Phaser.Scene {
         backgroundColor: '#493b1c',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(position.x, position.y, [body, head, label])
+      const container = this.add.container(position.x, position.y, [leftLeg, rightLeg, body, head, label])
         .setDepth(105);
       this.civilianVisuals.set(civilian.id, { id: civilian.id, container });
     }
@@ -351,7 +353,8 @@ export class MissionScene extends Phaser.Scene {
       const visual = this.civilianVisuals.get(civilian.id);
       if (!visual) continue;
       visual.container.setPosition(civilian.position.x, civilian.position.y);
-      visual.container.setAlpha(civilian.state === 'extracted' ? 0.45 : 1);
+      visual.container.setAlpha(civilian.isIncapacitated ? 0.28 : civilian.state === 'extracted' ? 0.45 : 1);
+      visual.container.setScale(civilian.behaviorState === 'panic' ? 1.08 : 1);
     }
   }
 
