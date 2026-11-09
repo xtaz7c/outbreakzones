@@ -115,6 +115,10 @@ export class Simulation {
     return this.deployableSystem?.getResources() ?? { scrap: 0, parts: 0 };
   }
 
+  getShelterCapacity(): number {
+    return this.deployableSystem?.getShelterCapacity() ?? 0;
+  }
+
   getDeployableState(): DeployableState | null {
     return this.deployableSystem?.exportState() ?? null;
   }
