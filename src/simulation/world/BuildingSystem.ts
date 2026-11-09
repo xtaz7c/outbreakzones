@@ -85,6 +85,7 @@ function toCells(definition: AccessDefinition, tileSize: number, grid: GridMap):
 export class BuildingAccess {
   readonly id: string;
   readonly kind: AccessKind;
+  private readonly baseMaxHealth: number;
   private currentMaxHealth: number;
   readonly cells: readonly TilePosition[];
   private currentHealth: number;
@@ -96,8 +97,9 @@ export class BuildingAccess {
     if (!definition.id.trim()) throw new RangeError('Access id cannot be empty.');
     this.id = definition.id;
     this.kind = definition.kind;
-    this.currentMaxHealth = definition.maxHealth ?? (definition.kind === 'window' ? 60 : 120);
-    if (!Number.isFinite(this.currentMaxHealth) || this.currentMaxHealth <= 0) throw new RangeError('Access maxHealth must be positive.');
+    this.baseMaxHealth = definition.maxHealth ?? (definition.kind === 'window' ? 60 : 120);
+    if (!Number.isFinite(this.baseMaxHealth) || this.baseMaxHealth <= 0) throw new RangeError('Access maxHealth must be positive.');
+    this.currentMaxHealth = this.baseMaxHealth;
     this.currentHealth = this.currentMaxHealth;
     this.currentState = state;
     this.cells = cells.map((cell) => ({ ...cell }));
@@ -178,7 +180,6 @@ export class BuildingAccess {
     const barricadeLevel = upgrades?.barricadeLevel ?? 0;
     const lockLevel = upgrades?.lockLevel ?? 0;
     if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(state) ||
-        !Number.isFinite(health) || health < 0 || health > this.maxHealth ||
         !Number.isInteger(reinforcementLevel) || reinforcementLevel < 0 || reinforcementLevel > 2 ||
         !Number.isInteger(barricadeLevel) || barricadeLevel < 0 || barricadeLevel > 1 ||
         !Number.isInteger(lockLevel) || lockLevel < 0 || lockLevel > 2 ||
@@ -186,14 +187,17 @@ export class BuildingAccess {
         (state === 'barricaded' && barricadeLevel === 0)) {
       throw new RangeError(`Invalid persisted state for access ${this.id}.`);
     }
+    let restoredMaxHealth = this.baseMaxHealth;
+    for (let level = 0; level < reinforcementLevel; level += 1) {
+      restoredMaxHealth += Math.ceil(restoredMaxHealth * 0.2);
+    }
+    if (!Number.isFinite(health) || health < 0 || health > restoredMaxHealth) {
+      throw new RangeError(`Invalid persisted health for access ${this.id}.`);
+    }
     this.currentReinforcementLevel = reinforcementLevel;
     this.currentBarricadeLevel = barricadeLevel;
     this.currentLockLevel = lockLevel;
-    this.currentMaxHealth = (this.currentMaxHealth / (1.2 ** reinforcementLevel));
-    const baseMaxHealth = this.currentMaxHealth;
-    this.currentMaxHealth = baseMaxHealth;
-    for (let level = 0; level < reinforcementLevel; level += 1) this.currentMaxHealth += Math.ceil(this.currentMaxHealth * 0.2);
-    if (health > this.currentMaxHealth) throw new RangeError(`Persisted health exceeds upgraded maximum for access ${this.id}.`);
+    this.currentMaxHealth = restoredMaxHealth;
     this.currentState = state;
     this.currentHealth = health;
   }
