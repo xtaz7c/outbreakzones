@@ -2,7 +2,7 @@ import type { TilePosition } from './world/WorldConfig';
 import { GridMap } from './world/GridMap';
 import { findPath } from './world/Pathfinder';
 
-export type CivilianState = 'sheltered' | 'following' | 'extracted';
+export type CivilianState = 'sheltered' | 'following' | 'extracted' | 'dead';
 
 export interface CivilianConfig {
   readonly id: number;
@@ -19,6 +19,8 @@ export interface CivilianPosition {
 export class Civilian {
   readonly id: number;
   readonly moveSpeed: number;
+  readonly maxHealth: number;
+  private currentHealth: number;
   private currentPosition: { x: number; y: number };
   private currentState: CivilianState = 'sheltered';
   private escortOfficerId: number | null = null;
@@ -34,6 +36,8 @@ export class Civilian {
       throw new RangeError('Civilian coordinates must be finite.');
     }
     this.moveSpeed = config.moveSpeed ?? 72;
+    this.maxHealth = 60;
+    this.currentHealth = this.maxHealth;
     if (!Number.isFinite(this.moveSpeed) || this.moveSpeed <= 0) {
       throw new RangeError('Civilian moveSpeed must be positive.');
     }
@@ -44,7 +48,22 @@ export class Civilian {
   get state(): CivilianState { return this.currentState; }
   get position(): CivilianPosition { return { ...this.currentPosition }; }
   get isRescued(): boolean { return this.currentState === 'extracted'; }
+  get isIncapacitated(): boolean { return this.currentState === 'dead'; }
+  get health(): number { return this.currentHealth; }
   get escortId(): number | null { return this.escortOfficerId; }
+
+  takeDamage(amount: number): number {
+    if (this.isIncapacitated || !Number.isFinite(amount) || amount <= 0) return 0;
+    const applied = Math.min(amount, this.currentHealth);
+    this.currentHealth = Math.max(0, this.currentHealth - applied);
+    if (this.currentHealth === 0) {
+      this.currentState = 'dead';
+      this.path = [];
+      this.waypointIndex = 0;
+      this.escortOfficerId = null;
+    }
+    return applied;
+  }
 
   beginFollowing(officerId?: number): boolean {
     if (this.currentState !== 'sheltered') return false;
