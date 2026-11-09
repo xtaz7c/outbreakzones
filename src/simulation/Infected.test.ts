@@ -6,6 +6,19 @@ import { GridMap } from './world/GridMap';
 describe('Infected', () => {
   const map = new GridMap(10, 10);
 
+  it('enters the map from beyond the western boundary before using normal navigation', () => {
+    const infected = new Infected({
+      id: 1, x: -48, y: 80, entryTile: { column: 0, row: 2 }, moveSpeed: 32,
+    });
+    infected.update(0.5, 32, map, []);
+    expect(infected.state).toBe('moving');
+    expect(infected.position.x).toBeGreaterThan(-48);
+    expect(infected.position.x).toBeLessThan(16);
+    for (let index = 0; index < 60; index += 1) infected.update(1 / 60, 32, map, []);
+    expect(infected.position.x).toBe(16);
+    expect(infected.position.y).toBe(80);
+  });
+
   it('starts alive with the configured base attributes', () => {
     const infected = new Infected({ id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 } });
     expect(infected.health).toBe(60);
@@ -66,6 +79,28 @@ describe('Infected', () => {
     infected.update(0.5, 32, map, [officer]);
     expect(infected.state).toBe('attacking');
     expect(officer.health).toBe(88);
+  });
+
+  it('detects and attacks a civilian using the same line-of-sight rules as officers', () => {
+    const infected = new Infected({
+      id: 2, x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      detectionRange: 100, attackRange: 30, attackInterval: 0.5, damage: 12,
+    });
+    const civilian = {
+      id: 1,
+      position: { x: 40, y: 16 },
+      isIncapacitated: false,
+      health: 60,
+      takeDamage(amount: number) {
+        const applied = Math.min(amount, this.health);
+        this.health -= applied;
+        if (this.health <= 0) this.isIncapacitated = true;
+        return applied;
+      },
+    };
+    infected.update(0.5, 32, map, [civilian]);
+    expect(infected.state).toBe('attacking');
+    expect(civilian.health).toBe(48);
   });
 
   it('ignores incapacitated officers when selecting targets', () => {
