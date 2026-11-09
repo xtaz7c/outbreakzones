@@ -9,12 +9,12 @@ import {
 } from './WorldConfig';
 
 describe('world dimensions', () => {
-  it('defines a 64 × 40 grid of 32 px cells', () => {
-    expect(WORLD_CONFIG.columns).toBe(64);
-    expect(WORLD_CONFIG.rows).toBe(40);
+  it('defines an 80 × 45 grid of 32 px cells', () => {
+    expect(WORLD_CONFIG.columns).toBe(80);
+    expect(WORLD_CONFIG.rows).toBe(45);
     expect(WORLD_CONFIG.tileSize).toBe(32);
-    expect(WORLD_WIDTH).toBe(2048);
-    expect(WORLD_HEIGHT).toBe(1280);
+    expect(WORLD_WIDTH).toBe(2560);
+    expect(WORLD_HEIGHT).toBe(1440);
   });
 
   it('keeps the world larger than the logical viewport', () => {
@@ -46,7 +46,7 @@ describe('world and tile coordinate conversion', () => {
   it('converts world coordinates to the expected tile', () => {
     expect(worldToTile({ x: 0, y: 0 })).toEqual({ column: 0, row: 0 });
     expect(worldToTile({ x: 63, y: 95 })).toEqual({ column: 1, row: 2 });
-    expect(worldToTile({ x: 2047, y: 1279 })).toEqual({ column: 63, row: 39 });
+    expect(worldToTile({ x: 2047, y: 1279 })).toEqual({ column: 79, row: 44 });
   });
 
   it('returns null for positions outside the world', () => {
@@ -56,13 +56,13 @@ describe('world and tile coordinate conversion', () => {
 
   it('returns the center of a valid tile', () => {
     expect(tileToWorldCenter({ column: 0, row: 0 })).toEqual({ x: 16, y: 16 });
-    expect(tileToWorldCenter({ column: 63, row: 39 })).toEqual({ x: 2032, y: 1264 });
+    expect(tileToWorldCenter({ column: 63, row: 39 })).toEqual({ x: 2544, y: 1424 });
   });
 
   it('rejects invalid tile coordinates', () => {
     expect(tileToWorldCenter({ column: -1, row: 0 })).toBeNull();
-    expect(tileToWorldCenter({ column: 64, row: 0 })).toBeNull();
-    expect(tileToWorldCenter({ column: 0, row: 40 })).toBeNull();
+    expect(tileToWorldCenter({ column: 80, row: 0 })).toBeNull();
+    expect(tileToWorldCenter({ column: 0, row: 45 })).toBeNull();
     expect(tileToWorldCenter({ column: 1.5, row: 0 })).toBeNull();
   });
 });
