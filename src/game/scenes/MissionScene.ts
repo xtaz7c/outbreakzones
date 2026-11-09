@@ -257,10 +257,10 @@ export class MissionScene extends Phaser.Scene {
     this.add.circle(1280, 720, 72, 0x55c878, 0.08)
       .setStrokeStyle(3, 0x55c878, 0.85).setDepth(70);
     const spawnPoints: WaveSpawnPoint[] = [
-      { id: 'west', x: 128, y: 640, entryTile: { column: 21, row: 18 } },
-      { id: 'east', x: 2496, y: 720, entryTile: { column: 77, row: 22 } },
-      { id: 'north', x: 1024, y: 64, entryTile: { column: 32, row: 9 } },
-      { id: 'south', x: 1280, y: 1408, entryTile: { column: 40, row: 43 } },
+      { id: 'west', x: -48, y: 640, entryTile: { column: 21, row: 18 } },
+      { id: 'east', x: 2608, y: 720, entryTile: { column: 77, row: 22 } },
+      { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 9 } },
+      { id: 'south', x: 1280, y: 1488, entryTile: { column: 40, row: 43 } },
     ];
     this.simulation.configureWaves(spawnPoints, [
       { infectedCount: 3, spawnInterval: 1.4 },
