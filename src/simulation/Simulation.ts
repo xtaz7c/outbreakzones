@@ -353,7 +353,8 @@ export class Simulation {
         damage: 8 + (waveNumber - 1),
       });
     });
-    if (this.waveSystem?.getState().phase === 'completed' && this.infected.length === 0) {
+    if (this.waveSystem?.getState().phase === 'completed' && this.infected.length === 0 &&
+        this.civilians.every((civilian) => civilian.isRescued)) {
       this.missionStatus = 'victory';
     }
   }
