@@ -239,10 +239,10 @@ export class MissionScene extends Phaser.Scene {
     this.add.circle(1280, 720, 72, 0x55c878, 0.08)
       .setStrokeStyle(3, 0x55c878, 0.85).setDepth(70);
     const spawnPoints: WaveSpawnPoint[] = [
-      { id: 'west', x: 128, y: 640, entryTile: { column: 21, row: 18 } },
-      { id: 'east', x: 2496, y: 720, entryTile: { column: 77, row: 22 } },
-      { id: 'north', x: 1024, y: 64, entryTile: { column: 32, row: 9 } },
-      { id: 'south', x: 1280, y: 1408, entryTile: { column: 40, row: 43 } },
+      { id: 'west', x: -48, y: 640, entryTile: { column: 0, row: 20 } },
+      { id: 'east', x: 2608, y: 720, entryTile: { column: 79, row: 22 } },
+      { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 0 } },
+      { id: 'south', x: 1280, y: 1488, entryTile: { column: 40, row: 44 } },
     ];
     this.simulation.configureWaves(spawnPoints, [
       { infectedCount: 3, spawnInterval: 1.4 },
@@ -978,10 +978,10 @@ export class MissionScene extends Phaser.Scene {
     if (entries.length === 0) return;
 
     const spawnPlans = [
-      { x: 128, y: 640, entryId: 'west-window' },
-      { x: 1920, y: 640, entryId: 'east-window' },
-      { x: 1024, y: 64, entryId: 'north-window-west' },
-      { x: 1024, y: 1216, entryId: 'front-door' },
+      { x: -48, y: 640, entryId: 'west-window' },
+      { x: 2608, y: 640, entryId: 'east-window' },
+      { x: 1024, y: -48, entryId: 'north-window-west' },
+      { x: 1024, y: 1488, entryId: 'front-door' },
     ] as const;
     const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
     this.debugInfectedSpawnIndex += 1;
