@@ -201,7 +201,7 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** ciclo completo de missão, do início ao resultado, com pausa funcional.
 
-**Issue #26 — incrementos em andamento:** (1) infectados das ondas surgem além dos quatro limites do mapa e caminham até o tile de entrada; (2) Missão 0 — O Resgate e Missão 1 — Refúgio possuem objetivos/ondas separados, com escolha de campanha após o tutorial; (3) infectados agora adquirem policiais e civis humanos visíveis, civis têm vida, entram em pânico e fogem por rotas caminháveis, juntam-se automaticamente a policiais próximos e podem perder escolta por distância/obstrução. Testes unitários e de integração adicionados. Ainda faltam quatro estruturas implantáveis com custos/persistência/dano e escala persistente do HUD. QA de navegador continua pendente.
+**Issue #26 — incrementos em andamento:** (1) infectados das ondas surgem além dos quatro limites do mapa e caminham até o tile de entrada; (2) Missão 0 — O Resgate e Missão 1 — Refúgio possuem objetivos/ondas separados, com escolha de campanha após o tutorial; (3) infectados adquirem policiais e civis humanos visíveis, civis têm vida, entram em pânico e fogem por rotas caminháveis, juntam-se automaticamente a policiais próximos e podem perder escolta por distância/obstrução; (4) escala do HUD persistente e independente do zoom da câmera, ajustável entre 80% e 120% nas configurações da pausa. Testes unitários e de integração adicionados. Ainda faltam quatro estruturas implantáveis com custos/persistência/dano. QA de navegador continua pendente.
 
 ### Fase 9 — Interface e experiência
 
@@ -222,6 +222,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 **Implementação em andamento na PR #30:** o HUD/minimapa está sendo corrigido para permanecer em coordenadas de viewport durante scroll/zoom. A equipe também passa a exibir vida e munição/recarga de cada policial (T086). T085–T086 continuam desmarcadas até CI e QA no navegador.
 
 **Saída da fase:** jogador entende o estado da missão e consegue executar todas as ações necessárias pela interface.
+
+**Tarefa T085 / Issue #26:** escala do HUD implementada com contêiner de viewport, persistência em `localStorage` e limites seguros de 80%–120%, ajustável no menu de pausa. A validação visual em resoluções diferentes ainda está pendente.
 
 ### Fase 10 — Arte, áudio e acabamento
 
