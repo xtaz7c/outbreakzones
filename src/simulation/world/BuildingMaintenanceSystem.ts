@@ -121,7 +121,8 @@ export class BuildingMaintenanceSystem {
     for (let index = this.jobs.length - 1; index >= 0; index -= 1) {
       const job = this.jobs[index]!;
       job.remaining = Math.max(0, job.remaining - dt);
-      if (job.remaining > 0) continue;
+      if (job.remaining > 1e-9) continue;
+      job.remaining = 0;
       const access = this.buildings.getAccess(job.accessId);
       const success = access ? this.complete(access, job.action) : false;
       if (success) completed.push(job.accessId);
