@@ -84,3 +84,8 @@ Documentação:
 ## Licença
 
 A definir.
+
+
+## Campanha (em desenvolvimento)
+
+A Missão 0 — **O Resgate** funciona como tutorial e exige extrair os dois civis e eliminar todas as ondas. Ao vencer, o jogador pode voltar à tela inicial ou iniciar a Missão 1 — **Refúgio**, uma missão de campanha com quatro ondas e objetivo de defender o setor. O desbloqueio da campanha é salvo localmente. A Missão 1 ainda reutiliza o mapa atual; cenário próprio, persistência completa e conteúdo de campanha seguem em desenvolvimento.
