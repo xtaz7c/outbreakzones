@@ -1,5 +1,5 @@
 import type { PoliceOfficer } from './PoliceOfficer';
-import { hasLineOfSight } from '../CombatSystem';
+import { hasLineOfSight } from '../systems/CombatSystem';
 import type { TilePosition } from '../world/WorldConfig';
 import { GridMap } from '../world/GridMap';
 import { findPath } from '../systems/navigation/Pathfinder';
