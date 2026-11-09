@@ -5,6 +5,7 @@
  * Timestep: fixed timestep com acumulador (ADR7).
  */
 import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
+import { Civilian } from './Civilian';
 import { Infected } from './Infected';
 import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
 import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
@@ -18,6 +19,8 @@ export interface SimulationState {
   officerCount: number;
   activeOfficerCount: number;
   infectedCount: number;
+  civilianCount: number;
+  rescuedCivilianCount: number;
 }
 
 export const FIXED_DT = 1 / 60;
@@ -39,6 +42,10 @@ export class Simulation {
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
   private readonly infected: Infected[] = [];
+  private readonly civilians: Civilian[] = [
+    new Civilian({ id: 1, x: 800, y: 480 }),
+    new Civilian({ id: 2, x: 1200, y: 480 }),
+  ];
   private readonly combat: CombatSystem;
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
@@ -96,6 +103,10 @@ export class Simulation {
 
   getInfected(): readonly Infected[] {
     return this.infected;
+  }
+
+  getCivilians(): readonly Civilian[] {
+    return this.civilians;
   }
 
   isMissionDefeated(): boolean {
@@ -234,6 +245,8 @@ export class Simulation {
       officerCount: this.officers.length,
       activeOfficerCount: this.officers.filter((officer) => !officer.isIncapacitated).length,
       infectedCount: this.infected.length,
+      civilianCount: this.civilians.length,
+      rescuedCivilianCount: this.civilians.filter((civilian) => civilian.isRescued).length,
     };
   }
 }

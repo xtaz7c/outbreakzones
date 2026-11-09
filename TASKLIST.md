@@ -71,18 +71,18 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 ### Fase 1 — Fundação técnica
 
-- [ ] **T007 — P0** Configurar Vite e TypeScript.
-- [ ] **T008 — P0** Instalar e configurar Phaser 3.
-- [ ] **T009 — P0** Instalar e configurar Vitest.
-- [ ] **T010 — P1** Configurar lint e formatação.
-- [ ] **T011 — P0** Criar cena de inicialização e cena principal da missão.
-- [ ] **T012 — P0** Criar fluxo de carregamento de assets e tratamento de falhas.
-- [ ] **T013 — P1** Configurar resolução lógica, escala e redimensionamento responsivo.
-- [ ] **T014 — P0** Definir atualização da simulação com delta time e comportamento estável diante de variações de FPS.
-- [ ] **T015 — P0** Separar regras/simulação da camada de renderização Phaser.
-- [ ] **T016 — P0** Configurar scripts de desenvolvimento, teste, lint e build.
+- [x] **T007 — P0** Configurar Vite e TypeScript.
+- [x] **T008 — P0** Instalar e configurar Phaser 3.
+- [x] **T009 — P0** Instalar e configurar Vitest.
+- [x] **T010 — P1** Configurar lint e formatação.
+- [x] **T011 — P0** Criar cena de inicialização e cena principal da missão.
+- [x] **T012 — P0** Criar fluxo de carregamento de assets e tratamento de falhas.
+- [x] **T013 — P1** Configurar resolução lógica, escala e redimensionamento responsivo.
+- [x] **T014 — P0** Definir atualização da simulação com delta time e comportamento estável diante de variações de FPS.
+- [x] **T015 — P0** Separar regras/simulação da camada de renderização Phaser.
+- [x] **T016 — P0** Configurar scripts de desenvolvimento, teste, lint e build.
 
-**Saída da fase:** implementação integrada; validação final pendente de `npm ci`, `npm test` e `npm run lint`. O usuário confirmou que `npm run build` passou localmente.
+**Saída da fase:** concluída. Vite, TypeScript, Phaser, Vitest, lint, cenas, carregamento de assets com tratamento de falhas, escala responsiva e simulação desacoplada estão integrados. A CI da PR #17 executou `npm ci`, `npm test`, `npm run lint` e `npm run build` com sucesso.
 
 ### Fase 2 — Mapa e mundo
 
@@ -237,13 +237,15 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T109 — P0** Testar vitória, derrota e reinício.
 - [ ] **T110 — P1** Testar navegadores desktop e diferentes resoluções.
 - [ ] **T111 — P0** Corrigir bugs críticos e bloqueadores.
-- [ ] **T112 — P0** Executar testes automatizados, lint e build em ambiente limpo.
+- [x] **T112 — P0** Executar testes automatizados, lint e build em ambiente limpo.
 - [ ] **T113 — P1** Documentar instalação, execução, controles e como jogar.
 - [ ] **T114 — P0** Publicar uma versão web jogável.
 
 **Saída da fase:** MVP acessível no navegador, reproduzível a partir das instruções e sem bugs bloqueadores conhecidos.
 
 ### Fase 12 — Civis e tutorial de resgate
+
+**Progresso parcial (PR #17, branch `feat/phase-12-civilian-rescue`):** criada a entidade `Civilian`, independente do Phaser, com estados `sheltered`, `following` e `extracted`; dois civis são inicializados dentro da casa e renderizados na cena; o Dev Hub exibe o progresso de extração. Testes cobrem validação, ciclo de estados e posições iniciais. A CI da PR passou (`npm ci`, testes, lint e build). T116–T117 ainda não foram marcadas como concluídas porque falta validar o comportamento visual no navegador; interação de resgate, escolta com navegação por acessos válidos e zona de extração ainda não foram implementadas.
 
 - [ ] **T116 — P0** Criar entidades civis com estados de aguardando, seguindo e resgatado.
 - [ ] **T117 — P0** Posicionar dois civis no interior da casa no início do tutorial.
