@@ -132,7 +132,7 @@ describe('Simulation', () => {
     civilian.beginFollowing(1);
     civilian.updatePosition({ x: 1024, y: 1072 });
     const infected = sim.spawnInfected({
-      x: 1024, y: 1072, entryTile: { column: 30, row: 33 },
+      x: 1024, y: 1072, entryTile: { column: 32, row: 33 },
       detectionRange: 100, attackRange: 40, attackInterval: FIXED_DT, damage: 8,
     });
     for (let index = 0; index < 10; index += 1) sim.update(FIXED_DT);
