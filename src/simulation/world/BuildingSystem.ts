@@ -26,6 +26,9 @@ export interface AccessPersistentState {
   readonly id: string;
   readonly state: AccessState;
   readonly health: number;
+  readonly reinforcementLevel?: number;
+  readonly barricadeLevel?: number;
+  readonly lockLevel?: number;
 }
 export interface AccessSnapshot {
   readonly id: string;
@@ -33,6 +36,9 @@ export interface AccessSnapshot {
   readonly state: AccessState;
   readonly health: number;
   readonly maxHealth: number;
+  readonly reinforcementLevel: number;
+  readonly barricadeLevel: number;
+  readonly lockLevel: number;
   readonly cells: readonly TilePosition[];
 }
 const DEFAULT_WEIGHTS: AccessWeightConfig = {
@@ -79,22 +85,31 @@ function toCells(definition: AccessDefinition, tileSize: number, grid: GridMap):
 export class BuildingAccess {
   readonly id: string;
   readonly kind: AccessKind;
-  readonly maxHealth: number;
+  private readonly baseMaxHealth: number;
+  private currentMaxHealth: number;
   readonly cells: readonly TilePosition[];
   private currentHealth: number;
   private currentState: AccessState;
+  private currentReinforcementLevel = 0;
+  private currentBarricadeLevel = 0;
+  private currentLockLevel = 0;
   constructor(definition: AccessDefinition, state: AccessState, cells: readonly TilePosition[]) {
     if (!definition.id.trim()) throw new RangeError('Access id cannot be empty.');
     this.id = definition.id;
     this.kind = definition.kind;
-    this.maxHealth = definition.maxHealth ?? (definition.kind === 'window' ? 60 : 120);
-    if (!Number.isFinite(this.maxHealth) || this.maxHealth <= 0) throw new RangeError('Access maxHealth must be positive.');
-    this.currentHealth = this.maxHealth;
+    this.baseMaxHealth = definition.maxHealth ?? (definition.kind === 'window' ? 60 : 120);
+    if (!Number.isFinite(this.baseMaxHealth) || this.baseMaxHealth <= 0) throw new RangeError('Access maxHealth must be positive.');
+    this.currentMaxHealth = this.baseMaxHealth;
+    this.currentHealth = state === 'broken' ? 0 : this.currentMaxHealth;
     this.currentState = state;
     this.cells = cells.map((cell) => ({ ...cell }));
   }
   get state(): AccessState { return this.currentState; }
   get health(): number { return this.currentHealth; }
+  get maxHealth(): number { return this.currentMaxHealth; }
+  get reinforcementLevel(): number { return this.currentReinforcementLevel; }
+  get barricadeLevel(): number { return this.currentBarricadeLevel; }
+  get lockLevel(): number { return this.currentLockLevel; }
   get isPassable(): boolean { return this.currentState === 'open' || this.currentState === 'broken'; }
   get isDestroyed(): boolean { return this.currentState === 'broken'; }
   canTraverse(actor: ActorKind): boolean {
@@ -104,6 +119,7 @@ export class BuildingAccess {
   }
   interact(actor: ActorKind, hasKey = false): boolean {
     if (this.currentState === 'broken') return false;
+    if (this.currentState === 'barricaded' && actor === 'police') return this.removeBarricade();
     if (this.isPassable) {
       this.currentState = 'closed';
       return true;
@@ -120,23 +136,86 @@ export class BuildingAccess {
   }
   takeDamage(amount: number): number {
     if (!Number.isFinite(amount) || amount <= 0 || this.isDestroyed) return 0;
-    const applied = Math.min(amount, this.currentHealth);
+    const damageMultiplier = this.currentState === 'barricaded'
+      ? 0.5
+      : this.currentState === 'locked' ? 1 - this.currentLockLevel * 0.15 : 1;
+    const applied = Math.min(amount * damageMultiplier, this.currentHealth);
     this.currentHealth -= applied;
-    if (this.currentHealth === 0) this.currentState = 'broken';
+    if (this.currentHealth === 0) {
+      this.currentState = 'broken';
+      this.currentBarricadeLevel = 0;
+      this.currentLockLevel = 0;
+    }
     return applied;
   }
-  restoreState(state: AccessState, health: number): void {
+  repair(maxAmount = Number.POSITIVE_INFINITY): number {
+    if (!Number.isFinite(maxAmount) && maxAmount !== Number.POSITIVE_INFINITY || maxAmount <= 0) return 0;
+    const missing = this.currentMaxHealth - this.currentHealth;
+    const restored = Math.min(missing, maxAmount);
+    if (restored <= 0) return 0;
+    this.currentHealth += restored;
+    if (this.currentState === 'broken') this.currentState = 'closed';
+    return restored;
+  }
+  reinforce(): boolean {
+    if (this.currentReinforcementLevel >= 2 || this.currentState === 'broken') return false;
+    const increase = Math.ceil(this.currentMaxHealth * 0.2);
+    this.currentMaxHealth += increase;
+    this.currentHealth += increase;
+    this.currentReinforcementLevel += 1;
+    return true;
+  }
+  installBarricade(): boolean {
+    if (this.currentBarricadeLevel >= 1 || this.currentState !== 'closed') return false;
+    this.currentBarricadeLevel = 1;
+    this.currentState = 'barricaded';
+    return true;
+  }
+  upgradeLock(): boolean {
+    if (this.currentLockLevel >= 2 || !['closed', 'locked'].includes(this.currentState)) return false;
+    this.currentLockLevel += 1;
+    this.currentState = 'locked';
+    return true;
+  }
+  removeBarricade(): boolean {
+    if (this.currentBarricadeLevel === 0 || this.currentState !== 'barricaded') return false;
+    this.currentBarricadeLevel = 0;
+    this.currentState = 'closed';
+    return true;
+  }
+  restoreState(state: AccessState, health: number, upgrades?: {
+    readonly reinforcementLevel?: number; readonly barricadeLevel?: number; readonly lockLevel?: number;
+  }): void {
+    const reinforcementLevel = upgrades?.reinforcementLevel ?? 0;
+    const barricadeLevel = upgrades?.barricadeLevel ?? (state === 'barricaded' ? 1 : 0);
+    const lockLevel = upgrades?.lockLevel ?? 0;
     if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(state) ||
-        !Number.isFinite(health) || health < 0 || health > this.maxHealth ||
-        (health === 0 && state !== 'broken')) {
+        !Number.isInteger(reinforcementLevel) || reinforcementLevel < 0 || reinforcementLevel > 2 ||
+        !Number.isInteger(barricadeLevel) || barricadeLevel < 0 || barricadeLevel > 1 ||
+        !Number.isInteger(lockLevel) || lockLevel < 0 || lockLevel > 2 ||
+        ((health === 0) !== (state === 'broken')) ||
+        ((state === 'barricaded') !== (barricadeLevel === 1))) {
       throw new RangeError(`Invalid persisted state for access ${this.id}.`);
     }
+    let restoredMaxHealth = this.baseMaxHealth;
+    for (let level = 0; level < reinforcementLevel; level += 1) {
+      restoredMaxHealth += Math.ceil(restoredMaxHealth * 0.2);
+    }
+    if (!Number.isFinite(health) || health < 0 || health > restoredMaxHealth) {
+      throw new RangeError(`Invalid persisted health for access ${this.id}.`);
+    }
+    this.currentReinforcementLevel = reinforcementLevel;
+    this.currentBarricadeLevel = barricadeLevel;
+    this.currentLockLevel = lockLevel;
+    this.currentMaxHealth = restoredMaxHealth;
     this.currentState = state;
     this.currentHealth = health;
   }
   snapshot(): AccessSnapshot {
     return { id: this.id, kind: this.kind, state: this.currentState, health: this.currentHealth,
-      maxHealth: this.maxHealth, cells: this.cells.map((cell) => ({ ...cell })) };
+      maxHealth: this.maxHealth, reinforcementLevel: this.reinforcementLevel,
+      barricadeLevel: this.barricadeLevel, lockLevel: this.lockLevel,
+      cells: this.cells.map((cell) => ({ ...cell })) };
   }
 }
 export class BuildingSystem {
@@ -169,6 +248,9 @@ export class BuildingSystem {
       id: access.id,
       state: access.state,
       health: access.health,
+      reinforcementLevel: access.reinforcementLevel,
+      barricadeLevel: access.barricadeLevel,
+      lockLevel: access.lockLevel,
     }));
   }
   restoreState(states: readonly AccessPersistentState[]): void {
@@ -183,15 +265,35 @@ export class BuildingSystem {
     for (const access of this.accesses) {
       const saved = byId.get(access.id);
       if (!saved) throw new RangeError(`Persisted state is missing access ${access.id}.`);
+      const reinforcementLevel = saved.reinforcementLevel ?? 0;
+      const barricadeLevel = saved.barricadeLevel ?? (saved.state === 'barricaded' ? 1 : 0);
+      const lockLevel = saved.lockLevel ?? 0;
+      let maximumHealth = access.maxHealth;
+      if (Number.isInteger(reinforcementLevel) && reinforcementLevel >= 0 && reinforcementLevel <= 2) {
+        for (let level = 0; level < reinforcementLevel; level += 1) {
+          maximumHealth += Math.ceil(maximumHealth * 0.2);
+        }
+      }
+      const legacyBrokenHealth = saved.state === 'broken' &&
+        saved.reinforcementLevel === undefined && saved.barricadeLevel === undefined &&
+        saved.lockLevel === undefined && saved.health === access.maxHealth;
+      const normalizedHealth = legacyBrokenHealth ? 0 : saved.health;
       if (!['open', 'closed', 'locked', 'barricaded', 'broken'].includes(saved.state) ||
-          !Number.isFinite(saved.health) || saved.health < 0 || saved.health > access.maxHealth ||
-          (saved.health === 0 && saved.state !== 'broken')) {
+          !Number.isFinite(normalizedHealth) || normalizedHealth < 0 || normalizedHealth > maximumHealth ||
+          !Number.isInteger(reinforcementLevel) || reinforcementLevel < 0 || reinforcementLevel > 2 ||
+          !Number.isInteger(barricadeLevel) || barricadeLevel < 0 || barricadeLevel > 1 ||
+          !Number.isInteger(lockLevel) || lockLevel < 0 || lockLevel > 2 ||
+          ((saved.state === 'barricaded') !== (barricadeLevel === 1)) ||
+          ((normalizedHealth === 0) !== (saved.state === 'broken'))) {
         throw new RangeError(`Invalid persisted state for access ${access.id}.`);
       }
     }
     for (const access of this.accesses) {
       const saved = byId.get(access.id)!;
-      access.restoreState(saved.state, saved.health);
+      const legacyBrokenHealth = saved.state === 'broken' &&
+        saved.reinforcementLevel === undefined && saved.barricadeLevel === undefined &&
+        saved.lockLevel === undefined && saved.health === access.maxHealth;
+      access.restoreState(saved.state, legacyBrokenHealth ? 0 : saved.health, saved);
     }
   }
   getNavigationGrid(actor: ActorKind): GridMap {

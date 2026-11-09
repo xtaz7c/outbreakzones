@@ -11,6 +11,7 @@ import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptio
 import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import { BuildingSystem, type AccessSnapshot, type ActorKind } from './world/BuildingSystem';
+import { BuildingMaintenanceSystem, type MaintenanceAction, type MaintenanceState } from './world/BuildingMaintenanceSystem';
 import type { TilePosition } from './world/WorldConfig';
 import { WaveSystem, type WaveDefinition, type WaveSpawnPoint, type WavePhase } from './WaveSystem';
 
@@ -61,6 +62,7 @@ export class Simulation {
   private randomState = 0x6d2b79f5;
   private worldGrid: GridMap | null = null;
   private buildingSystem: BuildingSystem | null = null;
+  private maintenanceSystem: BuildingMaintenanceSystem | null = null;
   private tileSize = WORLD_TILE_SIZE;
   private waveSystem: WaveSystem | null = null;
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
@@ -93,6 +95,20 @@ export class Simulation {
 
   setBuildingSystem(system: BuildingSystem): void {
     this.buildingSystem = system;
+    this.maintenanceSystem = new BuildingMaintenanceSystem(system);
+  }
+
+  getMaintenanceState(): MaintenanceState | null {
+    return this.maintenanceSystem?.getState() ?? null;
+  }
+
+  restoreMaintenanceState(state: MaintenanceState): void {
+    if (!this.maintenanceSystem) throw new Error('Building maintenance is not initialized.');
+    this.maintenanceSystem.restoreState(state);
+  }
+
+  startBuildingMaintenance(accessId: string, action: MaintenanceAction): boolean {
+    return this.maintenanceSystem?.start(accessId, action) ?? false;
   }
 
   configureWaves(spawnPoints: readonly WaveSpawnPoint[], waves: readonly WaveDefinition[], preparationDuration = 8): void {
@@ -313,6 +329,11 @@ export class Simulation {
 
   private step(dt: number): void {
     this.elapsed += dt;
+    const completedMaintenance = this.maintenanceSystem?.update(dt) ?? [];
+    if (completedMaintenance.length > 0) {
+      this.replanOfficerRoutes();
+      this.replanCivilianEscorts();
+    }
     for (const officer of this.officers) {
       officer.update(dt, this.tileSize);
     }
