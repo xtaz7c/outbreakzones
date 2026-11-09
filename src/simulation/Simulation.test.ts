@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FIXED_DT, Simulation } from './Simulation';
+import { Civilian } from './Civilian';
 import { GridMap } from './world/GridMap';
 import { BuildingSystem } from './world/BuildingSystem';
 
@@ -14,6 +15,8 @@ describe('Simulation', () => {
     const state = sim.getState();
     expect(state.officerCount).toBe(3);
     expect(state.infectedCount).toBe(0);
+    expect(state.civilianCount).toBe(2);
+    expect(state.rescuedCivilianCount).toBe(0);
     expect(state.elapsed).toBe(0);
     expect(state.paused).toBe(false);
   });
