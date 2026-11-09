@@ -13,8 +13,8 @@ export const WORLD_CONFIG = Object.freeze({
   /** Tamanho de cada célula em pixels lógicos. */
   tileSize: 32,
   /** Resolução lógica configurada no Phaser. */
-  viewportWidth: 1280,
-  viewportHeight: 720,
+  viewportWidth: 1920,
+  viewportHeight: 1080,
 });
 
 export const WORLD_WIDTH = WORLD_CONFIG.columns * WORLD_CONFIG.tileSize;
