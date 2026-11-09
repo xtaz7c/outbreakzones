@@ -66,6 +66,7 @@ export class Simulation {
   private tileSize = WORLD_TILE_SIZE;
   private waveSystem: WaveSystem | null = null;
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
+  private requireCivilianExtraction = true;
   private extractionZone = { x: 1024, y: 1120, radius: 72 };
 
   constructor(combatOptions: CombatSystemOptions = {}) {
@@ -111,8 +112,14 @@ export class Simulation {
     return this.maintenanceSystem?.start(accessId, action) ?? false;
   }
 
-  configureWaves(spawnPoints: readonly WaveSpawnPoint[], waves: readonly WaveDefinition[], preparationDuration = 8): void {
+  configureWaves(
+    spawnPoints: readonly WaveSpawnPoint[],
+    waves: readonly WaveDefinition[],
+    preparationDuration = 8,
+    requireCivilianExtraction = true,
+  ): void {
     this.waveSystem = new WaveSystem(spawnPoints, waves, preparationDuration, () => this.nextRandom());
+    this.requireCivilianExtraction = requireCivilianExtraction;
     this.missionStatus = 'playing';
   }
 
@@ -381,7 +388,7 @@ export class Simulation {
       });
     });
     if (this.waveSystem?.getState().phase === 'completed' && this.infected.length === 0 &&
-        this.civilians.every((civilian) => civilian.isRescued)) {
+        (!this.requireCivilianExtraction || this.civilians.every((civilian) => civilian.isRescued))) {
       this.missionStatus = 'victory';
     }
   }
