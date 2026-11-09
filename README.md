@@ -35,6 +35,18 @@ npm run dev
 
 Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`). Sempre versione `package.json` e `package-lock.json` juntos; não edite manualmente as entradas de dependências do lockfile.
 
+## Áudio
+
+O primeiro pacote de áudio usa arquivos WAV originais do projeto em `public/audio/`:
+
+- `ambient-loop.wav`: camada ambiente contínua, em volume baixo.
+- `pistol-shot.wav`: disparo das armas dos policiais.
+- `infected-groan.wav`: vocalização ocasional ao surgir um infectado.
+
+O carregamento é feito na `BootScene` e a reprodução é controlada por `AudioManager`, separado da simulação. Pressione **M** durante a missão para silenciar ou reativar o áudio. Os efeitos são intencionalmente discretos nesta primeira integração; mixagem, áudio posicional e sons de interação serão refinados em etapas posteriores.
+
+Os arquivos são efeitos sonoros originais sintetizados para o protótipo, em WAV mono de baixa taxa de amostragem, sem dependência de bibliotecas ou serviços externos.
+
 ## Validação
 
 Execute antes de abrir um Pull Request:
@@ -54,6 +66,7 @@ npm run build
 | Mover unidades | Clique direito |
 | Pausar / Retomar | Espaço |
 | Câmera | WASD / setas + scroll (zoom) |
+| Silenciar / reativar áudio | M |
 | Manter posição das unidades selecionadas | X |
 | Segurar fogo das unidades selecionadas | H |
 | Retomar engajamento automático | G |
