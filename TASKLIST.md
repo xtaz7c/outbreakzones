@@ -241,6 +241,8 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 
 **Saída da fase:** identidade visual coerente e feedback suficiente para interpretar as ações.
 
+**PR #32 aberta:** os 12 WAVs enviados foram conectados ao preload e ao `AudioManager`, com quatro variações por grupo (disparos, suspense e infectados). CI passou; T102/T103 permanecem desmarcadas até QA auditivo no navegador e integração na `main`.
+
 **Áudio — PR #32 aberta:** 12 WAVs enviados ao repositório estão ligados ao `BootScene`/`AudioManager` (4 variações de disparo, 4 faixas de suspense e 4 vocalizações). CI passou; T102/T103 continuam desmarcadas até QA auditivo no navegador e integração na `main`.
 
 ### Fase 11 — Testes, estabilidade e entrega web
