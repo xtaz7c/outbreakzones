@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Infected } from '../Infected';
-import { GridMap } from './GridMap';
+import { Infected } from '../../entities/Infected';
+import { GridMap } from '../../world/GridMap';
 import { DeployableStructureSystem } from './DeployableStructureSystem';
 
 describe('DeployableStructureSystem', () => {

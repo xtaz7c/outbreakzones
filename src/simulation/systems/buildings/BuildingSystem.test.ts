@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BuildingSystem, type AccessDefinition } from './BuildingSystem';
-import { GridMap } from './GridMap';
+import { GridMap } from '../../world/GridMap';
 
 const definitions: AccessDefinition[] = [
   { id: 'front', kind: 'door', x: 32, y: 32, width: 32, height: 32 },

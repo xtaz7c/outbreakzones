@@ -1,5 +1,5 @@
-import { GridMap } from './GridMap';
-import type { TilePosition } from './WorldConfig';
+import { GridMap } from '../../world/GridMap';
+import type { TilePosition } from '../../world/WorldConfig';
 
 export type AccessKind = 'door' | 'window' | 'garage';
 export type AccessState = 'open' | 'closed' | 'locked' | 'barricaded' | 'broken';
