@@ -217,9 +217,9 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T093 — P0** Permitir reiniciar a missão.
 - [ ] **T094 — P1** Garantir legibilidade e usabilidade em diferentes resoluções desktop.
 
-**Implementação em andamento na branch `feat/hud-civilian-status-t088`:** o painel da missão passa a resumir quantos civis aguardam resgate, quantos estão em escolta e quantos foram extraídos, além do progresso total. T088 permanece desmarcada até CI e QA visual.
+**PR #31 merged:** HUD exibe civis aguardando, em escolta e extraídos, além do progresso total. T088 permanece desmarcada até QA visual no navegador.
 
-**Implementação em andamento na PR #30:** o HUD/minimapa está sendo corrigido para permanecer em coordenadas de viewport durante scroll/zoom. A equipe também passa a exibir vida e munição/recarga de cada policial (T086). T085–T086 continuam desmarcadas até CI e QA no navegador.
+**PR #30 merged:** HUD/minimapa e controles estão ancorados à viewport, com vida e munição/recarga por policial. T085–T086 continuam desmarcadas até QA visual/interativo no navegador.
 
 **Saída da fase:** jogador entende o estado da missão e consegue executar todas as ações necessárias pela interface.
 
@@ -355,4 +355,4 @@ Uma tarefa só pode ser marcada como concluída quando:
 - [ ] O resultado foi revisado no navegador, quando envolve gameplay ou interface.
 
 
-**Ajuste de interface pendente na `main`:** a implementação da PR #28 posicionou os painéis do HUD/minimapa em coordenadas do mundo, fazendo-os sair do enquadramento durante o deslocamento da câmera. O requisito correto é HUD fixo à viewport; a branch `fix/tactical-hud-viewport-anchor-t085` corrige o `scrollFactor` e a detecção de cliques para coordenadas de tela. A validação visual e em diferentes resoluções continua pendente.
+**Correção integrada na PR #30:** o HUD/minimapa agora permanece fixo à viewport durante scroll/zoom. O ajuste de escala responsiva está na PR #33; validação visual em diferentes resoluções continua pendente.
