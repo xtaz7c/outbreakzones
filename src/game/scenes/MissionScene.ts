@@ -37,12 +37,29 @@ interface TacticalInfected {
   readonly container: Phaser.GameObjects.Container;
 }
 
+interface MinimapVisibility {
+  officers: boolean;
+  civilians: boolean;
+  infected: boolean;
+}
+
+const MINIMAP_CONFIG_KEY = 'outbreakzones:minimap-visibility';
+const HUD_COLORS = {
+  ink: 0x111415,
+  panel: 0x1b2021,
+  metal: 0xb9b9b0,
+  muted: 0x858a87,
+  paper: 0xe8e3d8,
+  red: 0xc33a36,
+  officer: 0x5c9be6,
+  civilian: 0xe7c66a,
+  infected: 0xc33a36,
+} as const;
+
 export class MissionScene extends Phaser.Scene {
   private simulation!: Simulation;
   private audio!: AudioManager;
   private readonly playedCombatEvents = new WeakSet<CombatEvent>();
-  private statusText!: Phaser.GameObjects.Text;
-  private fullscreenText!: Phaser.GameObjects.Text;
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
   private selectionGraphics!: Phaser.GameObjects.Graphics;
   private combatGraphics!: Phaser.GameObjects.Graphics;
@@ -64,6 +81,37 @@ export class MissionScene extends Phaser.Scene {
   private resultShown = false;
   private lastPersistedBuildingState = '';
   private lastPersistedMaintenanceState = '';
+  private hudPanels!: Phaser.GameObjects.Graphics;
+  private minimapGraphics!: Phaser.GameObjects.Graphics;
+  private missionText!: Phaser.GameObjects.Text;
+  private teamText!: Phaser.GameObjects.Text;
+  private settingsButton!: Phaser.GameObjects.Text;
+  private fullscreenButton!: Phaser.GameObjects.Text;
+  private pauseOverlay!: Phaser.GameObjects.Rectangle;
+  private pausePanel!: Phaser.GameObjects.Rectangle;
+  private pauseTitle!: Phaser.GameObjects.Text;
+  private pauseSubtitle!: Phaser.GameObjects.Text;
+  private resumeButton!: Phaser.GameObjects.Text;
+  private resetButton!: Phaser.GameObjects.Text;
+  private settingsMenuButton!: Phaser.GameObjects.Text;
+  private homeButton!: Phaser.GameObjects.Text;
+  private settingsBackButton!: Phaser.GameObjects.Text;
+  private pauseSettingsOpen = false;
+  private officerToggle!: Phaser.GameObjects.Text;
+  private civilianToggle!: Phaser.GameObjects.Text;
+  private infectedToggle!: Phaser.GameObjects.Text;
+  private minimapVisibility: MinimapVisibility = {
+    officers: true,
+    civilians: true,
+    infected: true,
+  };
+  private pauseMenuOpen = false;
+  private readonly hudBounds = {
+    settings: { x: 20, y: 20, width: 124, height: 56 },
+    mission: { x: 20, y: 88, width: 276, height: 142 },
+    minimap: { x: 0, y: 20, width: 320, height: 354 },
+    team: { x: 0, y: 384, width: 320, height: 154 },
+  };
 
   constructor() {
     super('MissionScene');
@@ -106,11 +154,10 @@ export class MissionScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown-SPACE', () => {
       if (this.simulation.getState().missionStatus !== 'playing') return;
-      this.isPaused = !this.isPaused;
-      this.simulation.setPaused(this.isPaused);
+      this.setPausedFromKeyboard();
     });
 
-    this.updateStatusText(0);
+    this.updateHud();
   }
 
   update(_time: number, delta: number): void {
@@ -121,13 +168,14 @@ export class MissionScene extends Phaser.Scene {
     this.persistBuildingState();
     this.persistMaintenanceState();
     this.updateCamera(dt);
+    this.clampCamera();
     if (!this.isPaused) {
       this.updateOfficers(dt);
     }
     this.updateInfectedVisuals();
     this.updateCivilianVisuals();
     this.updateAccessVisuals();
-    this.updateStatusText(dt);
+    this.updateHud();
   }
 
   private createWorld(): void {
@@ -205,14 +253,14 @@ export class MissionScene extends Phaser.Scene {
     this.lastPersistedMaintenanceState = this.serializeMaintenanceState();
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
-    this.simulation.setExtractionZone({ x: 1024, y: 1120, radius: 72 });
-    this.add.circle(1024, 1120, 72, 0x55c878, 0.08)
+    this.simulation.setExtractionZone({ x: 1280, y: 720, radius: 72 });
+    this.add.circle(1280, 720, 72, 0x55c878, 0.08)
       .setStrokeStyle(3, 0x55c878, 0.85).setDepth(70);
     const spawnPoints: WaveSpawnPoint[] = [
       { id: 'west', x: 128, y: 640, entryTile: { column: 21, row: 18 } },
-      { id: 'east', x: 1920, y: 640, entryTile: { column: 42, row: 18 } },
+      { id: 'east', x: 2496, y: 720, entryTile: { column: 77, row: 22 } },
       { id: 'north', x: 1024, y: 64, entryTile: { column: 32, row: 9 } },
-      { id: 'south', x: 1024, y: 1216, entryTile: { column: 32, row: 28 } },
+      { id: 'south', x: 1280, y: 1408, entryTile: { column: 40, row: 43 } },
     ];
     this.simulation.configureWaves(spawnPoints, [
       { infectedCount: 3, spawnInterval: 1.4 },
@@ -345,45 +393,384 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    // O Dev Hub pertence ao mundo: acompanha o movimento da câmera e
-    // também respeita o zoom, em vez de ficar preso à viewport.
-    this.statusText = this.add
-      .text(16, 16, '', {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#e0e0e0',
-        backgroundColor: '#000000aa',
-        padding: { x: 8, y: 6 },
-      })
-      .setDepth(1000);
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const viewX = this.cameras.main.scrollX;
+    const viewY = this.cameras.main.scrollY;
+    const mapX = viewX + width - 340;
+    const mapY = viewY + 20;
 
-    this.fullscreenText = this.add
-      .text(this.scale.width - 16, 16, 'Fullscreen [F]', {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#ffffff',
-        backgroundColor: '#000000cc',
-        padding: { x: 10, y: 8 },
-      })
-      .setOrigin(1, 0)
-      .setScrollFactor(0)
-      .setDepth(1000)
-      .setInteractive({ useHandCursor: true });
+    this.hudBounds.settings.x = viewX + 20;
+    this.hudBounds.settings.y = viewY + 20;
+    this.hudBounds.mission.x = viewX + 20;
+    this.hudBounds.mission.y = viewY + 88;
+    this.hudBounds.minimap.x = mapX;
+    this.hudBounds.minimap.y = mapY;
+    this.hudBounds.team.x = mapX;
+    this.hudBounds.team.y = mapY + 364;
 
-    this.fullscreenText.on('pointerdown', () => this.toggleFullscreen());
-    this.scale.on('enterfullscreen', () => this.fullscreenText.setText('Exit fullscreen [F]'));
-    this.scale.on('leavefullscreen', () => this.fullscreenText.setText('Fullscreen [F]'));
-
+    // The tactical HUD belongs to the world layer and moves with the camera.
+    this.hudPanels = this.add.graphics().setDepth(1500);
+    this.minimapGraphics = this.add.graphics().setDepth(1502);
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
     this.accessGraphics = this.add.graphics().setDepth(80);
 
-    this.resultPanel = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, 520, 190, 0x080b10, 0.92)
-      .setScrollFactor(0).setDepth(2000).setStrokeStyle(2, 0xd7e0ea).setVisible(false);
-    this.resultText = this.add.text(this.scale.width / 2, this.scale.height / 2, '', {
-      fontFamily: 'monospace', fontSize: '26px', color: '#ffffff', align: 'center',
+    this.hudPanels.fillStyle(HUD_COLORS.panel, 0.94);
+    this.hudPanels.lineStyle(1, HUD_COLORS.metal, 0.24);
+    this.hudPanels.fillRoundedRect(viewX + 20, viewY + 20, 124, 56, 8);
+    this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 20, 124, 56, 8);
+    this.hudPanels.fillRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
+    this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
+    this.hudPanels.fillRoundedRect(mapX, mapY, 320, 354, 12);
+    this.hudPanels.strokeRoundedRect(mapX, mapY, 320, 354, 12);
+    this.hudPanels.fillStyle(HUD_COLORS.officer, 1);
+    this.hudPanels.fillCircle(mapX + 18, mapY + 338, 3);
+    this.hudPanels.fillStyle(HUD_COLORS.civilian, 1);
+    this.hudPanels.fillCircle(mapX + 112, mapY + 338, 3);
+    this.hudPanels.fillStyle(HUD_COLORS.infected, 1);
+    this.hudPanels.fillCircle(mapX + 194, mapY + 338, 3);
+    this.hudPanels.fillRoundedRect(mapX, mapY + 364, 320, 154, 8);
+    this.hudPanels.strokeRoundedRect(mapX, mapY + 364, 320, 154, 8);
+
+    this.settingsButton = this.add.text(viewX + 48, viewY + 48, '⚙', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '29px',
+      color: '#e8e3d8',
+    }).setOrigin(0.5).setDepth(1505)
+      .setInteractive({ useHandCursor: true });
+    this.settingsButton.on('pointerdown', () => this.openPauseMenu());
+
+    // Keep fullscreen accessible to mouse and touch users; keyboard F remains available.
+    this.fullscreenButton = this.add.text(viewX + 112, viewY + 48, '⛶', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '27px',
+      color: '#e8e3d8',
+    }).setOrigin(0.5).setDepth(1505)
+      .setInteractive({ useHandCursor: true });
+    this.fullscreenButton.setData('action-label', 'Entrar em tela cheia');
+    this.fullscreenButton.on('pointerdown', () => this.toggleFullscreen());
+    this.scale.on('enterfullscreen', () => {
+      this.fullscreenButton.setText('×').setData('action-label', 'Sair da tela cheia');
+    });
+    this.scale.on('leavefullscreen', () => {
+      this.fullscreenButton.setText('⛶').setData('action-label', 'Entrar em tela cheia');
+    });
+
+    this.missionText = this.add.text(viewX + 36, viewY + 102, '', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '13px',
+      color: '#e8e3d8',
+      lineSpacing: 8,
+      wordWrap: { width: 244 },
+    }).setDepth(1505);
+
+    this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '9px',
+      fontStyle: 'bold',
+      color: '#b9b9b0',
+      letterSpacing: 1.4,
+    }).setDepth(1505);
+    [
+      { x: mapX + 28, label: 'POLICIAIS' },
+      { x: mapX + 122, label: 'CIVIS' },
+      { x: mapX + 204, label: 'INFECTADOS' },
+    ].forEach(({ x, label }) => {
+      this.add.text(x, mapY + 211, label, {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '7px',
+        color: '#858a87',
+      }).setDepth(1505);
+    });
+
+    this.teamText = this.add.text(mapX + 12, mapY + 376, '', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '10px',
+      color: '#e8e3d8',
+      lineSpacing: 8,
+    }).setDepth(1505);
+
+    const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
+      .setDepth(1507)
+      .setInteractive({ useHandCursor: true });
+    teamHitArea.on('pointerdown', () => this.selectAllOfficers());
+
+    this.pauseOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x080a0a, 0.72)
+      .setScrollFactor(0).setDepth(1900).setVisible(false);
+    this.pausePanel = this.add.rectangle(width / 2, height / 2, 410, 440, HUD_COLORS.panel, 1)
+      .setScrollFactor(0).setDepth(1901).setStrokeStyle(1, HUD_COLORS.red, 0.8).setVisible(false);
+    this.pauseTitle = this.add.text(width / 2, height / 2 - 188, 'OPERAÇÃO PAUSADA', {
+      fontFamily: 'Barlow Condensed, Impact, sans-serif',
+      fontSize: '32px',
+      fontStyle: 'bold',
+      color: '#e8e3d8',
+      letterSpacing: 1.5,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
+    this.pauseSubtitle = this.add.text(width / 2, height / 2 - 148, 'ESCOLHA UMA AÇÃO', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '9px',
+      color: '#858a87',
+      letterSpacing: 1.4,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
+
+    this.officerToggle = this.createPauseToggle(width / 2, height / 2 - 64, 'POLICIAIS', 'officers');
+    this.civilianToggle = this.createPauseToggle(width / 2, height / 2 - 8, 'CIVIS', 'civilians');
+    this.infectedToggle = this.createPauseToggle(width / 2, height / 2 + 48, 'INFECTADOS', 'infected');
+
+    this.resumeButton = this.createPauseAction(width / 2, height / 2 - 92, 'RETOMAR', () => this.closePauseMenu());
+    this.resetButton = this.createPauseAction(width / 2, height / 2 - 24, 'RESETAR', () => this.restartMission());
+    this.settingsMenuButton = this.createPauseAction(width / 2, height / 2 + 44, 'CONFIGURAÇÕES', () => {
+      this.pauseSettingsOpen = true;
+      this.setPauseMenuVisible(true);
+    });
+    this.homeButton = this.createPauseAction(width / 2, height / 2 + 112, 'VOLTAR À TELA INICIAL', () => this.returnToHome());
+    this.settingsBackButton = this.createPauseAction(width / 2, height / 2 + 128, 'VOLTAR', () => {
+      this.pauseSettingsOpen = false;
+      this.setPauseMenuVisible(true);
+    });
+
+    this.resultPanel = this.add.rectangle(width / 2, height / 2, 520, 190, 0x111415, 0.96)
+      .setScrollFactor(0).setDepth(2000).setStrokeStyle(2, HUD_COLORS.red).setVisible(false);
+    this.resultText = this.add.text(width / 2, height / 2, '', {
+      fontFamily: 'Barlow Condensed, Impact, sans-serif',
+      fontSize: '26px',
+      color: '#e8e3d8',
+      align: 'center',
       padding: { x: 18, y: 12 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2001).setVisible(false);
+
+    this.loadMinimapVisibility();
+    this.refreshPauseMenuLabels();
+  }
+
+  private createPauseAction(
+    x: number,
+    y: number,
+    label: string,
+    action: () => void,
+  ): Phaser.GameObjects.Text {
+    const button = this.add.text(x, y, label, {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '12px',
+      fontStyle: 'bold',
+      color: '#fff5e9',
+      backgroundColor: '#252c2d',
+      padding: { x: 22, y: 12 },
+      fixedWidth: 280,
+      align: 'center',
+      letterSpacing: 1,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false)
+      .setInteractive({ useHandCursor: true });
+    button.on('pointerdown', action);
+    return button;
+  }
+
+  private createPauseToggle(
+    x: number,
+    y: number,
+    label: string,
+    key: keyof MinimapVisibility,
+  ): Phaser.GameObjects.Text {
+    const toggle = this.add.text(x, y, label, {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '11px',
+      color: '#e8e3d8',
+      backgroundColor: '#252c2d',
+      padding: { x: 16, y: 10 },
+      fixedWidth: 230,
+      align: 'left',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false)
+      .setInteractive({ useHandCursor: true });
+    toggle.on('pointerdown', () => {
+      this.minimapVisibility[key] = !this.minimapVisibility[key];
+      this.saveMinimapVisibility();
+      this.refreshPauseMenuLabels();
+      this.updateHud();
+    });
+    return toggle;
+  }
+
+  private loadMinimapVisibility(): void {
+    const saved = this.readStorage(MINIMAP_CONFIG_KEY);
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved) as Partial<MinimapVisibility>;
+      this.minimapVisibility = {
+        officers: parsed.officers !== false,
+        civilians: parsed.civilians !== false,
+        infected: parsed.infected !== false,
+      };
+    } catch {
+      this.minimapVisibility = { officers: true, civilians: true, infected: true };
+    }
+  }
+
+  private saveMinimapVisibility(): void {
+    this.writeStorage(MINIMAP_CONFIG_KEY, JSON.stringify(this.minimapVisibility));
+  }
+
+  private refreshPauseMenuLabels(): void {
+    const label = (name: string, enabled: boolean) => `${name}     [${enabled ? 'ATIVO' : 'OCULTO'}]`;
+    this.officerToggle.setText(label('POLICIAIS', this.minimapVisibility.officers));
+    this.civilianToggle.setText(label('CIVIS', this.minimapVisibility.civilians));
+    this.infectedToggle.setText(label('INFECTADOS', this.minimapVisibility.infected));
+  }
+
+  private openPauseMenu(): void {
+    if (this.simulation.getState().missionStatus !== 'playing' || this.pauseMenuOpen) return;
+    this.pauseMenuOpen = true;
+    this.pauseSettingsOpen = false;
+    this.isPaused = true;
+    this.simulation.setPaused(true);
+    this.setPauseMenuVisible(true);
+  }
+
+  private returnToHome(): void {
+    window.dispatchEvent(new Event('outbreakzones:return-home'));
+  }
+
+  private closePauseMenu(): void {
+    this.pauseMenuOpen = false;
+    this.isPaused = false;
+    this.simulation.setPaused(false);
+    this.setPauseMenuVisible(false);
+  }
+
+  private setPauseMenuVisible(visible: boolean): void {
+    [
+      this.pauseOverlay, this.pausePanel, this.pauseTitle, this.pauseSubtitle,
+    ].forEach((object) => object.setVisible(visible));
+    const mainActions = [this.resumeButton, this.resetButton, this.settingsMenuButton, this.homeButton];
+    const settingsActions = [
+      this.officerToggle, this.civilianToggle, this.infectedToggle, this.settingsBackButton,
+    ];
+    mainActions.forEach((object) => object.setVisible(visible && !this.pauseSettingsOpen));
+    settingsActions.forEach((object) => object.setVisible(visible && this.pauseSettingsOpen));
+    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'CONFIGURAÇÕES DO MINIMAPA' : 'ESCOLHA UMA AÇÃO');
+  }
+
+  private setPausedFromKeyboard(): void {
+    if (this.pauseMenuOpen) {
+      this.closePauseMenu();
+      return;
+    }
+    this.openPauseMenu();
+  }
+
+  private selectAllOfficers(): void {
+    this.selectedOfficerIds.clear();
+    for (const officer of this.simulation.getOfficers()) {
+      if (!officer.isIncapacitated) this.selectedOfficerIds.add(officer.id);
+    }
+    this.refreshSelectionVisuals();
+  }
+
+  private isHudPoint(x: number, y: number): boolean {
+    const worldPoint = this.cameras.main.getWorldPoint(x, y);
+    const inside = (rect: { x: number; y: number; width: number; height: number }) =>
+      worldPoint.x >= rect.x && worldPoint.x <= rect.x + rect.width &&
+      worldPoint.y >= rect.y && worldPoint.y <= rect.y + rect.height;
+    return inside(this.hudBounds.settings) || inside(this.hudBounds.mission) ||
+      inside(this.hudBounds.minimap) || inside(this.hudBounds.team) ||
+      this.pauseMenuOpen;
+  }
+
+  private updateHud(): void {
+    if (!this.simulation || !this.minimapGraphics) return;
+    const state = this.simulation.getState();
+    const civilians = this.simulation.getCivilians();
+    const officers = this.simulation.getOfficers();
+    const waveLabel = state.wavePhase === 'preparing'
+      ? `PRÓXIMA ONDA EM ${state.preparationRemaining.toFixed(0)}s`
+      : `ONDA ${state.waveNumber || 1} / ${state.totalWaves}`;
+    const objective = state.missionStatus === 'victory'
+      ? 'MISSÃO CONCLUÍDA'
+      : state.missionStatus === 'defeat'
+        ? 'EQUIPE INCAPACITADA'
+        : 'RESGATAR SOBREVIVENTES';
+    this.missionText.setText([
+      'MISSÃO 01  /  SETOR 07',
+      objective,
+      `CIVIS RESGATADOS  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
+      `AMEAÇAS ATIVAS  ${state.infectedCount}`,
+      waveLabel,
+    ].join('\n'));
+
+    const teamLines = officers.map((officer) => {
+      const selected = this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated;
+      const status = officer.isIncapacitated ? 'FORA DE COMBATE' : selected ? 'SELECIONADO' : 'OPERACIONAL';
+      const health = Math.max(0, Math.round((officer.health / officer.maxHealth) * 100));
+      return `[${selected ? '◆' : ' '}]${officer.id}  ${status.padEnd(16)} ${health}%`;
+    });
+    const maintenance = this.simulation.getMaintenanceState();
+    const maintenanceJobs = maintenance?.jobs.map((job) =>
+      \`\${job.action} \${job.accessId}: \${job.remaining.toFixed(1)}s\`).join(', ') || 'nenhum';
+    this.teamText.setText([
+      'EQUIPE  /  CLIQUE PARA SELECIONAR TODOS',
+      ...teamLines,
+      \`RECURSOS  \${maintenance?.resources.scrap ?? 0} sucata / \${maintenance?.resources.parts ?? 0} peças\`,
+      \`MANUTENÇÃO  \${maintenanceJobs}\`,
+    ].join('\\n'));
+
+    this.minimapGraphics.clear();
+    const mapX = this.hudBounds.minimap.x + 12;
+    const mapY = this.hudBounds.minimap.y + 30;
+    const mapWidth = 296;
+    const mapHeight = 296;
+    const markerInset = 14;
+    this.minimapGraphics.fillStyle(0x101516, 1);
+    this.minimapGraphics.fillRoundedRect(mapX, mapY, mapWidth, mapHeight, 12);
+    this.minimapGraphics.lineStyle(1, HUD_COLORS.metal, 0.3);
+    this.minimapGraphics.strokeRoundedRect(mapX, mapY, mapWidth, mapHeight, 12);
+
+    const toMinimap = (position: { x: number; y: number }) => ({
+      x: mapX + markerInset + Phaser.Math.Clamp(position.x / this.cameraWorldWidth, 0, 1) * (mapWidth - markerInset * 2),
+      y: mapY + markerInset + Phaser.Math.Clamp(position.y / this.cameraWorldHeight, 0, 1) * (mapHeight - markerInset * 2),
+    });
+
+    if (this.minimapVisibility.civilians) {
+      for (const civilian of civilians) {
+        if (civilian.state === 'extracted') continue;
+        const point = toMinimap(civilian.position);
+        this.minimapGraphics.fillStyle(HUD_COLORS.civilian, 1);
+        this.minimapGraphics.fillCircle(point.x, point.y, 3.5);
+      }
+    }
+    if (this.minimapVisibility.infected) {
+      for (const infected of this.simulation.getInfected()) {
+        const point = toMinimap(infected.position);
+        this.minimapGraphics.fillStyle(HUD_COLORS.infected, 1);
+        this.minimapGraphics.fillCircle(point.x, point.y, 3.5);
+      }
+    }
+    if (this.minimapVisibility.officers) {
+      for (const officer of officers) {
+        const point = toMinimap(officer.position);
+        this.minimapGraphics.fillStyle(officer.isIncapacitated ? HUD_COLORS.muted : HUD_COLORS.officer, 1);
+        this.minimapGraphics.fillCircle(point.x, point.y, this.selectedOfficerIds.has(officer.id) ? 5 : 4);
+        if (this.selectedOfficerIds.has(officer.id)) {
+          this.minimapGraphics.lineStyle(1, HUD_COLORS.paper, 0.95);
+          this.minimapGraphics.strokeCircle(point.x, point.y, 7);
+        }
+      }
+    }
+
+    const camera = this.cameras.main;
+    const viewX = mapX + Phaser.Math.Clamp(camera.scrollX / this.cameraWorldWidth, 0, 1) * mapWidth;
+    const viewY = mapY + Phaser.Math.Clamp(camera.scrollY / this.cameraWorldHeight, 0, 1) * mapHeight;
+    const viewWidth = Phaser.Math.Clamp((camera.width / camera.zoom) / this.cameraWorldWidth * mapWidth, 2, mapWidth);
+    const viewHeight = Phaser.Math.Clamp((camera.height / camera.zoom) / this.cameraWorldHeight * mapHeight, 2, mapHeight);
+    this.minimapGraphics.lineStyle(1, HUD_COLORS.paper, 0.8);
+    this.minimapGraphics.strokeRoundedRect(
+      Phaser.Math.Clamp(viewX, mapX + markerInset, mapX + mapWidth - markerInset - viewWidth),
+      Phaser.Math.Clamp(viewY, mapY + markerInset, mapY + mapHeight - markerInset - viewHeight),
+      Math.min(viewWidth, mapWidth - markerInset * 2),
+      Math.min(viewHeight, mapHeight - markerInset * 2),
+      4,
+    );
+
+    this.settingsButton.setColor(this.pauseMenuOpen ? '#c33a36' : '#e8e3d8');
   }
 
   private createCameraControls(): void {
@@ -405,8 +792,13 @@ export class MissionScene extends Phaser.Scene {
         deltaY: number,
       ) => {
         const camera = this.cameras.main;
+        const minimumZoom = Math.max(
+          MIN_CAMERA_ZOOM,
+          camera.width / this.cameraWorldWidth,
+          camera.height / this.cameraWorldHeight,
+        );
         const nextZoom = camera.zoom * (deltaY > 0 ? 0.9 : 1.1);
-        camera.setZoom(Phaser.Math.Clamp(nextZoom, MIN_CAMERA_ZOOM, MAX_CAMERA_ZOOM));
+        camera.setZoom(Phaser.Math.Clamp(nextZoom, minimumZoom, MAX_CAMERA_ZOOM));
         this.clampCamera();
       },
     );
@@ -423,6 +815,7 @@ export class MissionScene extends Phaser.Scene {
     this.input.mouse?.disableContextMenu();
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.isHudPoint(pointer.x, pointer.y)) return;
       if (pointer.button === 2) {
         this.issueMoveOrder(pointer.worldX, pointer.worldY);
         return;
@@ -761,6 +1154,12 @@ export class MissionScene extends Phaser.Scene {
 
   private clampCamera(): void {
     const camera = this.cameras.main;
+    const minimumZoom = Math.max(
+      MIN_CAMERA_ZOOM,
+      camera.width / this.cameraWorldWidth,
+      camera.height / this.cameraWorldHeight,
+    );
+    if (camera.zoom < minimumZoom) camera.setZoom(minimumZoom);
     const maxScrollX = Math.max(0, this.cameraWorldWidth - camera.width / camera.zoom);
     const maxScrollY = Math.max(0, this.cameraWorldHeight - camera.height / camera.zoom);
     camera.setScroll(
@@ -780,6 +1179,9 @@ export class MissionScene extends Phaser.Scene {
     if (this.resultShown) return;
     this.resultShown = true;
     this.isPaused = true;
+    this.simulation.setPaused(true);
+    this.pauseMenuOpen = false;
+    this.setPauseMenuVisible(false);
     this.resultPanel.setVisible(true).setPosition(this.scale.width / 2, this.scale.height / 2);
     this.resultText
       .setText(status === 'victory' ? 'MISSION COMPLETE\nAll civilians rescued\nAll waves eliminated\n\nPress R to restart' : 'MISSION FAILED\nAll officers incapacitated\n\nPress R to restart')
@@ -787,51 +1189,5 @@ export class MissionScene extends Phaser.Scene {
       .setVisible(true);
   }
 
-  private updateStatusText(dt: number): void {
-    const state = this.simulation.getState();
-    const fps = dt > 0 ? (1 / dt).toFixed(0) : '—';
-    const followingCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'following').length;
-    const shelteredCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'sheltered').length;
-    const hasActiveSelection = this.simulation.getOfficers().some((officer) =>
-      this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
-    const maintenance = this.simulation.getMaintenanceState();
-    const maintenanceJobs = maintenance?.jobs.map((job) =>
-      `${job.action} ${job.accessId}: ${job.remaining.toFixed(1)}s`).join(', ') || 'none';
-    const nearbyAccessId = this.findNearestAccess()?.id;
-    const nearbyAccess = this.simulation.getBuildingSnapshots().find((access) => access.id === nearbyAccessId);
-    const accessDetails = nearbyAccess
-      ? `${nearbyAccess.id} ${nearbyAccess.state} HP ${nearbyAccess.health}/${nearbyAccess.maxHealth} | R${nearbyAccess.reinforcementLevel} B${nearbyAccess.barricadeLevel} L${nearbyAccess.lockLevel}`
-      : 'none';
-    const tutorialHint = !hasActiveSelection
-      ? 'Tutorial: select an active police officer with left-click or keys 1-3.'
-      : shelteredCount > 0
-        ? 'Rescue: approach a civilian and press E. Open doors with E; civilians cannot use windows.'
-        : followingCount > 0
-          ? 'Escort: lead civilians to the green extraction zone. Keep a valid door route open.'
-          : 'Rescue complete: eliminate every infected wave to finish the tutorial.';
-    this.statusText.setText(
-      [
-        'Outbreak Zones — Mission',
-        `Paused: ${state.paused ? 'YES' : 'NO'}  (Space) | Audio: ${this.audio.isMuted ? 'OFF' : 'ON'} (M)`,
-        `Sim time: ${state.elapsed.toFixed(2)}s | Seed: ${this.registry.get('missionSeed')}`,
-        `Approx FPS: ${fps}`,
-        `Officers: ${state.activeOfficerCount}/${state.officerCount}  |  Infected: ${state.infectedCount}`,
-        `Wave: ${state.waveNumber}/${state.totalWaves} | ${state.wavePhase.toUpperCase()} | Spawn queue: ${state.remainingToSpawn}`,
-        state.wavePhase === 'preparing' ? `Next wave in: ${state.preparationRemaining.toFixed(1)}s` : `Mission: ${state.missionStatus.toUpperCase()}`,
-        `Civilians: ${state.rescuedCivilianCount}/${state.civilianCount} extracted`,
-        `Supplies: ${maintenance?.resources.scrap ?? 0} scrap / ${maintenance?.resources.parts ?? 0} parts | Jobs: ${maintenanceJobs}`,
-        `Nearby access: ${accessDetails}`,
-        tutorialHint,
-        `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
-        'E interact | B breach | Y repair | U reinforce | V barricade | L lock upgrade',
-        ...this.simulation.getOfficers().map((officer) => {
-          const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
-          const posture = officer.tacticalPosture === 'hold_fire' ? 'HOLD FIRE' : 'ENGAGE';
-          return `Officer ${officer.id}: HP ${officer.health} | Ammo ${ammo.current}/${ammo.capacity}${ammo.reloading ? ' | Reloading' : ''} | ${posture}`;
-        }),
-        'WASD / Arrows: camera | Wheel: zoom | F: fullscreen | I: spawn | N: noise lure | E: rescue/open access | B: breach',
-        'Tactics: X hold position | H hold fire | G auto-engage | Right click infected: target priority | R: restart after result',
-      ].join('\n'),
-    );
-  }
+
 }
