@@ -37,6 +37,22 @@ describe('BuildingMaintenanceSystem', () => {
     expect(maintenance.getState().jobs).toHaveLength(0);
   });
 
+  it('repairs a breached access and clears destroyed lock and barricade hardware', () => {
+    const { buildings, maintenance } = createSystems({ scrap: 80, parts: 20 });
+    const door = buildings.getAccess('front-door')!;
+    expect(maintenance.start('front-door', 'barricade')).toBe(true);
+    maintenance.update(8);
+    expect(door.state).toBe('barricaded');
+    buildings.damage('front-door', 1000);
+    expect(door.state).toBe('broken');
+    expect(door.barricadeLevel).toBe(0);
+
+    expect(maintenance.start('front-door', 'repair')).toBe(true);
+    maintenance.update(10);
+    expect(door.state).toBe('closed');
+    expect(door.health).toBe(door.maxHealth);
+  });
+
   it('limits reinforcement and increases maximum durability', () => {
     const { buildings, maintenance } = createSystems();
     const access = buildings.getAccess('front-door')!;
