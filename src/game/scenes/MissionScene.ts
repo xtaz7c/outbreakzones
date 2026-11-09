@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { AudioManager } from '../audio/AudioManager';
 import { Simulation } from '../../simulation/Simulation';
+import type { CombatEvent } from '../../simulation/CombatSystem';
 import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
 import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
@@ -26,6 +27,7 @@ interface TacticalInfected {
 export class MissionScene extends Phaser.Scene {
   private simulation!: Simulation;
   private audio!: AudioManager;
+  private readonly playedCombatEvents = new WeakSet<CombatEvent>();
   private statusText!: Phaser.GameObjects.Text;
   private fullscreenText!: Phaser.GameObjects.Text;
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -488,7 +490,10 @@ export class MissionScene extends Phaser.Scene {
   private updateCombatFeedback(): void {
     this.combatGraphics.clear();
     for (const event of this.simulation.getCombatEvents()) {
-      this.audio.playGunshot();
+      if (!this.playedCombatEvents.has(event)) {
+        this.playedCombatEvents.add(event);
+        this.audio.playGunshot();
+      }
       this.combatGraphics.lineStyle(event.hit ? 2 : 1, event.hit ? 0xffd166 : 0x9aa0a6, 0.9);
       this.combatGraphics.beginPath();
       this.combatGraphics.moveTo(event.from.x, event.from.y);
