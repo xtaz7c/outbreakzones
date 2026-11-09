@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FIXED_DT, Simulation } from './Simulation';
-import { Civilian } from './Civilian';
+import { Civilian } from './entities/Civilian';
 import { GridMap } from './world/GridMap';
-import { BuildingSystem } from './world/BuildingSystem';
-import { DeployableStructureSystem } from './world/DeployableStructureSystem';
+import { BuildingSystem } from './systems/buildings/BuildingSystem';
+import { DeployableStructureSystem } from './systems/buildings/DeployableStructureSystem';
 
 describe('Simulation', () => {
   let sim: Simulation;

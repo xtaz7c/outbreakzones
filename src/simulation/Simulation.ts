@@ -4,11 +4,11 @@
  *
  * Timestep: fixed timestep com acumulador (ADR7).
  */
-import { PoliceOfficer, type TacticalPosture } from './PoliceOfficer';
-import { Civilian } from './Civilian';
-import { Infected } from './Infected';
-import type { HumanTarget } from './HumanTarget';
-import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './CombatSystem';
+import { PoliceOfficer, type TacticalPosture } from './entities/PoliceOfficer';
+import { Civilian } from './entities/Civilian';
+import { Infected } from './entities/Infected';
+import type { HumanTarget } from './entities/HumanTarget';
+import { CombatSystem, type AmmoStatus, type CombatEvent, type CombatSystemOptions } from './systems/CombatSystem';
 import type { InfectedConfig, InfectedStimulus, InfectedStructureTarget } from './Infected';
 import type { GridMap } from './world/GridMap';
 import { BuildingSystem, type AccessSnapshot, type ActorKind } from './systems/buildings/BuildingSystem';
