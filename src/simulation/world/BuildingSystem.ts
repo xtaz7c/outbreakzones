@@ -135,7 +135,10 @@ export class BuildingAccess {
   }
   takeDamage(amount: number): number {
     if (!Number.isFinite(amount) || amount <= 0 || this.isDestroyed) return 0;
-    const applied = Math.min(amount, this.currentHealth);
+    const damageMultiplier = this.currentState === 'barricaded'
+      ? 0.5
+      : this.currentState === 'locked' ? 1 - this.currentLockLevel * 0.15 : 1;
+    const applied = Math.min(amount * damageMultiplier, this.currentHealth);
     this.currentHealth -= applied;
     if (this.currentHealth === 0) {
       this.currentState = 'broken';
