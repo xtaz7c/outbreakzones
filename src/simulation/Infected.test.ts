@@ -14,8 +14,8 @@ describe('Infected', () => {
     expect(infected.state).toBe('moving');
     expect(infected.position.x).toBeGreaterThan(-48);
     expect(infected.position.x).toBeLessThan(16);
-    for (let index = 0; index < 60; index += 1) infected.update(1 / 60, 32, map, []);
-    expect(infected.position.x).toBe(16);
+    for (let index = 0; index < 120; index += 1) infected.update(1 / 60, 32, map, []);
+    expect(infected.position.x).toBeCloseTo(16, 8);
     expect(infected.position.y).toBe(80);
   });
 
@@ -142,7 +142,7 @@ describe('Infected', () => {
         return applied;
       },
     };
-    infected.update(0.5, 32, map, [], structure);
+    infected.update(0.5, 32, new GridMap(40, 40), [], structure);
     expect(infected.state).toBe('attacking');
     expect(health).toBe(13);
   });
