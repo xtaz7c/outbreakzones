@@ -8,6 +8,7 @@ import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader'
 import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/world/MissionEntryPoints';
 import { BuildingSystem, type AccessKind } from '../../simulation/world/BuildingSystem';
 import type { WaveSpawnPoint } from '../../simulation/WaveSystem';
+import type { MaintenanceAction } from '../../simulation/world/BuildingMaintenanceSystem';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -89,6 +90,10 @@ export class MissionScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-N', () => this.emitNoiseAtHouse());
     this.input.keyboard?.on('keydown-E', () => this.interactWithNearestAccess());
     this.input.keyboard?.on('keydown-B', () => this.breachNearestAccess());
+    this.input.keyboard?.on('keydown-Y', () => this.startMaintenance('repair'));
+    this.input.keyboard?.on('keydown-U', () => this.startMaintenance('reinforce'));
+    this.input.keyboard?.on('keydown-V', () => this.startMaintenance('barricade'));
+    this.input.keyboard?.on('keydown-L', () => this.startMaintenance('upgrade-lock'));
     this.input.keyboard?.on('keydown-H', () => this.setSelectedPosture('hold_fire'));
     this.input.keyboard?.on('keydown-G', () => this.setSelectedPosture('engage'));
     this.input.keyboard?.on('keydown-X', () => this.holdSelectedPositions());
@@ -585,6 +590,12 @@ export class MissionScene extends Phaser.Scene {
     if (nearest) this.simulation.damageAccess(nearest.id, 30);
   }
 
+  private startMaintenance(action: MaintenanceAction): void {
+    if (this.isPaused) return;
+    const nearest = this.findNearestAccess();
+    if (nearest) this.simulation.startBuildingMaintenance(nearest.id, action);
+  }
+
   private updateAccessVisuals(): void {
     this.accessGraphics.clear();
     const colors = { open: 0x55c878, closed: 0xe4c35b, locked: 0xe05b5b,
@@ -752,6 +763,9 @@ export class MissionScene extends Phaser.Scene {
     const shelteredCount = this.simulation.getCivilians().filter((civilian) => civilian.state === 'sheltered').length;
     const hasActiveSelection = this.simulation.getOfficers().some((officer) =>
       this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated);
+    const maintenance = this.simulation.getMaintenanceState();
+    const maintenanceJobs = maintenance?.jobs.map((job) =>
+      `${job.action} ${job.accessId}: ${job.remaining.toFixed(1)}s`).join(', ') || 'none';
     const tutorialHint = !hasActiveSelection
       ? 'Tutorial: select an active police officer with left-click or keys 1-3.'
       : shelteredCount > 0
@@ -769,8 +783,10 @@ export class MissionScene extends Phaser.Scene {
         `Wave: ${state.waveNumber}/${state.totalWaves} | ${state.wavePhase.toUpperCase()} | Spawn queue: ${state.remainingToSpawn}`,
         state.wavePhase === 'preparing' ? `Next wave in: ${state.preparationRemaining.toFixed(1)}s` : `Mission: ${state.missionStatus.toUpperCase()}`,
         `Civilians: ${state.rescuedCivilianCount}/${state.civilianCount} extracted`,
+        `Supplies: ${maintenance?.resources.scrap ?? 0} scrap / ${maintenance?.resources.parts ?? 0} parts | Jobs: ${maintenanceJobs}`,
         tutorialHint,
         `Selected: ${this.selectedOfficerIds.size} | 1-3: select | Shift: add | Right click: move/target`,
+        'E interact | B breach | Y repair | U reinforce | V barricade | L lock upgrade',
         ...this.simulation.getOfficers().map((officer) => {
           const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
           const posture = officer.tacticalPosture === 'hold_fire' ? 'HOLD FIRE' : 'ENGAGE';
