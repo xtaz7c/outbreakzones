@@ -37,15 +37,7 @@ Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`). Semp
 
 ## Áudio
 
-O primeiro pacote de áudio usa arquivos WAV originais do projeto em `public/audio/`:
-
-- `ambient-loop.wav`: camada ambiente contínua, em volume baixo.
-- `pistol-shot.wav`: disparo das armas dos policiais.
-- `infected-groan.wav`: vocalização ocasional ao surgir um infectado.
-
-O carregamento é feito na `BootScene` e a reprodução é controlada por `AudioManager`, separado da simulação. Pressione **M** durante a missão para silenciar ou reativar o áudio. Os efeitos são intencionalmente discretos nesta primeira integração; mixagem, áudio posicional e sons de interação serão refinados em etapas posteriores.
-
-Os arquivos são efeitos sonoros originais sintetizados para o protótipo, em WAV mono de baixa taxa de amostragem, sem dependência de bibliotecas ou serviços externos.
+A primeira integração inclui a camada `AudioManager`, separada da simulação, preparada para ambiente, disparos e vocalizações. Os arquivos WAV ainda não estão versionados em `public/audio/`; por isso, o carregamento e a reprodução desses sons são opcionais e a missão continua normalmente quando eles não estão disponíveis. Pressione **M** durante a missão para silenciar ou reativar o áudio. Mixagem, áudio posicional e assets licenciados/originais serão refinados em etapas posteriores.
 
 ## Validação
 
