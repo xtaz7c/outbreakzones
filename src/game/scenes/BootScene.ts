@@ -137,12 +137,19 @@ export class BootScene extends Phaser.Scene {
     this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
     this.load.image('mission-tiles', '/tiles/mission-tiles.svg');
 
+    // Pick one ambient track per mission; avoid downloading unused full-length variants.
+    const ambientVariant = Phaser.Math.Between(1, 4);
+    const ambientTrackKey = `ambient-loop-${ambientVariant}`;
+    const ambientSuffix = String(ambientVariant).padStart(2, '0');
+    this.registry.set('ambientTrackKey', ambientTrackKey);
+    this.load.audio(
+      ambientTrackKey,
+      `/audio/music/ambient-suspense-${ambientSuffix}.wav`,
+    );
+
+    // Short sound effects keep their per-event variation.
     for (let variant = 1; variant <= 4; variant += 1) {
       const suffix = String(variant).padStart(2, '0');
-      this.load.audio(
-        `ambient-loop-${variant}`,
-        `/audio/music/ambient-suspense-${suffix}.wav`,
-      );
       this.load.audio(
         `pistol-shot-${variant}`,
         `/audio/effects/weapons/pistol-shot-${suffix}.wav`,

@@ -36,15 +36,15 @@ export class AudioManager {
       return;
     }
 
-    const variants = [1, 2, 3, 4]
-      .map((number) => `ambient-loop-${number}`)
-      .filter((key) => this.scene.cache.audio.exists(key));
-
-    if (variants.length === 0) {
+    const ambientTrackKey = this.scene.registry.get('ambientTrackKey');
+    if (
+      typeof ambientTrackKey !== 'string' ||
+      !this.scene.cache.audio.exists(ambientTrackKey)
+    ) {
       return;
     }
 
-    this.ambient = this.scene.sound.add(Phaser.Utils.Array.GetRandom(variants), {
+    this.ambient = this.scene.sound.add(ambientTrackKey, {
       loop: true,
       volume: 0.16,
     });
