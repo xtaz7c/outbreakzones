@@ -11,6 +11,17 @@ describe('Simulation', () => {
     sim = new Simulation();
   });
 
+  it('completes Mission 0 only after every civilian is extracted', () => {
+    sim.setTutorialMode(true);
+    for (const civilian of sim.getCivilians()) {
+      civilian.beginFollowing();
+      civilian.extract();
+    }
+    sim.update(FIXED_DT);
+    expect(sim.getState().missionStatus).toBe('victory');
+    expect(sim.getState().wavePhase).toBe('disabled');
+  });
+
   it('starts with three officers and zero infected', () => {
     const state = sim.getState();
     expect(state.officerCount).toBe(3);
