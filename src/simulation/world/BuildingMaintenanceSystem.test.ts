@@ -85,6 +85,32 @@ describe('BuildingMaintenanceSystem', () => {
     expect(maintenance.start('front-door', 'reinforce')).toBe(false);
   });
 
+  it('restores the resource wallet and an in-progress job', () => {
+    const first = createSystems();
+    expect(first.maintenance.start('front-door', 'reinforce')).toBe(true);
+    first.maintenance.update(4);
+    const saved = first.maintenance.getState();
+
+    const second = createSystems();
+    second.maintenance.restoreState(saved);
+    expect(second.maintenance.getState().resources).toEqual(saved.resources);
+    expect(second.maintenance.getState().jobs[0]?.remaining).toBe(6);
+
+    second.maintenance.update(6);
+    expect(second.buildings.getAccess('front-door')?.reinforcementLevel).toBe(1);
+    expect(second.maintenance.getState().jobs).toHaveLength(0);
+  });
+
+  it('rejects malformed persisted jobs without changing the wallet', () => {
+    const { maintenance } = createSystems();
+    expect(() => maintenance.restoreState({
+      resources: { scrap: 999, parts: 0 },
+      jobs: [{ id: 1, accessId: 'missing', action: 'repair', cost: { scrap: 1, parts: 1 },
+        duration: 5, remaining: 4 }],
+    })).toThrow(RangeError);
+    expect(maintenance.getState().resources).toEqual({ scrap: 40, parts: 12 });
+  });
+
   it('persists upgrade levels and the upgraded health ceiling', () => {
     const { buildings, maintenance } = createSystems();
     expect(maintenance.start('front-door', 'reinforce')).toBe(true);
