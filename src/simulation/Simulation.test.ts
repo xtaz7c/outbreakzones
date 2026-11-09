@@ -3,6 +3,7 @@ import { FIXED_DT, Simulation } from './Simulation';
 import { Civilian } from './Civilian';
 import { GridMap } from './world/GridMap';
 import { BuildingSystem } from './world/BuildingSystem';
+import { DeployableStructureSystem } from './world/DeployableStructureSystem';
 
 describe('Simulation', () => {
   let sim: Simulation;
