@@ -236,7 +236,7 @@ export class MissionScene extends Phaser.Scene {
     this.registry.set('worldGrid', this.worldGrid);
     this.simulation.setWorldGrid(this.worldGrid, this.tileSize);
     this.simulation.setExtractionZone({ x: 1280, y: 720, radius: 72 });
-    this.add.circle(1024, 1120, 72, 0x55c878, 0.08)
+    this.add.circle(1280, 720, 72, 0x55c878, 0.08)
       .setStrokeStyle(3, 0x55c878, 0.85).setDepth(70);
     const spawnPoints: WaveSpawnPoint[] = [
       { id: 'west', x: 128, y: 640, entryTile: { column: 21, row: 18 } },
@@ -358,9 +358,15 @@ export class MissionScene extends Phaser.Scene {
   private createHud(): void {
     const width = this.scale.width;
     const height = this.scale.height;
-    const mapX = width - 340;
-    const mapY = 20;
+    const viewX = this.cameras.main.scrollX;
+    const viewY = this.cameras.main.scrollY;
+    const mapX = viewX + width - 340;
+    const mapY = viewY + 20;
 
+    this.hudBounds.settings.x = viewX + 20;
+    this.hudBounds.settings.y = viewY + 20;
+    this.hudBounds.mission.x = viewX + 20;
+    this.hudBounds.mission.y = viewY + 88;
     this.hudBounds.minimap.x = mapX;
     this.hudBounds.minimap.y = mapY;
     this.hudBounds.team.x = mapX;
@@ -375,10 +381,10 @@ export class MissionScene extends Phaser.Scene {
 
     this.hudPanels.fillStyle(HUD_COLORS.panel, 0.94);
     this.hudPanels.lineStyle(1, HUD_COLORS.metal, 0.24);
-    this.hudPanels.fillRoundedRect(20, 20, 56, 56, 8);
-    this.hudPanels.strokeRoundedRect(20, 20, 56, 56, 8);
-    this.hudPanels.fillRoundedRect(20, 88, 276, 142, 8);
-    this.hudPanels.strokeRoundedRect(20, 88, 276, 142, 8);
+    this.hudPanels.fillRoundedRect(viewX + 20, viewY + 20, 56, 56, 8);
+    this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 20, 56, 56, 8);
+    this.hudPanels.fillRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
+    this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
     this.hudPanels.fillRoundedRect(mapX, mapY, 320, 354, 12);
     this.hudPanels.strokeRoundedRect(mapX, mapY, 320, 354, 12);
     this.hudPanels.fillStyle(HUD_COLORS.officer, 1);
@@ -390,7 +396,7 @@ export class MissionScene extends Phaser.Scene {
     this.hudPanels.fillRoundedRect(mapX, mapY + 364, 320, 154, 8);
     this.hudPanels.strokeRoundedRect(mapX, mapY + 364, 320, 154, 8);
 
-    this.settingsButton = this.add.text(48, 48, '⚙', {
+    this.settingsButton = this.add.text(viewX + 48, viewY + 48, '⚙', {
       fontFamily: 'Arial, sans-serif',
       fontSize: '29px',
       color: '#e8e3d8',
@@ -398,7 +404,7 @@ export class MissionScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     this.settingsButton.on('pointerdown', () => this.openPauseMenu());
 
-    this.missionText = this.add.text(36, 102, '', {
+    this.missionText = this.add.text(viewX + 36, viewY + 102, '', {
       fontFamily: 'Arial, sans-serif',
       fontSize: '13px',
       color: '#e8e3d8',
