@@ -94,3 +94,8 @@ A Missão 0 — **O Resgate** funciona como tutorial e exige extrair os dois civ
 ## Configurações de interface
 
 A escala do HUD é independente do zoom da câmera e pode ser ajustada no menu de pausa entre 80% e 120%. A preferência fica salva localmente no navegador.
+
+
+## Estruturas implantáveis
+
+A barra inferior permite posicionar quatro estruturas: abrigo (capacidade para duas pessoas), tenda de recursos (gera sucata), posto sniper (atira automaticamente em infectados visíveis) e barricada (bloqueia infectados até ser destruída). Cada estrutura tem custo em sucata/peças e vida própria. Clique em uma estrutura para selecioná-la e pressione `Delete` para desmontar e recuperar metade dos materiais. O estado das estruturas e recursos fica salvo localmente por missão.
