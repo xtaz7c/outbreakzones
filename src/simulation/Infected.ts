@@ -1,4 +1,3 @@
-import type { PoliceOfficer } from './PoliceOfficer';
 import type { GridMap } from './world/GridMap';
 import { findPath } from './world/Pathfinder';
 import { hasLineOfSight } from './CombatSystem';
@@ -9,6 +8,14 @@ export type InfectedState = 'idle' | 'moving' | 'attacking' | 'dead';
 export interface InfectedPosition {
   readonly x: number;
   readonly y: number;
+}
+
+/** Any living non-infected human can be acquired and attacked by infected. */
+export interface HumanTarget {
+  readonly id: number;
+  readonly position: InfectedPosition;
+  readonly isIncapacitated: boolean;
+  takeDamage(amount: number): number;
 }
 
 export interface InfectedStimulus {
@@ -48,7 +55,7 @@ export interface InfectedStructureTarget {
 }
 
 type Target =
-  | { readonly kind: 'officer'; readonly officer: PoliceOfficer; readonly position: InfectedPosition }
+  | { readonly kind: 'human'; readonly human: HumanTarget; readonly position: InfectedPosition }
   | { readonly kind: 'structure'; readonly structure: InfectedStructureTarget; readonly position: InfectedPosition; readonly tile: TilePosition }
   | { readonly kind: 'entry'; readonly position: InfectedPosition; readonly tile: TilePosition };
 
@@ -162,7 +169,7 @@ export class Infected {
     dt: number,
     tileSize: number,
     map: GridMap,
-    officers: readonly PoliceOfficer[],
+    humans: readonly HumanTarget[],
     structureTarget?: InfectedStructureTarget,
     stimuli: readonly InfectedStimulus[] = [],
   ): void {
@@ -171,7 +178,7 @@ export class Infected {
       throw new RangeError('tileSize must be a positive finite number.');
     }
 
-    const target = this.chooseTarget(officers, structureTarget, tileSize, map, stimuli, dt);
+    const target = this.chooseTarget(humans, structureTarget, tileSize, map, stimuli, dt);
     const distance = this.distanceTo(target.position);
 
     if (target.kind !== 'entry' && distance <= this.attackRange) {
@@ -182,10 +189,10 @@ export class Infected {
       this.attackTimer += dt;
       while (this.attackTimer >= this.attackInterval) {
         this.attackTimer -= this.attackInterval;
-        if (target.kind === 'officer') target.officer.takeDamage(this.damage);
-        else target.structure.takeDamage(this.damage);
+        if (target.kind === 'human') target.human.takeDamage(this.damage);
+        else if (target.kind === 'structure') target.structure.takeDamage(this.damage);
         if (target.kind === 'structure' && target.structure.isDestroyed) break;
-        if (target.kind === 'officer' && target.officer.isIncapacitated) break;
+        if (target.kind === 'human' && target.human.isIncapacitated) break;
       }
       return;
     }
@@ -227,20 +234,20 @@ export class Infected {
   }
 
   private chooseTarget(
-    officers: readonly PoliceOfficer[],
+    humans: readonly HumanTarget[],
     structureTarget: InfectedStructureTarget | undefined,
     tileSize: number,
     map: GridMap,
     stimuli: readonly InfectedStimulus[],
     dt: number,
   ): Target {
-    let nearest: PoliceOfficer | undefined;
+    let nearest: HumanTarget | undefined;
     let nearestDistance = this.detectionRange;
-    for (const officer of officers) {
-      if (officer.isIncapacitated) continue;
-      const distance = this.distanceTo(officer.position);
-      if (distance <= nearestDistance && hasLineOfSight(map, this.currentPosition, officer.position, tileSize)) {
-        nearest = officer;
+    for (const human of humans) {
+      if (human.isIncapacitated) continue;
+      const distance = this.distanceTo(human.position);
+      if (distance <= nearestDistance && hasLineOfSight(map, this.currentPosition, human.position, tileSize)) {
+        nearest = human;
         nearestDistance = distance;
       }
     }
@@ -248,7 +255,7 @@ export class Infected {
       this.investigationTarget = null;
       this.investigationRemaining = 0;
       this.patrolTarget = null;
-      return { kind: 'officer', officer: nearest, position: nearest.position };
+      return { kind: 'human', human: nearest, position: nearest.position };
     }
 
     let strongestStimulus: InfectedStimulus | undefined;
