@@ -18,6 +18,9 @@ interface TacticalOfficer {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
   readonly selectionRing: Phaser.GameObjects.Arc;
+  readonly body: Phaser.GameObjects.Arc;
+  readonly leftLeg: Phaser.GameObjects.Rectangle;
+  readonly rightLeg: Phaser.GameObjects.Rectangle;
 }
 
 interface TacticalCivilian {
@@ -189,6 +192,8 @@ export class MissionScene extends Phaser.Scene {
     this.officers = this.simulation.getOfficers().map((officer) => {
       const position = officer.position;
       const ring = this.add.circle(0, 0, 15).setStrokeStyle(3, 0xffdf70).setVisible(false);
+      const leftLeg = this.add.rectangle(-5, 9, 5, 9, 0x24364c).setOrigin(0.5, 0.25);
+      const rightLeg = this.add.rectangle(5, 9, 5, 9, 0x24364c).setOrigin(0.5, 0.25);
       const body = this.add.circle(0, 0, 10, 0x3f83d5).setStrokeStyle(2, 0xe8f2ff);
       const direction = this.add.triangle(0, -13, 0, -5, -4, 4, 4, 4, 0xffe0a3);
       const label = this.add.text(0, 13, String(officer.id), {
@@ -198,8 +203,8 @@ export class MissionScene extends Phaser.Scene {
         backgroundColor: '#172033',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(position.x, position.y, [ring, body, direction, label]).setDepth(100);
-      return { id: officer.id, container, selectionRing: ring };
+      const container = this.add.container(position.x, position.y, [ring, leftLeg, rightLeg, body, direction, label]).setDepth(100);
+      return { id: officer.id, container, selectionRing: ring, body, leftLeg, rightLeg };
     });
   }
 
@@ -565,6 +570,15 @@ export class MissionScene extends Phaser.Scene {
       this.combatGraphics.moveTo(event.from.x, event.from.y);
       this.combatGraphics.lineTo(event.to.x, event.to.y);
       this.combatGraphics.strokePath();
+      this.combatGraphics.fillStyle(0xffdf70, 0.95);
+      this.combatGraphics.fillCircle(event.from.x, event.from.y, 4);
+      this.combatGraphics.lineStyle(2, 0xffdf70, 0.9);
+      for (const angle of [-0.8, 0, 0.8]) {
+        this.combatGraphics.beginPath();
+        this.combatGraphics.moveTo(event.from.x + Math.cos(angle) * 5, event.from.y + Math.sin(angle) * 5);
+        this.combatGraphics.lineTo(event.from.x + Math.cos(angle) * 10, event.from.y + Math.sin(angle) * 10);
+        this.combatGraphics.strokePath();
+      }
       if (event.hit) {
         this.combatGraphics.fillStyle(0xffe08a, 0.95);
         this.combatGraphics.fillCircle(event.to.x, event.to.y, 3);
@@ -580,6 +594,12 @@ export class MissionScene extends Phaser.Scene {
       visual.container.setPosition(position.x, position.y);
       visual.container.setRotation(officer.facingAngle + Math.PI / 2);
       visual.container.setAlpha(officer.isIncapacitated ? 0.35 : 1);
+      const walking = officer.state === 'moving' && !officer.isIncapacitated;
+      const gait = walking ? Math.sin(this.simulation.getState().elapsed * 13 + officer.id) * 0.55 : 0;
+      visual.leftLeg.setRotation(gait);
+      visual.rightLeg.setRotation(-gait);
+      visual.body.setScale(1, walking ? 1 + Math.abs(gait) * 0.06 : 1);
+      visual.body.setFillStyle(officer.isIncapacitated ? 0x65707b : 0x3f83d5);
       visual.selectionRing.setVisible(
         this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
       );
