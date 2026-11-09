@@ -64,6 +64,38 @@ export class BuildingMaintenanceSystem {
     };
   }
 
+  restoreState(state: MaintenanceState): void {
+    if (!state || !state.resources ||
+        !Number.isInteger(state.resources.scrap) || state.resources.scrap < 0 ||
+        !Number.isInteger(state.resources.parts) || state.resources.parts < 0 ||
+        !Array.isArray(state.jobs)) {
+      throw new RangeError('Invalid persisted maintenance state.');
+    }
+    const accessIds = new Set<string>();
+    const jobIds = new Set<number>();
+    let maximumJobId = 0;
+    const restoredJobs: MutableJob[] = [];
+    for (const job of state.jobs) {
+      if (!Number.isInteger(job.id) || job.id <= 0 || jobIds.has(job.id) ||
+          !this.buildings.getAccess(job.accessId) || accessIds.has(job.accessId) ||
+          !['repair', 'reinforce', 'barricade', 'upgrade-lock'].includes(job.action) ||
+          !Number.isFinite(job.duration) || job.duration <= 0 ||
+          !Number.isFinite(job.remaining) || job.remaining < 0 || job.remaining > job.duration ||
+          !Number.isInteger(job.cost?.scrap) || job.cost.scrap < 0 ||
+          !Number.isInteger(job.cost?.parts) || job.cost.parts < 0) {
+        throw new RangeError('Invalid persisted maintenance job.');
+      }
+      accessIds.add(job.accessId);
+      jobIds.add(job.id);
+      maximumJobId = Math.max(maximumJobId, job.id);
+      restoredJobs.push({ ...job, cost: { ...job.cost } });
+    }
+    this.scrap = state.resources.scrap;
+    this.parts = state.resources.parts;
+    this.jobs.splice(0, this.jobs.length, ...restoredJobs);
+    this.nextJobId = maximumJobId + 1;
+  }
+
   start(accessId: string, action: MaintenanceAction): boolean {
     const access = this.buildings.getAccess(accessId);
     if (!access || this.jobs.some((job) => job.accessId === accessId)) return false;
