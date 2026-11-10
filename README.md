@@ -8,6 +8,8 @@
 
 Em desenvolvimento ativo. O backlog oficial está nos [GitHub Issues](https://github.com/xtaz7c/outbreakzones/issues). O [`TASKLIST.md`](./TASKLIST.md) mantém o detalhamento histórico das tarefas do MVP.
 
+A versão do jogo é mantida em `package.json`. A tela inicial e o carregador exibem automaticamente essa versão e o identificador curto do commit que gerou o build; commits não provocam bump de versão por si só. Consulte [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) para a política de releases.
+
 ## Stack
 
 | Camada | Tecnologia |
@@ -73,7 +75,9 @@ X, H e G são comandos táticos básicos em validação. E, B, I e N são atalho
 
 - **Simulação** (`src/simulation/`): regras de domínio puras, sem dependência de Phaser.
 - **Renderização e input** (`src/game/`): cenas Phaser, sprites, câmera, input e HUD.
-- A simulação usa fixed timestep (1/60 s) com acumulador, conforme ADR7 em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).\n- O HUD fica fixo à viewport; a câmera movimenta apenas o mundo do jogo.\n- A casa é navegável por acessos interativos; consulte ADR9.
+- A simulação usa fixed timestep (1/60 s) com acumulador, conforme ADR7 em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+- O HUD fica fixo à viewport; a câmera movimenta apenas o mundo do jogo.
+- A casa é navegável por acessos interativos; consulte ADR9.
 
 Documentação:
 
