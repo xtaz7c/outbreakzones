@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { BUILD_LABEL } from '../../buildInfo';
-import { BUILD_LABEL } from '../../buildInfo';
 
 /** Carrega assets críticos e áudio opcional antes da missão. */
 export class BootScene extends Phaser.Scene {
