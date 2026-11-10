@@ -6,15 +6,18 @@ Este documento é o roteiro de validação da primeira publicação pública. Ma
 
 ## 1. Decisões de lançamento
 
-- [ ] Escolher o provedor de hospedagem estática e confirmar quem tem acesso administrativo ao projeto.
-- [ ] Definir o domínio/URL público.
+- [x] Provedor escolhido: Netlify. A configuração versionada fica em `netlify.toml`.
+- [ ] Conectar o repositório `xtaz7c/outbreakzones` ao Netlify e confirmar acesso administrativo.
+- [ ] Definir/confirmar o domínio ou subdomínio público.
 - [ ] Definir a matriz mínima de navegadores e sistemas operacionais desktop suportados.
 - [ ] Confirmar a licença do projeto e as licenças/atribuições dos assets antes da distribuição pública.
 - [ ] Confirmar a versão semântica da release e criar a tag Git correspondente após aprovar o escopo. Não incrementar a versão por commit ou PR.
 
 ## 2. Build e integridade do artefato
 
-Executar a partir de um clone limpo da branch/tag candidata:
+A configuração do Netlify executa `npm run build` e publica `dist`. O Netlify instala dependências usando o lockfile versionado; validar o fluxo em um deploy de preview antes de promover a produção.
+
+Para validação local a partir de um clone limpo:
 
 ```bash
 npm ci
@@ -49,9 +52,8 @@ npm run preview
 
 Executar o smoke test em cada combinação aprovada na matriz de suporte:
 
-- [ ] Navegador desktop principal atualizado.
-- [ ] Segundo navegador baseado em Chromium atualizado.
-- [ ] Firefox atualizado.
+- [ ] Chromium (versão estável atual).
+- [ ] Firefox (versão estável atual).
 - [ ] Resolução 1280×720.
 - [ ] Resolução 1366×768.
 - [ ] Resolução 1920×1080.
@@ -62,21 +64,19 @@ Registrar navegador, versão, sistema operacional, resolução, resultado e evid
 
 ## 5. Publicação e verificação pós-deploy
 
-- [ ] Configuração de build do provedor usa Node.js compatível, `npm ci` e `npm run build`.
-- [ ] Diretório publicado corresponde ao artefato Vite (`dist`).
-- [ ] Deploy de preview validado antes de publicar a versão principal.
+- [x] Configuração versionada do Netlify: Node.js 20, comando `npm run build`, diretório `dist`.
+- [ ] Conectar o GitHub ao Netlify com `main` como production branch e deploy previews para Pull Requests.
+- [ ] Confirmar que o preview de uma PR é publicado antes do merge e que apenas `main` atualiza a produção.
 - [ ] URL pública abre em sessão anônima/limpa e em outro dispositivo.
 - [ ] Fluxo completo da missão é repetido na URL pública, não apenas em localhost.
 - [ ] Recursos estáticos, áudio e persistência local funcionam no domínio final.
 - [ ] Registrar URL, commit, versão, data do deploy e resultado do smoke test.
-- [ ] Documentar procedimento de rollback e como publicar uma correção.
+- [ ] Documentar procedimento de rollback: promover deploy anterior no Netlify e corrigir pela branch/PR.
 
-## 6. Bloqueadores conhecidos na auditoria inicial
+## 6. Bloqueadores conhecidos
 
-- Ainda não há configuração de deploy versionada no repositório (Netlify/Vercel/GitHub Pages).
-- O destino de hospedagem e a URL pública do jogo ainda precisam ser confirmados.
-- A matriz de navegadores desktop ainda não foi definida nem executada.
+- A conexão do repositório ao Netlify e a confirmação do domínio público dependem de acesso ao painel Netlify.
+- A matriz de navegadores desktop ainda não foi executada.
 - O README ainda precisa de revisão final para separar controles de jogador dos atalhos provisórios/de desenvolvimento.
-- A licença do projeto está indicada como pendente no README.
-- A PR #41 (versionamento e identificação de build, issue #40) permanece separada e precisa ser integrada/validada antes da release, para que a versão e o commit publicados sejam identificáveis.
-
+- A licença do projeto está indicada como pendente no README; esclarecer licença do código e licenças/atribuições dos assets.
+- A PR #41 (versionamento e identificação de build, issue #40) permanece em draft. Antes da release, revisar sua base/alterações, integrar e validar a identificação de versão e SHA no build Netlify.
