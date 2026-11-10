@@ -37,7 +37,7 @@ Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`). Semp
 
 ## Áudio
 
-O projeto inclui 12 arquivos WAV em `public/audio/`: quatro variações de disparo, quatro faixas de suspense e quatro vocalizações de infectados. `BootScene` pré-carrega esses assets com nomes de arquivo codificados nas URLs; `AudioManager` escolhe variantes aleatórias para evitar repetição imediata. O áudio é opcional e falhas de carregamento não bloqueiam a missão. Pressione **M** durante a missão para silenciar ou reativar o áudio. Mixagem, áudio posicional e validação de autoplay/volume ainda precisam de QA no navegador.
+O projeto inclui 12 arquivos WAV em `public/audio/`: quatro variações de disparo, quatro faixas de suspense e quatro vocalizações de infectados. `BootScene` carrega as quatro variações de efeitos sonoros e seleciona apenas uma faixa ambiente aleatória por missão, evitando transferir as outras três faixas completas sem uso. `AudioManager` reproduz a faixa selecionada em loop e escolhe variantes aleatórias para os efeitos. O áudio é opcional: falhas de carregamento não bloqueiam a missão. Pressione **M** durante a missão para silenciar ou reativar o áudio.
 
 ## Validação
 

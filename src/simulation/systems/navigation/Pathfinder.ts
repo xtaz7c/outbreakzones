@@ -1,5 +1,5 @@
-import type { TilePosition } from './WorldConfig';
-import { GridMap } from './GridMap';
+import type { TilePosition } from '../../world/WorldConfig';
+import { GridMap } from '../../world/GridMap';
 
 export interface PathOptions {
   /** Permite movimentos diagonais. Padrão: true. */

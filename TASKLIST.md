@@ -239,13 +239,11 @@ Legenda sugerida: **P0** = bloqueia a fundação/MVP; **P1** = necessário para 
 - [ ] **T103 — P2** Adicionar áudio ambiente ou música, se contribuir para a experiência.
 - [ ] **T104 — P1** Validar consistência de escala, contraste e legibilidade das texturas.
 
-**Áudio adicionado ao repositório pelo usuário:** 4 variações de disparo, 4 faixas de suspense e 4 vocalizações de infectados em `public/audio/`. A integração na branch `feat/audio-assets-and-issue-26-progress` registra preload com nomes/URLs codificados e seleção aleatória de variantes no `AudioManager`. T102/T103 aguardam CI e QA auditivo no navegador; confirmar também comportamento de autoplay/mute.
+**Recursos de áudio adicionados pelo usuário:** 12 arquivos WAV, organizados por categoria em `public/audio/`. A trilha ambiente é escolhida aleatoriamente e somente a variante selecionada é carregada por missão; efeitos sonoros mantêm quatro variantes por grupo.
 
 **Saída da fase:** identidade visual coerente e feedback suficiente para interpretar as ações.
 
-**PR #32 aberta:** os 12 WAVs enviados foram conectados ao preload e ao `AudioManager`, com quatro variações por grupo (disparos, suspense e infectados). CI passou; T102/T103 permanecem desmarcadas até QA auditivo no navegador e integração na `main`.
-
-**Áudio — PR #32 aberta:** 12 WAVs enviados ao repositório estão ligados ao `BootScene`/`AudioManager` (4 variações de disparo, 4 faixas de suspense e 4 vocalizações). CI passou; T102/T103 continuam desmarcadas até QA auditivo no navegador e integração na `main`.
+**Áudio integrado na PR #35:** os 12 WAVs estão organizados em `public/audio/` (4 disparos, 4 faixas ambiente e 4 vocalizações). `BootScene` carrega apenas uma faixa ambiente aleatória por missão, além das variantes curtas de efeitos; `AudioManager` reproduz a faixa selecionada em loop. Falhas de áudio não bloqueiam a missão. O mantenedor confirmou a validação funcional no navegador; CI da consolidação deve ser executada antes do merge.
 
 ### Fase 11 — Testes, estabilidade e entrega web
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GridMap } from './GridMap';
+import { GridMap } from '../../world/GridMap';
 import { findPath } from './Pathfinder';
 
 describe('GridMap', () => {

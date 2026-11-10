@@ -1,10 +1,10 @@
 import type { PoliceOfficer } from './PoliceOfficer';
 import type { Civilian } from './Civilian';
 import type { HumanTarget } from './HumanTarget';
-import type { GridMap } from './world/GridMap';
-import { findPath } from './world/Pathfinder';
-import { hasLineOfSight } from './CombatSystem';
-import type { TilePosition } from './world/WorldConfig';
+import type { GridMap } from '../world/GridMap';
+import { findPath } from '../systems/navigation/Pathfinder';
+import { hasLineOfSight } from '../systems/CombatSystem';
+import type { TilePosition } from '../world/WorldConfig';
 
 export type InfectedState = 'idle' | 'moving' | 'attacking' | 'dead';
 

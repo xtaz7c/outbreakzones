@@ -1,6 +1,6 @@
-import type { PoliceOfficer } from './PoliceOfficer';
-import type { Infected } from './Infected';
-import type { GridMap } from './world/GridMap';
+import type { PoliceOfficer } from '../entities/PoliceOfficer';
+import type { Infected } from '../entities/Infected';
+import type { GridMap } from '../world/GridMap';
 
 export interface CombatEvent {
   readonly officerId: number;
