@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { BUILD_LABEL } from '../../buildInfo';
 
 /** Carrega assets críticos e áudio opcional antes da missão. */
 export class BootScene extends Phaser.Scene {
@@ -94,7 +95,7 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(1, 0.5);
 
     this.add
-      .text(width * 0.065, height * 0.925, 'SISTEMA DE CAMPO  //  BUILD 01', {
+      .text(width * 0.065, height * 0.925, `SISTEMA DE CAMPO  //  ${BUILD_LABEL}`, {
         fontFamily: 'Arial, sans-serif',
         fontSize: '8px',
         color: '#666e6a',
