@@ -8,6 +8,8 @@
 
 Em desenvolvimento ativo. O backlog oficial está nos [GitHub Issues](https://github.com/xtaz7c/outbreakzones/issues). O [`TASKLIST.md`](./TASKLIST.md) mantém o detalhamento histórico das tarefas do MVP.
 
+A versão do jogo é mantida em `package.json`. A tela inicial e o carregador exibem automaticamente essa versão e o identificador curto do commit que gerou o build; commits não provocam bump de versão por si só. Consulte [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) para a política de releases.
+
 ## Stack
 
 | Camada | Tecnologia |
