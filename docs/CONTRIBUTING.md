@@ -64,3 +64,13 @@ Uma tarefa só é marcada como concluída quando:
 
 - Apenas assets originais ou com licença verificada.
 - Não commitar binários grandes sem necessidade.
+
+## Versionamento e identificação de builds
+
+- A versão semântica do produto tem uma única fonte: `package.json` (`version`). Não replique números de versão em HTML, cenas ou componentes.
+- Não incremente a versão a cada commit ou Pull Request. Uma versão identifica uma release; vários commits e builds de CI podem pertencer à mesma versão.
+- Use `MAJOR.MINOR.PATCH`: PATCH para correções compatíveis, MINOR para funcionalidades compatíveis e MAJOR para mudanças incompatíveis após `1.0.0`. Enquanto o projeto estiver em `0.x`, use `0.MINOR.PATCH`, mantendo a convenção de MINOR para marcos funcionais e PATCH para correções.
+- Atualize `package.json` e `package-lock.json` juntos ao preparar uma release e crie a tag Git correspondente (`vX.Y.Z`). Não crie tags de release em commits de trabalho.
+- A interface exibe a versão do produto e um identificador de build separado. Em CI/deploy, o identificador é derivado do SHA do commit; localmente, aparece como `local`. Assim cada deploy pode ser distinguido sem falsificar uma nova versão de produto.
+- Toda issue deve registrar: versão atual de referência, versão alvo (ou `TBD`) e tipo de impacto (`PATCH`, `MINOR`, `MAJOR`, sem impacto ou TBD). `TBD` significa que o escopo de release ainda não foi decidido.
+- Toda Pull Request deve indicar a versão de referência e se altera ou não a versão do produto. O bump fica concentrado na preparação da release, não em cada PR.
