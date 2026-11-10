@@ -1,0 +1,74 @@
+name: Tarefa, melhoria ou bug
+description: Registre trabalho com escopo, critérios de aceite e impacto de versão.
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Descreva uma unidade de trabalho que possa ser implementada e validada em uma Pull Request.
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto e problema
+      description: O que precisa ser feito e por quê?
+      placeholder: Contexto, comportamento atual e resultado esperado.
+    validations:
+      required: true
+  - type: input
+    id: current_version
+    attributes:
+      label: Versão atual de referência
+      description: Versão do produto em que o problema foi observado ou a partir da qual a tarefa será desenvolvida.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: target_version
+    attributes:
+      label: Versão alvo
+      description: Release que deverá conter a mudança. Use TBD se ainda não foi definida.
+      placeholder: "TBD"
+    validations:
+      required: true
+  - type: dropdown
+    id: version_impact
+    attributes:
+      label: Impacto de versão esperado
+      description: O bump ocorre ao preparar a release, não automaticamente nesta issue.
+      options:
+        - Sem impacto de versão
+        - PATCH
+        - MINOR
+        - MAJOR
+        - TBD
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Escopo
+      description: Liste as alterações incluídas e, se necessário, o que fica fora do escopo.
+      placeholder: |
+        - [ ] Alteração 1
+        - [ ] Alteração 2
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critérios de aceitação
+      description: Como saberemos que a tarefa está concluída?
+      placeholder: |
+        - [ ] Critério verificável 1
+        - [ ] Testes, lint e build passam.
+        - [ ] QA manual documentado quando envolver gameplay ou interface.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependências e referências
+      description: Issues, PRs, assets ou decisões relacionadas.
+      placeholder: "Nenhuma, se não houver dependências."
+    validations:
+      required: false
