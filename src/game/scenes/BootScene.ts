@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { BUILD_LABEL } from '../../buildInfo';
+import { BUILD_LABEL } from '../../buildInfo';
 
 /** Carrega assets críticos e áudio opcional antes da missão. */
 export class BootScene extends Phaser.Scene {
@@ -94,7 +96,7 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(1, 0.5);
 
     this.add
-      .text(width * 0.065, height * 0.925, 'SISTEMA DE CAMPO  //  BUILD 01', {
+      .text(width * 0.065, height * 0.925, `SISTEMA DE CAMPO  //  ${BUILD_LABEL}`, {
         fontFamily: 'Arial, sans-serif',
         fontSize: '8px',
         color: '#666e6a',
@@ -135,10 +137,6 @@ export class BootScene extends Phaser.Scene {
     });
 
     this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
-    this.load.spritesheet('character-sprites', '/sprites/characters.svg', {
-      frameWidth: 32,
-      frameHeight: 32,
-    });
     this.load.image('mission-tiles', '/tiles/mission-tiles.svg');
 
     // Pick one ambient track per mission; avoid downloading unused full-length variants.
