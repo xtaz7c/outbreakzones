@@ -27,20 +27,21 @@ interface TacticalOfficer {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
   readonly selectionRing: Phaser.GameObjects.Arc;
-  readonly body: Phaser.GameObjects.Arc;
-  readonly leftLeg: Phaser.GameObjects.Rectangle;
-  readonly rightLeg: Phaser.GameObjects.Rectangle;
+  readonly sprite: Phaser.GameObjects.Sprite;
 }
 
 interface TacticalCivilian {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
-  readonly body: Phaser.GameObjects.Arc;
+  readonly sprite: Phaser.GameObjects.Sprite;
+  lastX: number;
+  lastY: number;
 }
 
 interface TacticalInfected {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
+  readonly sprite: Phaser.GameObjects.Sprite;
 }
 
 interface MinimapVisibility {
@@ -157,6 +158,7 @@ export class MissionScene extends Phaser.Scene {
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
+    this.createCharacterAnimations();
     this.createWorld();
     this.createOfficers();
     this.createCivilians();
@@ -402,41 +404,74 @@ export class MissionScene extends Phaser.Scene {
     this.scene.restart();
   }
 
+  private createCharacterAnimations(): void {
+    const animations = [
+      { key: 'police-walk', start: 1, end: 2 },
+      { key: 'civilian-walk', start: 7, end: 8 },
+      { key: 'infected-walk', start: 13, end: 14 },
+    ];
+    for (const animation of animations) {
+      if (this.anims.exists(animation.key)) continue;
+      this.anims.create({
+        key: animation.key,
+        frames: this.anims.generateFrameNumbers('character-sprites', {
+          start: animation.start,
+          end: animation.end,
+        }),
+        frameRate: 7,
+        repeat: -1,
+      });
+    }
+  }
+
+  private playCharacterWalk(sprite: Phaser.GameObjects.Sprite, animation: string): void {
+    if (sprite.anims.currentAnim?.key !== animation) {
+      sprite.play(animation);
+    }
+  }
+
+  private setCharacterFrame(sprite: Phaser.GameObjects.Sprite, frame: number): void {
+    sprite.anims.stop();
+    sprite.setFrame(frame);
+  }
+
   private createOfficers(): void {
     this.officers = this.simulation.getOfficers().map((officer) => {
       const position = officer.position;
       const ring = this.add.circle(0, 0, 15).setStrokeStyle(3, 0xffdf70).setVisible(false);
-      const leftLeg = this.add.rectangle(-5, 9, 5, 9, 0x24364c).setOrigin(0.5, 0.25);
-      const rightLeg = this.add.rectangle(5, 9, 5, 9, 0x24364c).setOrigin(0.5, 0.25);
-      const body = this.add.circle(0, 0, 10, 0x3f83d5).setStrokeStyle(2, 0xe8f2ff);
-      const direction = this.add.triangle(0, -13, 0, -5, -4, 4, 4, 4, 0xffe0a3);
-      const label = this.add.text(0, 13, String(officer.id), {
+      const sprite = this.add.sprite(0, 0, 'character-sprites', 0)
+        .setOrigin(0.5)
+        .setScale(1.15);
+      const label = this.add.text(0, 16, String(officer.id), {
         fontFamily: 'monospace',
-        fontSize: '11px',
+        fontSize: '10px',
         color: '#ffffff',
         backgroundColor: '#172033',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(position.x, position.y, [ring, leftLeg, rightLeg, body, direction, label]).setDepth(100);
-      return { id: officer.id, container, selectionRing: ring, body, leftLeg, rightLeg };
+      const container = this.add.container(position.x, position.y, [ring, sprite, label]).setDepth(100);
+      return { id: officer.id, container, selectionRing: ring, sprite };
     });
   }
 
   private createCivilians(): void {
     for (const civilian of this.simulation.getCivilians()) {
       const position = civilian.position;
-      const body = this.add.circle(0, 0, 9, 0xe7c66a).setStrokeStyle(2, 0x493b1c);
-      const head = this.add.circle(0, -10, 5, 0xf1d4b1).setStrokeStyle(1, 0x493b1c);
-      const label = this.add.text(0, 13, `C${civilian.id}`, {
+      const sprite = this.add.sprite(0, 0, 'character-sprites', 6)
+        .setOrigin(0.5)
+        .setScale(1.15);
+      const label = this.add.text(0, 16, `C${civilian.id}`, {
         fontFamily: 'monospace',
-        fontSize: '10px',
+        fontSize: '9px',
         color: '#ffffff',
         backgroundColor: '#493b1c',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(position.x, position.y, [body, head, label])
+      const container = this.add.container(position.x, position.y, [sprite, label])
         .setDepth(105);
-      this.civilianVisuals.set(civilian.id, { id: civilian.id, container, body });
+      this.civilianVisuals.set(civilian.id, {
+        id: civilian.id, container, sprite, lastX: position.x, lastY: position.y,
+      });
     }
   }
 
@@ -444,10 +479,21 @@ export class MissionScene extends Phaser.Scene {
     for (const civilian of this.simulation.getCivilians()) {
       const visual = this.civilianVisuals.get(civilian.id);
       if (!visual) continue;
-      visual.container.setPosition(civilian.position.x, civilian.position.y);
+      const position = civilian.position;
+      const moving = Math.hypot(position.x - visual.lastX, position.y - visual.lastY) > 0.1;
+      visual.lastX = position.x;
+      visual.lastY = position.y;
+      visual.container.setPosition(position.x, position.y);
       visual.container.setAlpha(civilian.state === 'extracted' ? 0.45 : civilian.isIncapacitated ? 0.55 : 1);
-      visual.body.setFillStyle(civilian.isIncapacitated ? 0x626967 : civilian.mood === 'panicked'
-        ? HUD_COLORS.red : civilian.state === 'following' ? 0x8eaf75 : HUD_COLORS.civilian);
+      if (civilian.isIncapacitated) {
+        this.setCharacterFrame(visual.sprite, 11);
+      } else if (civilian.mood === 'panicked') {
+        this.setCharacterFrame(visual.sprite, 10);
+      } else if (moving) {
+        this.playCharacterWalk(visual.sprite, 'civilian-walk');
+      } else {
+        this.setCharacterFrame(visual.sprite, 6);
+      }
     }
   }
 
@@ -1338,14 +1384,24 @@ export class MissionScene extends Phaser.Scene {
       let visual = this.infectedVisuals.get(infected.id);
       if (!visual) {
         this.audio.playInfectedGroan();
-        const body = this.add.circle(0, 0, 11, 0xb83b3b).setStrokeStyle(2, 0x2a1010);
-        const core = this.add.circle(0, 0, 4, 0x451818);
-        const container = this.add.container(infected.position.x, infected.position.y, [body, core])
+        const sprite = this.add.sprite(0, 0, 'character-sprites', 12)
+          .setOrigin(0.5)
+          .setScale(1.2);
+        const container = this.add.container(infected.position.x, infected.position.y, [sprite])
           .setDepth(110);
-        visual = { id: infected.id, container };
+        visual = { id: infected.id, container, sprite };
         this.infectedVisuals.set(infected.id, visual);
       }
       visual.container.setPosition(infected.position.x, infected.position.y);
+      if (infected.state === 'dead') {
+        this.setCharacterFrame(visual.sprite, 17);
+      } else if (infected.state === 'attacking') {
+        this.setCharacterFrame(visual.sprite, 15);
+      } else if (infected.state === 'moving') {
+        this.playCharacterWalk(visual.sprite, 'infected-walk');
+      } else {
+        this.setCharacterFrame(visual.sprite, 12);
+      }
     }
 
     for (const [id, visual] of this.infectedVisuals) {
@@ -1391,12 +1447,15 @@ export class MissionScene extends Phaser.Scene {
       visual.container.setPosition(position.x, position.y);
       visual.container.setRotation(officer.facingAngle + Math.PI / 2);
       visual.container.setAlpha(officer.isIncapacitated ? 0.35 : 1);
-      const walking = officer.state === 'moving' && !officer.isIncapacitated;
-      const gait = walking ? Math.sin(this.simulation.getState().elapsed * 13 + officer.id) * 0.55 : 0;
-      visual.leftLeg.setRotation(gait);
-      visual.rightLeg.setRotation(-gait);
-      visual.body.setScale(1, walking ? 1 + Math.abs(gait) * 0.06 : 1);
-      visual.body.setFillStyle(officer.isIncapacitated ? 0x65707b : 0x3f83d5);
+      if (officer.isIncapacitated) {
+        this.setCharacterFrame(visual.sprite, 5);
+      } else if (officer.state === 'attacking') {
+        this.setCharacterFrame(visual.sprite, 3);
+      } else if (officer.state === 'moving') {
+        this.playCharacterWalk(visual.sprite, 'police-walk');
+      } else {
+        this.setCharacterFrame(visual.sprite, 0);
+      }
       visual.selectionRing.setVisible(
         this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
       );
