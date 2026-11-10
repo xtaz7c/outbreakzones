@@ -1,8 +1,8 @@
 # Outbreak Zones — Tasklist do MVP
 
-> Backlog oficial de implementação. Atualize as caixas somente após validar o comportamento no jogo e, quando aplicável, executar os testes.
+> Registro histórico do detalhamento técnico do MVP. **O backlog oficial e o estado atual das tarefas ficam nos [GitHub Issues](https://github.com/xtaz7c/outbreakzones/issues).** Não abra branches a partir desta checklist; crie um issue com escopo e critérios de aceitação, depois uma branch derivada da `main`.
 >
-**Status atual:** `main` já contém as fundações das Fases 2–7, inclusive mapa Tiled, câmera/controles RTS, policiais, IA de infectados, combate e acessos dinâmicos. A Fase 7 ainda precisa fechar travessia completa para civis e persistência/validação integrada. Esta branch adiciona replanejamento de rotas após mudanças de acesso e o ciclo de ondas/vitória/derrota da Fase 8. A validação de navegador continua obrigatória antes de marcar o DoD.
+**Status atual (2026-11-10):** as fundações de simulação, mapa, câmera, policiais, infectados, combate, acessos, ondas, civis, manutenção, HUD, campanha, estruturas e áudio estão integradas na `main`. O mantenedor confirmou que o jogo está funcionando. A PR #35 consolidou a estrutura de pastas e os assets de áudio. O issue #26 foi concluído. O trabalho restante está organizado nos [issues #36 (acabamento visual)](https://github.com/xtaz7c/outbreakzones/issues/36) e [#37 (preparação e publicação do MVP web)](https://github.com/xtaz7c/outbreakzones/issues/37). As caixas abaixo são um histórico de decomposição técnica e podem conter estados antigos; não devem ser usadas como fonte oficial de status.
 
 ## 1. Visão e escopo
 

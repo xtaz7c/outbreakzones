@@ -6,7 +6,7 @@
 
 ## Status
 
-Em desenvolvimento ativo. O backlog oficial está em [`TASKLIST.md`](./TASKLIST.md).
+Em desenvolvimento ativo. O backlog oficial está nos [GitHub Issues](https://github.com/xtaz7c/outbreakzones/issues). O [`TASKLIST.md`](./TASKLIST.md) mantém o detalhamento histórico das tarefas do MVP.
 
 ## Stack
 
