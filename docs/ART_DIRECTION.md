@@ -52,3 +52,11 @@ O atlas em public/tiles/mission-tiles.svg usa células de 32 × 32 px. Os IDs ex
 - Preferir animações curtas e legíveis (idle, walk, attack, hit, down/death), com timing estável e sem interpolação borrada.
 - Efeitos visuais devem responder a eventos existentes na apresentação; não introduzir regras de gameplay no renderer.
 - Assets devem ser originais ou licenciados para uso no projeto, com fonte/licença registrada quando externos.
+
+
+## Sprites de personagens
+
+- Atlas em `public/sprites/characters.svg`, com células de 32 × 32 px e nearest-neighbor.
+- Linhas reservadas por facção: policial, civil e infectado; seis poses por personagem: idle, dois passos de caminhada, ataque, impacto e incapacitado/morto.
+- A cena apenas seleciona quadros/animações a partir do estado já existente na simulação. O atlas e o renderer não alteram movimento, dano, seleção ou navegação.
+- Silhuetas e equipamentos distinguem as facções mesmo em escala reduzida; cores semânticas reforçam a leitura, sem serem o único identificador.

@@ -135,6 +135,10 @@ export class BootScene extends Phaser.Scene {
     });
 
     this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
+    this.load.spritesheet('character-sprites', '/sprites/characters.svg', {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
     this.load.image('mission-tiles', '/tiles/mission-tiles.svg');
 
     // Pick one ambient track per mission; avoid downloading unused full-length variants.
