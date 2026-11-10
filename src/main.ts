@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import './home.css';
 import { gameConfig } from './game/config';
 import { BUILD_LABEL } from './buildInfo';
-import { BUILD_LABEL } from './buildInfo';
 
 const homeScreen = document.querySelector<HTMLElement>('#home-screen');
 const gameContainer = document.querySelector<HTMLElement>('#game-container');
@@ -11,17 +10,22 @@ const controlsButton = document.querySelector<HTMLButtonElement>('#open-controls
 const controlsDialog = document.querySelector<HTMLDialogElement>('#controls-dialog');
 const closeControlsButton = document.querySelector<HTMLButtonElement>('#close-controls');
 const buildVersion = document.querySelector<HTMLElement>('#build-version');
-const buildVersion = document.querySelector<HTMLElement>('#build-version');
 
 let game: Phaser.Game | null = null;
 
-if (!homeScreen || !gameContainer || !startButton || !controlsButton || !controlsDialog || !closeControlsButton || !buildVersion) {
+if (
+  !homeScreen ||
+  !gameContainer ||
+  !startButton ||
+  !controlsButton ||
+  !controlsDialog ||
+  !closeControlsButton ||
+  !buildVersion
+) {
   throw new Error('Required home screen elements are missing.');
 }
 
 buildVersion.textContent = BUILD_LABEL;
-
-
 
 startButton.addEventListener('click', () => {
   if (game) return;
