@@ -54,9 +54,9 @@ const MINIMAP_CONFIG_KEY = 'outbreakzones:minimap-visibility';
 const HUD_SCALE_STORAGE_KEY = 'outbreakzones:hud-scale';
 const HUD_COLORS = {
   ink: 0x111415,
-  panel: 0x1b2021,
+  panel: 0x101516,
   metal: 0xb9b9b0,
-  muted: 0x858a87,
+  muted: 0xc0c5bd,
   paper: 0xe8e3d8,
   red: 0xc33a36,
   officer: 0x5c9be6,
@@ -524,8 +524,8 @@ export class MissionScene extends Phaser.Scene {
     this.combatGraphics = this.add.graphics().setDepth(120);
     this.accessGraphics = this.add.graphics().setDepth(80);
 
-    this.hudPanels.fillStyle(HUD_COLORS.panel, 0.94);
-    this.hudPanels.lineStyle(1, HUD_COLORS.metal, 0.24);
+    this.hudPanels.fillStyle(HUD_COLORS.panel, 0.99);
+    this.hudPanels.lineStyle(1, HUD_COLORS.metal, 0.62);
     this.hudPanels.fillRoundedRect(viewX + 20, viewY + 20, 124, 56, 8);
     this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 20, 124, 56, 8);
     this.hudPanels.fillRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
@@ -569,8 +569,8 @@ export class MissionScene extends Phaser.Scene {
 
     this.missionText = this.add.text(viewX + 36, viewY + 102, '', {
       fontFamily: 'Arial, sans-serif',
-      fontSize: '11px',
-      color: '#e8e3d8',
+      fontSize: '12px',
+      color: '#f4f1e9',
       lineSpacing: 6,
       wordWrap: { width: 244 },
     }).setScrollFactor(0).setDepth(1505);
@@ -589,21 +589,21 @@ export class MissionScene extends Phaser.Scene {
     ].forEach(({ x, label }) => {
       hudLabels.push(this.add.text(x, mapY + 211, label, {
         fontFamily: 'Arial, sans-serif',
-        fontSize: '7px',
-        color: '#858a87',
+        fontSize: '8px',
+        color: '#c0c5bd',
       }).setScrollFactor(0).setDepth(1505));
     });
 
     this.teamText = this.add.text(mapX + 12, mapY + 376, '', {
       fontFamily: 'Arial, sans-serif',
-      fontSize: '9px',
-      color: '#e8e3d8',
-      lineSpacing: 7,
+      fontSize: '10px',
+      color: '#f4f1e9',
+      lineSpacing: 6,
       wordWrap: { width: 296 },
     }).setScrollFactor(0).setDepth(1505);
 
     const buildTitle = this.add.text(viewX + 32, height / this.hudScale - 78, 'CONSTRUÇÕES  /  CLIQUE E POSICIONE NO MAPA', {
-      fontFamily: 'Arial, sans-serif', fontSize: '7px', color: '#858a87', letterSpacing: 0.8,
+      fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#c0c5bd', letterSpacing: 0.8,
     }).setScrollFactor(0).setDepth(1505);
     hudLabels.push(buildTitle);
     this.buildButtons.splice(0, this.buildButtons.length,
@@ -1018,7 +1018,7 @@ export class MissionScene extends Phaser.Scene {
     const mapWidth = 296;
     const mapHeight = 296;
     const markerInset = 14;
-    this.minimapGraphics.fillStyle(0x101516, 1);
+    this.minimapGraphics.fillStyle(0x080c0d, 1);
     this.minimapGraphics.fillRoundedRect(mapX, mapY, mapWidth, mapHeight, 12);
     this.minimapGraphics.lineStyle(1, HUD_COLORS.metal, 0.3);
     this.minimapGraphics.strokeRoundedRect(mapX, mapY, mapWidth, mapHeight, 12);
@@ -1099,6 +1099,8 @@ export class MissionScene extends Phaser.Scene {
         const nextZoom = camera.zoom * (deltaY > 0 ? 0.9 : 1.1);
         camera.setZoom(Phaser.Math.Clamp(nextZoom, minimumZoom, MAX_CAMERA_ZOOM));
         this.clampCamera();
+        // Refresh the minimap viewport immediately after wheel zoom.
+        this.updateHud();
       },
     );
   }
