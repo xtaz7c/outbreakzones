@@ -579,7 +579,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '9px',
       fontStyle: 'bold',
-      color: '#b9b9b0',
+      color: '#f4f1e9',
       letterSpacing: 1.4,
     }).setScrollFactor(0).setDepth(1505));
     [
