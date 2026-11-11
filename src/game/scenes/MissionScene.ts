@@ -13,7 +13,6 @@ import type { WaveSpawnPoint } from '../../simulation/systems/WaveSystem';
 import type { MaintenanceAction, MaintenanceState } from '../../simulation/systems/buildings/BuildingMaintenanceSystem';
 import { DeployableStructureSystem, type DeployableKind, type DeployableState } from '../../simulation/systems/buildings/DeployableStructureSystem';
 import { getCameraScrollForZoom, getNextCameraZoom } from '../CameraZoom';
-import { getCameraScrollForZoom, getNextCameraZoom } from '../CameraZoom';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -398,7 +397,8 @@ export class MissionScene extends Phaser.Scene {
     const seed = this.registry.get('missionSeed');
     if (typeof seed === 'number' && Number.isInteger(seed)) {
       this.removeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${seed}`);
-      this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`);      this.removeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${seed}`);
+      this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`);
+      this.removeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${seed}`);
     }
     this.removeStorage(MISSION_SEED_STORAGE_KEY);
     this.registry.remove('missionSeed');
@@ -799,7 +799,8 @@ export class MissionScene extends Phaser.Scene {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2002).setVisible(false)
       .setInteractive({ useHandCursor: true });
     button.on('pointerdown', action);
-    return button;  }
+    return button;
+  }
 
   private startCampaign(): void {
     const unlocked = this.readStorage(CAMPAIGN_UNLOCK_STORAGE_KEY) === '1';
@@ -1198,7 +1199,8 @@ export class MissionScene extends Phaser.Scene {
 
   private selectAt(x: number, y: number, additive: boolean): void {
     const hitRadius = 22;
-    const hit = [...this.officers]      .reverse()
+    const hit = [...this.officers]
+      .reverse()
       .find((officer) => Phaser.Math.Distance.Between(x, y, officer.container.x, officer.container.y) <= hitRadius);
 
     if (!additive) this.selectedOfficerIds.clear();
