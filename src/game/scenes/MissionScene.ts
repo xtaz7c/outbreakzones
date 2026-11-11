@@ -397,8 +397,8 @@ export class MissionScene extends Phaser.Scene {
     const seed = this.registry.get('missionSeed');
     if (typeof seed === 'number' && Number.isInteger(seed)) {
       this.removeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${seed}`);
-      this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`);
-      this.removeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${seed}`);    }
+      this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`);      this.removeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${seed}`);
+    }
     this.removeStorage(MISSION_SEED_STORAGE_KEY);
     this.registry.remove('missionSeed');
     this.scene.restart();
@@ -797,8 +797,8 @@ export class MissionScene extends Phaser.Scene {
       letterSpacing: 0.8,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2002).setVisible(false)
       .setInteractive({ useHandCursor: true });
-    button.on('pointerdown', action);    return button;
-  }
+    button.on('pointerdown', action);
+    return button;  }
 
   private startCampaign(): void {
     const unlocked = this.readStorage(CAMPAIGN_UNLOCK_STORAGE_KEY) === '1';
@@ -1197,8 +1197,7 @@ export class MissionScene extends Phaser.Scene {
 
   private selectAt(x: number, y: number, additive: boolean): void {
     const hitRadius = 22;
-    const hit = [...this.officers]
-      .reverse()
+    const hit = [...this.officers]      .reverse()
       .find((officer) => Phaser.Math.Distance.Between(x, y, officer.container.x, officer.container.y) <= hitRadius);
 
     if (!additive) this.selectedOfficerIds.clear();
@@ -1223,6 +1222,7 @@ export class MissionScene extends Phaser.Scene {
     const right = Math.max(x1, x2);
     const top = Math.min(y1, y2);
     const bottom = Math.max(y1, y2);
+
     if (!additive) this.selectedOfficerIds.clear();
     for (const officer of this.officers) {
       const model = this.simulation.getOfficers().find((candidate) => candidate.id === officer.id);
