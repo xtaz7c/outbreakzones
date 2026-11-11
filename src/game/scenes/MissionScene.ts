@@ -12,6 +12,7 @@ import { BuildingSystem, type AccessKind } from '../../simulation/systems/buildi
 import type { WaveSpawnPoint } from '../../simulation/systems/WaveSystem';
 import type { MaintenanceAction, MaintenanceState } from '../../simulation/systems/buildings/BuildingMaintenanceSystem';
 import { DeployableStructureSystem, type DeployableKind, type DeployableState } from '../../simulation/systems/buildings/DeployableStructureSystem';
+import { getCameraScrollForZoom, getNextCameraZoom } from '../CameraZoom';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -516,10 +517,11 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.build.x = viewX + 20;
     this.hudBounds.build.y = height / this.hudScale - 84;
 
-    // Tactical HUD elements are viewport-space UI and must ignore world camera movement.
+    // Tactical HUD lives in world space so camera panning and zoom affect every panel.
     const hudLabels: Phaser.GameObjects.Text[] = [];
-    this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
-    this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
+    this.hudPanels = this.add.graphics().setDepth(1500);
+    this.minimapGraphics = this.add.graphics().setDepth(1502);
+    // Selection marquee is drawn in pointer screen coordinates, not world coordinates.
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
     this.accessGraphics = this.add.graphics().setDepth(80);
@@ -547,7 +549,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '29px',
       color: '#e8e3d8',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
+    }).setOrigin(0.5).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.settingsButton.on('pointerdown', () => this.openPauseMenu());
 
@@ -556,7 +558,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '27px',
       color: '#e8e3d8',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
+    }).setOrigin(0.5).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.fullscreenButton.setData('action-label', 'Entrar em tela cheia');
     this.fullscreenButton.on('pointerdown', () => this.toggleFullscreen());
@@ -573,7 +575,7 @@ export class MissionScene extends Phaser.Scene {
       color: '#f4f1e9',
       lineSpacing: 6,
       wordWrap: { width: 244 },
-    }).setScrollFactor(0).setDepth(1505);
+    }).setDepth(1505);
 
     hudLabels.push(this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
       fontFamily: 'Arial, sans-serif',
@@ -581,7 +583,7 @@ export class MissionScene extends Phaser.Scene {
       fontStyle: 'bold',
       color: '#f4f1e9',
       letterSpacing: 1.4,
-    }).setScrollFactor(0).setDepth(1505));
+    }).setDepth(1505));
     [
       { x: mapX + 28, label: 'POLICIAIS' },
       { x: mapX + 122, label: 'CIVIS' },
@@ -591,7 +593,7 @@ export class MissionScene extends Phaser.Scene {
         fontFamily: 'Arial, sans-serif',
         fontSize: '8px',
         color: '#c0c5bd',
-      }).setScrollFactor(0).setDepth(1505));
+      }).setDepth(1505));
     });
 
     this.teamText = this.add.text(mapX + 12, mapY + 376, '', {
@@ -600,11 +602,11 @@ export class MissionScene extends Phaser.Scene {
       color: '#f4f1e9',
       lineSpacing: 6,
       wordWrap: { width: 296 },
-    }).setScrollFactor(0).setDepth(1505);
+    }).setDepth(1505);
 
     const buildTitle = this.add.text(viewX + 32, height / this.hudScale - 78, 'CONSTRUÇÕES  /  CLIQUE E POSICIONE NO MAPA', {
       fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#c0c5bd', letterSpacing: 0.8,
-    }).setScrollFactor(0).setDepth(1505);
+    }).setDepth(1505);
     hudLabels.push(buildTitle);
     this.buildButtons.splice(0, this.buildButtons.length,
       this.createBuildButton(viewX + 76, height / this.hudScale - 47, 'ABRIGO 30/8', 'shelter-tent'),
@@ -614,12 +616,14 @@ export class MissionScene extends Phaser.Scene {
     );
 
     const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
-      .setScrollFactor(0).setDepth(1507)
+      .setDepth(1507)
       .setInteractive({ useHandCursor: true });
     teamHitArea.on('pointerdown', () => this.selectAllOfficers());
 
-    // Group only the tactical HUD so its scale remains independent of world-camera zoom.
-    this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
+    // Anchor the HUD to the camera's current world-space top-left. scrollX/scrollY
+    // are available during create; getWorldPoint relies on the first camera render.
+    const camera = this.cameras.main;
+    this.hudRoot = this.add.container(camera.scrollX, camera.scrollY).setDepth(1500);
     this.hudRoot.add([
       this.hudPanels, this.minimapGraphics, this.settingsButton, this.fullscreenButton,
       this.missionText, this.teamText, teamHitArea, ...hudLabels, ...this.buildButtons,
@@ -691,7 +695,7 @@ export class MissionScene extends Phaser.Scene {
       padding: { x: 6, y: 8 },
       fixedWidth: 96,
       align: 'center',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1506)
+    }).setOrigin(0.5).setDepth(1506)
       .setInteractive({ useHandCursor: true });
     button.on('pointerdown', () => {
       this.placementMode = this.placementMode === kind ? null : kind;
@@ -889,9 +893,9 @@ export class MissionScene extends Phaser.Scene {
 
   private applyHudScale(): void {
     if (!this.hudRoot) return;
-    // Anchor the left panels to the left edge and compute the right/bottom
-    // panel coordinates in scaled space so neither side clips at 80%–120%.
-    this.hudRoot.setScale(this.hudScale).setPosition(0, 0);
+    // The HUD shares the world camera transform. Phaser applies camera zoom
+    // automatically; this scale remains only the user's independent preference.
+    this.hudRoot.setScale(this.hudScale);
   }
 
   private adjustHudScale(delta: number): void {
@@ -952,8 +956,9 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private isHudPoint(x: number, y: number): boolean {
-    const localX = x / this.hudScale;
-    const localY = y / this.hudScale;
+    const worldPoint = this.cameras.main.getWorldPoint(x, y);
+    const localX = (worldPoint.x - this.hudRoot.x) / this.hudScale;
+    const localY = (worldPoint.y - this.hudRoot.y) / this.hudScale;
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
       localX >= rect.x && localX <= rect.x + rect.width &&
       localY >= rect.y && localY <= rect.y + rect.height;
@@ -1085,21 +1090,50 @@ export class MissionScene extends Phaser.Scene {
     this.input.on(
       'wheel',
       (
-        _pointer: Phaser.Input.Pointer,
+        pointer: Phaser.Input.Pointer,
         _currentlyOver: Phaser.GameObjects.GameObject[],
         _deltaX: number,
         deltaY: number,
       ) => {
+        // Wheel zoom is available over the map and over HUD panels.
+        const wheelEvent = pointer.event as WheelEvent;
+        wheelEvent.preventDefault();
+
         const camera = this.cameras.main;
         const minimumZoom = Math.max(
           MIN_CAMERA_ZOOM,
           camera.width / this.cameraWorldWidth,
           camera.height / this.cameraWorldHeight,
         );
-        const nextZoom = camera.zoom * (deltaY > 0 ? 0.9 : 1.1);
-        camera.setZoom(Phaser.Math.Clamp(nextZoom, minimumZoom, MAX_CAMERA_ZOOM));
+        const nextZoom = getNextCameraZoom(
+          camera.zoom,
+          deltaY,
+          minimumZoom,
+          MAX_CAMERA_ZOOM,
+        );
+        if (nextZoom === camera.zoom) return;
+
+        // Preserve the world position under the cursor while changing zoom.
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        camera.setZoom(nextZoom);
+        const scroll = getCameraScrollForZoom(
+          worldPoint.x,
+          worldPoint.y,
+          pointer.x,
+          pointer.y,
+          camera.x,
+          camera.y,
+          camera.width,
+          camera.height,
+          nextZoom,
+          camera.originX,
+          camera.originY,
+        );
+        camera.setScroll(scroll.x, scroll.y);
         this.clampCamera();
-        // Refresh the minimap viewport immediately after wheel zoom.
+        this.applyHudScale();
+
+        // Refresh the minimap viewport and scale the complete HUD with the camera.
         this.updateHud();
       },
     );
