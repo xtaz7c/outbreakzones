@@ -620,8 +620,10 @@ export class MissionScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     teamHitArea.on('pointerdown', () => this.selectAllOfficers());
 
-    // Keep the HUD in viewport space so it remains visible while the world camera pans.
-    this.hudRoot = this.add.container(0, 0).setDepth(1500);
+    // Anchor the HUD to the camera's current world-space top-left. scrollX/scrollY
+    // are available during create; getWorldPoint relies on the first camera render.
+    const camera = this.cameras.main;
+    this.hudRoot = this.add.container(camera.scrollX, camera.scrollY).setDepth(1500);
     this.hudRoot.add([
       this.hudPanels, this.minimapGraphics, this.settingsButton, this.fullscreenButton,
       this.missionText, this.teamText, teamHitArea, ...hudLabels, ...this.buildButtons,
@@ -693,7 +695,7 @@ export class MissionScene extends Phaser.Scene {
       padding: { x: 6, y: 8 },
       fixedWidth: 96,
       align: 'center',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1506)
+    }).setOrigin(0.5).setDepth(1506)
       .setInteractive({ useHandCursor: true });
     button.on('pointerdown', () => {
       this.placementMode = this.placementMode === kind ? null : kind;
