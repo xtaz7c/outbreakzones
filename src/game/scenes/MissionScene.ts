@@ -1121,7 +1121,11 @@ export class MissionScene extends Phaser.Scene {
           pointer.y,
           camera.x,
           camera.y,
+          camera.width,
+          camera.height,
           nextZoom,
+          camera.originX,
+          camera.originY,
         );
         camera.setScroll(scroll.x, scroll.y);
         this.clampCamera();
