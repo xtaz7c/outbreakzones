@@ -26,8 +26,9 @@ export function getNextCameraZoom(
 }
 
 /**
- * Keep the same world point beneath the cursor after a camera zoom.
- * Pointer and viewport coordinates are expressed in Phaser's game-space pixels.
+ * Keep the same world point beneath the cursor after a Phaser camera zoom.
+ * Phaser applies zoom around the camera origin (0.5 by default), not the
+ * viewport's top-left corner, so the viewport center must be included.
  */
 export function getCameraScrollForZoom(
   worldX: number,
@@ -36,14 +37,25 @@ export function getCameraScrollForZoom(
   pointerY: number,
   viewportX: number,
   viewportY: number,
+  viewportWidth: number,
+  viewportHeight: number,
   nextZoom: number,
+  originX = 0.5,
+  originY = 0.5,
 ): CameraScroll {
-  if (!Number.isFinite(nextZoom) || nextZoom <= 0) {
+  if (
+    ![worldX, worldY, pointerX, pointerY, viewportX, viewportY,
+      viewportWidth, viewportHeight, nextZoom, originX, originY].every(Number.isFinite) ||
+    nextZoom <= 0
+  ) {
     return { x: 0, y: 0 };
   }
 
+  const originOffsetX = viewportWidth * originX;
+  const originOffsetY = viewportHeight * originY;
+
   return {
-    x: worldX - (pointerX - viewportX) / nextZoom,
-    y: worldY - (pointerY - viewportY) / nextZoom,
+    x: worldX - (pointerX - viewportX - originOffsetX) / nextZoom - originOffsetX,
+    y: worldY - (pointerY - viewportY - originOffsetY) / nextZoom - originOffsetY,
   };
 }
