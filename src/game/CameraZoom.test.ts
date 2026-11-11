@@ -28,7 +28,7 @@ describe('getCameraScrollForZoom', () => {
 
   it('anchors an off-center cursor with a non-zero viewport origin', () => {
     const scroll = getCameraScrollForZoom(500, 300, 500, 260, 100, 60, 800, 600, 2);
-    expect(scroll).toEqual({ x: 120, y: 20 });
+    expect(scroll).toEqual({ x: 100, y: 50 });
     expect((500 - 100 - 400) / 2 + scroll.x + 400).toBe(500);
     expect((260 - 60 - 300) / 2 + scroll.y + 300).toBe(300);
   });
