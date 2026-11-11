@@ -11,7 +11,9 @@ Este documento é o roteiro de validação da primeira publicação pública. Ma
 - [x] O deploy preview da PR #44 foi reportado como aprovado pelo status do Netlify no GitHub.
 - [ ] Registrar a matriz mínima de navegadores e sistemas operacionais desktop suportados.
 - [x] Definir a licença do código-fonte como MIT e adicionar inventário de procedência dos assets.
-- [ ] Confirmar tier/termos do ElevenLabs aplicáveis aos 12 WAV e verificar licenças/atribuições dos demais assets antes da distribuição pública.
+- [x] Confirmar que os 12 WAV foram gerados no plano gratuito do ElevenLabs.
+- [ ] Substituir os 12 WAV por efeitos com licença comercial adequada ou obter confirmação/licença escrita da ElevenLabs que cubra esses outputs.
+- [ ] Verificar licenças/atribuições dos demais assets antes da distribuição pública.
 - [ ] Aprovar formalmente a versão da release e criar a tag Git correspondente. A versão atual permanece 0.1.0; a PR #44 não gerou bump.
 
 ## 2. Build e integridade do artefato
@@ -88,7 +90,7 @@ Registrar navegador, versão, sistema operacional, resolução, resultado e evid
 ## 7. Pendências / bloqueadores
 
 - Matriz de navegadores e resoluções desktop ainda não foi executada nem formalizada.
-- O código-fonte está sob MIT. A liberação dos assets continua pendente: confirmar tier/termos do ElevenLabs para os 12 WAV e revisar procedência/licenças dos demais assets.
+- O código-fonte está sob MIT. Os 12 WAV foram gerados no plano gratuito do ElevenLabs, que não inclui licença comercial; eles não estão liberados para distribuição comercial/monetizada. Substituí-los por áudio com licença adequada ou obter autorização escrita específica. A procedência/licença dos demais assets também precisa ser revisada.
 - É necessário registrar o smoke test detalhado, mesmo com a confirmação geral de funcionamento dada pelo mantenedor.
 - A conferência visual de versão + SHA da PR #44 na tela inicial e no loader continua pendente.
 - A conexão/configuração do Netlify e o domínio público já foram confirmados funcionalmente pela publicação; os detalhes de production branch/deploy previews ainda devem ser conferidos no painel.
