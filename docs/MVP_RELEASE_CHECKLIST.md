@@ -6,16 +6,16 @@ Este documento é o roteiro de validação da primeira publicação pública. Ma
 
 ## 1. Decisões de lançamento
 
-- [x] Provedor escolhido: Netlify. A configuração versionada fica em `netlify.toml`.
-- [ ] Conectar o repositório `xtaz7c/outbreakzones` ao Netlify e confirmar acesso administrativo.
-- [ ] Definir/confirmar o domínio ou subdomínio público.
-- [ ] Definir a matriz mínima de navegadores e sistemas operacionais desktop suportados.
-- [ ] Confirmar a licença do projeto e as licenças/atribuições dos assets antes da distribuição pública.
-- [ ] Confirmar a versão semântica da release e criar a tag Git correspondente após aprovar o escopo. Não incrementar a versão por commit ou PR.
+- [x] Provedor escolhido: Netlify. A configuração versionada fica em netlify.toml.
+- [x] URL pública definida e confirmada pelo mantenedor: https://outbreakzones.netlify.app/.
+- [x] O deploy preview da PR #44 foi reportado como aprovado pelo status do Netlify no GitHub.
+- [ ] Registrar a matriz mínima de navegadores e sistemas operacionais desktop suportados.
+- [ ] Definir a licença do código e confirmar licenças/atribuições de todos os assets antes da distribuição pública.
+- [ ] Aprovar formalmente a versão da release e criar a tag Git correspondente. A versão atual permanece 0.1.0; a PR #44 não gerou bump.
 
 ## 2. Build e integridade do artefato
 
-A configuração do Netlify executa `npm run build` e publica `dist`. O Netlify instala dependências usando o lockfile versionado; validar o fluxo em um deploy de preview antes de promover a produção.
+A configuração do Netlify executa npm run build e publica dist, usando Node.js 20. A CI da PR #44 executou npm ci, testes (148 aprovados), lint e build com sucesso. A verificação automatizada da PR não substitui o smoke test em cada navegador suportado.
 
 Para validação local a partir de um clone limpo:
 
@@ -27,14 +27,17 @@ npm run build
 npm run preview
 ```
 
-- [ ] Todos os comandos terminam com código de saída zero.
-- [ ] A prévia de produção abre a tela inicial sem erros no console.
-- [ ] O bundle carrega mapa, tiles, sprites e áudio a partir dos caminhos publicados.
-- [ ] Nenhum recurso essencial depende de caminhos absolutos incompatíveis com o destino de hospedagem.
-- [ ] Não há erros 404, exceções não tratadas ou avisos críticos no console.
+- [x] npm ci, npm test, npm run lint e npm run build passam na CI da PR #44.
+- [ ] Executar os comandos acima em clone limpo e registrar a versão de Node/npm.
+- [ ] Verificar a prévia de produção local e o console do navegador.
+- [ ] Confirmar carregamento de mapa, tiles, sprites e áudio no artefato publicado, sem 404 ou exceções.
+- [ ] Confirmar que nenhum recurso essencial depende de caminhos absolutos incompatíveis com hospedagem.
 
 ## 3. Smoke test funcional
 
+O mantenedor confirmou que a URL pública está funcionando normalmente. Os testes detalhados abaixo ainda precisam de registro individual para formar uma evidência reproduzível.
+
+- [x] URL pública abre e foi testada pelo mantenedor: https://outbreakzones.netlify.app/.
 - [ ] Tela inicial carrega e os botões de iniciar operação e controles funcionam.
 - [ ] A missão inicia sem tela em branco ou erro de carregamento.
 - [ ] Seleção individual por clique e teclas 1, 2 e 3 funciona.
@@ -50,7 +53,7 @@ npm run preview
 
 ## 4. Compatibilidade e resolução
 
-Executar o smoke test em cada combinação aprovada na matriz de suporte:
+Executar o smoke test em cada combinação aprovada na matriz de suporte. Até que a matriz seja definida e executada, não declarar suporte formal a navegadores/resoluções.
 
 - [ ] Chromium (versão estável atual).
 - [ ] Firefox (versão estável atual).
@@ -60,23 +63,31 @@ Executar o smoke test em cada combinação aprovada na matriz de suporte:
 - [ ] Janela redimensionada e tela cheia.
 - [ ] Escala do HUD nos limites mínimo e máximo.
 
-Registrar navegador, versão, sistema operacional, resolução, resultado e evidências para cada execução. Não declarar suporte a navegadores que não tenham sido testados.
+Registrar navegador, versão, sistema operacional, resolução, resultado e evidências para cada execução.
 
 ## 5. Publicação e verificação pós-deploy
 
-- [x] Configuração versionada do Netlify: Node.js 20, comando `npm run build`, diretório `dist`.
-- [ ] Conectar o GitHub ao Netlify com `main` como production branch e deploy previews para Pull Requests.
-- [ ] Confirmar que o preview de uma PR é publicado antes do merge e que apenas `main` atualiza a produção.
-- [ ] URL pública abre em sessão anônima/limpa e em outro dispositivo.
-- [ ] Fluxo completo da missão é repetido na URL pública, não apenas em localhost.
-- [ ] Recursos estáticos, áudio e persistência local funcionam no domínio final.
-- [ ] Registrar URL, commit, versão, data do deploy e resultado do smoke test.
+- [x] Configuração versionada do Netlify: Node.js 20, comando npm run build, diretório dist.
+- [x] URL pública informada e testada pelo mantenedor: https://outbreakzones.netlify.app/.
+- [ ] Confirmar no painel Netlify que main é a production branch e que deploy previews estão habilitados para Pull Requests.
+- [ ] Repetir o fluxo completo da missão na URL pública e registrar o resultado detalhado.
+- [ ] Confirmar recursos estáticos, áudio e persistência local no domínio final.
+- [ ] Registrar URL, commit, versão, data do deploy e resultado do smoke test detalhado.
 - [ ] Documentar procedimento de rollback: promover deploy anterior no Netlify e corrigir pela branch/PR.
 
-## 6. Bloqueadores conhecidos
+## 6. Versionamento e identidade de build
 
-- A conexão do repositório ao Netlify e a confirmação do domínio público dependem de acesso ao painel Netlify.
-- A matriz de navegadores desktop ainda não foi executada.
-- O README ainda precisa de revisão final para separar controles de jogador dos atalhos provisórios/de desenvolvimento.
-- A licença do projeto está indicada como pendente no README; esclarecer licença do código e licenças/atribuições dos assets.
-- A PR #41 (versionamento e identificação de build, issue #40) permanece em draft. Antes da release, revisar sua base/alterações, integrar e validar a identificação de versão e SHA no build Netlify.
+- [x] Política de versionamento documentada em docs/CONTRIBUTING.md.
+- [x] Versão centralizada em package.json; a versão atual continua 0.1.0.
+- [x] PR #44 integrada à main (merge commit 65ce6d9e021c6ceb32c17dd06b525a92cae0ac8a), substituindo a antiga PR #41.
+- [x] Tela inicial e loader recebem versão e identificador curto de build pelo mecanismo integrado na PR #44.
+- [ ] Conferir visualmente na URL pública se a versão e o SHA curto aparecem corretamente na tela inicial e no loader.
+- [ ] Aprovar versão/tag da release somente depois de fechar os critérios de distribuição.
+
+## 7. Pendências / bloqueadores
+
+- Matriz de navegadores e resoluções desktop ainda não foi executada nem formalizada.
+- Licença do código continua indicada como A definir no README; licenças e atribuições de assets também precisam ser confirmadas.
+- É necessário registrar o smoke test detalhado, mesmo com a confirmação geral de funcionamento dada pelo mantenedor.
+- A conferência visual de versão + SHA da PR #44 na tela inicial e no loader continua pendente.
+- A conexão/configuração do Netlify e o domínio público já foram confirmados funcionalmente pela publicação; os detalhes de production branch/deploy previews ainda devem ser conferidos no painel.
