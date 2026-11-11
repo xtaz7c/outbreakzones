@@ -12,6 +12,7 @@ import { BuildingSystem, type AccessKind } from '../../simulation/systems/buildi
 import type { WaveSpawnPoint } from '../../simulation/systems/WaveSystem';
 import type { MaintenanceAction, MaintenanceState } from '../../simulation/systems/buildings/BuildingMaintenanceSystem';
 import { DeployableStructureSystem, type DeployableKind, type DeployableState } from '../../simulation/systems/buildings/DeployableStructureSystem';
+import { getCameraScrollForZoom, getNextCameraZoom } from '../CameraZoom';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -397,8 +398,7 @@ export class MissionScene extends Phaser.Scene {
     if (typeof seed === 'number' && Number.isInteger(seed)) {
       this.removeStorage(`${BUILDING_STATE_STORAGE_PREFIX}${seed}`);
       this.removeStorage(`${MAINTENANCE_STATE_STORAGE_PREFIX}${seed}`);
-      this.removeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${seed}`);
-    }
+      this.removeStorage(`${DEPLOYABLE_STATE_STORAGE_PREFIX}${seed}`);    }
     this.removeStorage(MISSION_SEED_STORAGE_KEY);
     this.registry.remove('missionSeed');
     this.scene.restart();
@@ -797,8 +797,7 @@ export class MissionScene extends Phaser.Scene {
       letterSpacing: 0.8,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2002).setVisible(false)
       .setInteractive({ useHandCursor: true });
-    button.on('pointerdown', action);
-    return button;
+    button.on('pointerdown', action);    return button;
   }
 
   private startCampaign(): void {
@@ -1085,21 +1084,47 @@ export class MissionScene extends Phaser.Scene {
     this.input.on(
       'wheel',
       (
-        _pointer: Phaser.Input.Pointer,
+        pointer: Phaser.Input.Pointer,
         _currentlyOver: Phaser.GameObjects.GameObject[],
         _deltaX: number,
         deltaY: number,
       ) => {
+        // HUD interactions must remain independent from world-camera zoom.
+        if (this.isHudPoint(pointer.x, pointer.y)) return;
+
+        const wheelEvent = pointer.event as WheelEvent;
+        wheelEvent.preventDefault();
+
         const camera = this.cameras.main;
         const minimumZoom = Math.max(
           MIN_CAMERA_ZOOM,
           camera.width / this.cameraWorldWidth,
           camera.height / this.cameraWorldHeight,
         );
-        const nextZoom = camera.zoom * (deltaY > 0 ? 0.9 : 1.1);
-        camera.setZoom(Phaser.Math.Clamp(nextZoom, minimumZoom, MAX_CAMERA_ZOOM));
+        const nextZoom = getNextCameraZoom(
+          camera.zoom,
+          deltaY,
+          minimumZoom,
+          MAX_CAMERA_ZOOM,
+        );
+        if (nextZoom === camera.zoom) return;
+
+        // Preserve the world position under the cursor while changing zoom.
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        camera.setZoom(nextZoom);
+        const scroll = getCameraScrollForZoom(
+          worldPoint.x,
+          worldPoint.y,
+          pointer.x,
+          pointer.y,
+          camera.x,
+          camera.y,
+          nextZoom,
+        );
+        camera.setScroll(scroll.x, scroll.y);
         this.clampCamera();
-        // Refresh the minimap viewport immediately after wheel zoom.
+
+        // The HUD uses scrollFactor(0); redraw its camera indicator after zoom.
         this.updateHud();
       },
     );
@@ -1198,7 +1223,6 @@ export class MissionScene extends Phaser.Scene {
     const right = Math.max(x1, x2);
     const top = Math.min(y1, y2);
     const bottom = Math.max(y1, y2);
-
     if (!additive) this.selectedOfficerIds.clear();
     for (const officer of this.officers) {
       const model = this.simulation.getOfficers().find((candidate) => candidate.id === officer.id);
