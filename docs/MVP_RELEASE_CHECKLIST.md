@@ -10,8 +10,9 @@ Este documento é o roteiro de validação da primeira publicação pública. Ma
 - [x] URL pública definida e confirmada pelo mantenedor: https://outbreakzones.netlify.app/.
 - [x] O deploy preview da PR #44 foi reportado como aprovado pelo status do Netlify no GitHub.
 - [ ] Registrar a matriz mínima de navegadores e sistemas operacionais desktop suportados.
-- [x] Definir a licença do código-fonte como MIT e adicionar inventário de procedência dos assets.
-- [x] Confirmar que os 12 WAV foram gerados no plano gratuito do ElevenLabs.
+- [x] Definir a licença do código-fonte como MIT.
+- [x] Registrar a procedência e as condições de uso dos 12 WAV gerados pelo ElevenLabs.
+- [ ] Inventariar a procedência e as licenças dos demais assets (imagens, sprites, tiles, fontes e outros áudios).
 - [ ] Substituir os 12 WAV por efeitos com licença comercial adequada ou obter confirmação/licença escrita da ElevenLabs que cubra esses outputs.
 - [ ] Verificar licenças/atribuições dos demais assets antes da distribuição pública.
 - [ ] Aprovar formalmente a versão da release e criar a tag Git correspondente. A versão atual permanece 0.1.0; a PR #44 não gerou bump.
