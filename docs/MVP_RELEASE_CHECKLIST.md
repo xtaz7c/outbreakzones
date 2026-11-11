@@ -12,9 +12,9 @@ Este documento é o roteiro de validação da primeira publicação pública. Ma
 - [ ] Registrar a matriz mínima de navegadores e sistemas operacionais desktop suportados.
 - [x] Definir a licença do código-fonte como MIT.
 - [x] Registrar a procedência e as condições de uso dos 12 WAV gerados pelo ElevenLabs.
-- [ ] Inventariar a procedência e as licenças dos demais assets (imagens, sprites, tiles, fontes e outros áudios).
+- [x] Inventariar a procedência dos demais assets visuais: ícone, sprites de personagens, tileset e mapa foram confirmados pelo mantenedor como gerados pelo ChatGPT para o projeto. Ver docs/ASSET_LICENSES.md.
+- [ ] Revisar os termos aplicáveis aos assets gerados por IA e confirmar a adequação ao modelo de distribuição pretendido; não presumir que sejam MIT ou que haja garantia de exclusividade/não infração.
 - [ ] Substituir os 12 WAV por efeitos com licença comercial adequada ou obter confirmação/licença escrita da ElevenLabs que cubra esses outputs.
-- [ ] Verificar licenças/atribuições dos demais assets antes da distribuição pública.
 - [ ] Aprovar formalmente a versão da release e criar a tag Git correspondente. A versão atual permanece 0.1.0; a PR #44 não gerou bump.
 
 ## 2. Build e integridade do artefato
@@ -91,7 +91,8 @@ Registrar navegador, versão, sistema operacional, resolução, resultado e evid
 ## 7. Pendências / bloqueadores
 
 - Matriz de navegadores e resoluções desktop ainda não foi executada nem formalizada.
-- O código-fonte está sob MIT. Os 12 WAV foram gerados no plano gratuito do ElevenLabs, que não inclui licença comercial; eles não estão liberados para distribuição comercial/monetizada. Substituí-los por áudio com licença adequada ou obter autorização escrita específica. A procedência/licença dos demais assets também precisa ser revisada.
+- O código-fonte está sob MIT. Os 12 WAV foram gerados no plano gratuito do ElevenLabs, que não inclui licença comercial; eles não estão liberados para distribuição comercial/monetizada. Substituí-los por áudio com licença adequada ou obter autorização escrita específica.
+- Os quatro assets visuais restantes tiveram sua procedência identificada: foram gerados pelo ChatGPT para o projeto, conforme confirmação do mantenedor. A revisão dos termos aplicáveis e da adequação ao modelo de distribuição ainda precisa ser concluída; eles não são automaticamente cobertos pela MIT.
 - É necessário registrar o smoke test detalhado, mesmo com a confirmação geral de funcionamento dada pelo mantenedor.
 - A conferência visual de versão + SHA da PR #44 na tela inicial e no loader continua pendente.
 - A conexão/configuração do Netlify e o domínio público já foram confirmados funcionalmente pela publicação; os detalhes de production branch/deploy previews ainda devem ser conferidos no painel.
