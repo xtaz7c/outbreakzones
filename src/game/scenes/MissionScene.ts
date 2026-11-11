@@ -549,7 +549,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '29px',
       color: '#e8e3d8',
-    }).setOrigin(0.5).setScrollFactor(0).setScrollFactor(0).setDepth(1505)
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.settingsButton.on('pointerdown', () => this.openPauseMenu());
 
@@ -558,7 +558,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '27px',
       color: '#e8e3d8',
-    }).setOrigin(0.5).setScrollFactor(0).setScrollFactor(0).setDepth(1505)
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.fullscreenButton.setData('action-label', 'Entrar em tela cheia');
     this.fullscreenButton.on('pointerdown', () => this.toggleFullscreen());
@@ -891,16 +891,9 @@ export class MissionScene extends Phaser.Scene {
 
   private applyHudScale(): void {
     if (!this.hudRoot) return;
-    // Scale the entire viewport HUD around the viewport center. This preserves its
-    // screen anchoring during WASD panning while making it respond to wheel zoom.
-    const camera = this.cameras.main;
-    const effectiveScale = this.hudScale * camera.zoom;
-    const centerX = camera.x + camera.width / 2;
-    const centerY = camera.y + camera.height / 2;
-    this.hudRoot.setScale(effectiveScale).setPosition(
-      centerX * (1 - effectiveScale),
-      centerY * (1 - effectiveScale),
-    );
+    // Scroll-factor 0 keeps the HUD anchored to the viewport. Phaser still applies
+    // camera zoom to it, so only the independent user scale belongs on the root.
+    this.hudRoot.setScale(this.hudScale).setPosition(0, 0);
   }
 
   private adjustHudScale(delta: number): void {
@@ -961,9 +954,12 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private isHudPoint(x: number, y: number): boolean {
-    const effectiveScale = this.hudScale * this.cameras.main.zoom;
-    const localX = (x - this.hudRoot.x) / effectiveScale;
-    const localY = (y - this.hudRoot.y) / effectiveScale;
+    const camera = this.cameras.main;
+    const originX = camera.x + camera.width * camera.originX;
+    const originY = camera.y + camera.height * camera.originY;
+    // Invert the camera's zoom around its origin, then invert the user's HUD scale.
+    const localX = (originX + (x - originX) / camera.zoom) / this.hudScale;
+    const localY = (originY + (y - originY) / camera.zoom) / this.hudScale;
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
       localX >= rect.x && localX <= rect.x + rect.width &&
       localY >= rect.y && localY <= rect.y + rect.height;
