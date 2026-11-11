@@ -87,7 +87,7 @@ Documentação:
 
 ## Licença
 
-A definir.
+O código-fonte original deste projeto é distribuído sob a licença [MIT](./LICENSE). Essa licença não se estende automaticamente a áudio, imagens, fontes ou outros assets; consulte [docs/ASSET_LICENSES.md](./docs/ASSET_LICENSES.md) para procedência e condições de uso.
 
 
 ## Campanha (em desenvolvimento)
