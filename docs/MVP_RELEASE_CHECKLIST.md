@@ -10,7 +10,8 @@ Este documento é o roteiro de validação da primeira publicação pública. Ma
 - [x] URL pública definida e confirmada pelo mantenedor: https://outbreakzones.netlify.app/.
 - [x] O deploy preview da PR #44 foi reportado como aprovado pelo status do Netlify no GitHub.
 - [ ] Registrar a matriz mínima de navegadores e sistemas operacionais desktop suportados.
-- [ ] Definir a licença do código e confirmar licenças/atribuições de todos os assets antes da distribuição pública.
+- [x] Definir a licença do código-fonte como MIT e adicionar inventário de procedência dos assets.
+- [ ] Confirmar tier/termos do ElevenLabs aplicáveis aos 12 WAV e verificar licenças/atribuições dos demais assets antes da distribuição pública.
 - [ ] Aprovar formalmente a versão da release e criar a tag Git correspondente. A versão atual permanece 0.1.0; a PR #44 não gerou bump.
 
 ## 2. Build e integridade do artefato
@@ -87,7 +88,7 @@ Registrar navegador, versão, sistema operacional, resolução, resultado e evid
 ## 7. Pendências / bloqueadores
 
 - Matriz de navegadores e resoluções desktop ainda não foi executada nem formalizada.
-- Licença do código continua indicada como A definir no README; licenças e atribuições de assets também precisam ser confirmadas.
+- O código-fonte está sob MIT. A liberação dos assets continua pendente: confirmar tier/termos do ElevenLabs para os 12 WAV e revisar procedência/licenças dos demais assets.
 - É necessário registrar o smoke test detalhado, mesmo com a confirmação geral de funcionamento dada pelo mantenedor.
 - A conferência visual de versão + SHA da PR #44 na tela inicial e no loader continua pendente.
 - A conexão/configuração do Netlify e o domínio público já foram confirmados funcionalmente pela publicação; os detalhes de production branch/deploy previews ainda devem ser conferidos no painel.
