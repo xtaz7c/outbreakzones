@@ -521,7 +521,8 @@ export class MissionScene extends Phaser.Scene {
     const hudLabels: Phaser.GameObjects.Text[] = [];
     this.hudPanels = this.add.graphics().setDepth(1500);
     this.minimapGraphics = this.add.graphics().setDepth(1502);
-    this.selectionGraphics = this.add.graphics().setDepth(999);
+    // Selection marquee is drawn in pointer screen coordinates, not world coordinates.
+    this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
     this.accessGraphics = this.add.graphics().setDepth(80);
 
