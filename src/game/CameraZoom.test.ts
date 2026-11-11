@@ -19,15 +19,22 @@ describe('getNextCameraZoom', () => {
 });
 
 describe('getCameraScrollForZoom', () => {
-  it('keeps the cursor world point stationary across zoom levels', () => {
-    const scroll = getCameraScrollForZoom(500, 300, 400, 200, 0, 0, 2);
-    expect(scroll).toEqual({ x: 300, y: 200 });
-    expect(scroll.x + 400 / 2).toBe(500);
-    expect(scroll.y + 200 / 2).toBe(300);
+  it('anchors the cursor at the center of the viewport', () => {
+    const scroll = getCameraScrollForZoom(500, 300, 960, 540, 0, 0, 1920, 1080, 2);
+    expect(scroll).toEqual({ x: -460, y: -240 });
+    expect((960 - 960) / 2 + scroll.x + 960).toBe(500);
+    expect((540 - 540) / 2 + scroll.y + 540).toBe(300);
   });
 
-  it('accounts for a non-zero camera viewport origin', () => {
-    expect(getCameraScrollForZoom(500, 300, 500, 260, 100, 60, 2))
-      .toEqual({ x: 300, y: 200 });
+  it('anchors an off-center cursor with a non-zero viewport origin', () => {
+    const scroll = getCameraScrollForZoom(500, 300, 500, 260, 100, 60, 800, 600, 2);
+    expect(scroll).toEqual({ x: 120, y: 20 });
+    expect((500 - 100 - 400) / 2 + scroll.x + 400).toBe(500);
+    expect((260 - 60 - 300) / 2 + scroll.y + 300).toBe(300);
+  });
+
+  it('supports a non-default camera origin', () => {
+    const scroll = getCameraScrollForZoom(500, 300, 300, 180, 0, 0, 800, 600, 2, 0, 0);
+    expect(scroll).toEqual({ x: 350, y: 210 });
   });
 });
