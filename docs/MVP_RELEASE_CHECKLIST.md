@@ -10,7 +10,8 @@ Este documento é o roteiro de validação da primeira publicação pública. Ma
 - [x] URL pública definida e confirmada pelo mantenedor: https://outbreakzones.netlify.app/.
 - [x] O deploy preview da PR #44 foi reportado como aprovado pelo status do Netlify no GitHub.
 - [ ] Registrar a matriz mínima de navegadores e sistemas operacionais desktop suportados.
-- [ ] Definir a licença do código e confirmar licenças/atribuições de todos os assets antes da distribuição pública.
+- [x] Licença MIT adicionada para o código-fonte em LICENSE.
+- [ ] Confirmar procedência, licença e atribuição de todos os assets incluídos na distribuição; ver docs/ASSET_LICENSES.md.
 - [ ] Aprovar formalmente a versão da release e criar a tag Git correspondente. A versão atual permanece 0.1.0; a PR #44 não gerou bump.
 
 ## 2. Build e integridade do artefato
@@ -87,7 +88,8 @@ Registrar navegador, versão, sistema operacional, resolução, resultado e evid
 ## 7. Pendências / bloqueadores
 
 - Matriz de navegadores e resoluções desktop ainda não foi executada nem formalizada.
-- Licença do código continua indicada como A definir no README; licenças e atribuições de assets também precisam ser confirmadas.
+- A licença MIT foi definida para o código-fonte. Isso não cobre automaticamente sprites, tiles ou áudio.
+- A procedência e a permissão de redistribuição dos assets listados em docs/ASSET_LICENSES.md ainda precisam ser confirmadas. Esta é uma condição bloqueadora para uma release pública.
 - É necessário registrar o smoke test detalhado, mesmo com a confirmação geral de funcionamento dada pelo mantenedor.
 - A conferência visual de versão + SHA da PR #44 na tela inicial e no loader continua pendente.
 - A conexão/configuração do Netlify e o domínio público já foram confirmados funcionalmente pela publicação; os detalhes de production branch/deploy previews ainda devem ser conferidos no painel.
