@@ -890,9 +890,9 @@ export class MissionScene extends Phaser.Scene {
 
   private applyHudScale(): void {
     if (!this.hudRoot) return;
-    // Anchor the left panels to the left edge and compute the right/bottom
-    // panel coordinates in scaled space so neither side clips at 80%–120%.
-    this.hudRoot.setScale(this.hudScale).setPosition(0, 0);
+    // The complete tactical HUD follows the world camera's zoom while remaining
+    // anchored to the viewport. The user preference remains an independent scale.
+    this.hudRoot.setScale(this.hudScale * this.cameras.main.zoom).setPosition(0, 0);
   }
 
   private adjustHudScale(delta: number): void {
@@ -953,8 +953,9 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private isHudPoint(x: number, y: number): boolean {
-    const localX = x / this.hudScale;
-    const localY = y / this.hudScale;
+    const effectiveScale = this.hudScale * this.cameras.main.zoom;
+    const localX = x / effectiveScale;
+    const localY = y / effectiveScale;
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
       localX >= rect.x && localX <= rect.x + rect.width &&
       localY >= rect.y && localY <= rect.y + rect.height;
@@ -1129,8 +1130,9 @@ export class MissionScene extends Phaser.Scene {
         );
         camera.setScroll(scroll.x, scroll.y);
         this.clampCamera();
+        this.applyHudScale();
 
-        // The HUD uses scrollFactor(0); redraw its camera indicator after zoom.
+        // Refresh the minimap viewport and scale the complete HUD with the camera.
         this.updateHud();
       },
     );
