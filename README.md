@@ -83,22 +83,20 @@ Documentação:
 
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md)
+- [docs/ASSET_LICENSES.md](./docs/ASSET_LICENSES.md) — procedência e licenças de assets
 - [TASKLIST.md](./TASKLIST.md)
 
 ## Licença
 
-A definir.
-
+O código-fonte do projeto é distribuído sob a licença [MIT](./LICENSE). Essa licença não se estende automaticamente a imagens, sprites, áudio, fontes ou outros assets. Consulte [docs/ASSET_LICENSES.md](./docs/ASSET_LICENSES.md) para o inventário e o estado de verificação de cada grupo de assets. Assets sem procedência/licença confirmada continuam bloqueados para uma release pública.
 
 ## Campanha (em desenvolvimento)
 
 A Missão 0 — **O Resgate** funciona como tutorial e exige extrair os dois civis e eliminar todas as ondas. Ao vencer, o jogador pode voltar à tela inicial ou iniciar a Missão 1 — **Refúgio**, uma missão de campanha com quatro ondas e objetivo de defender o setor. O desbloqueio da campanha é salvo localmente. A Missão 1 ainda reutiliza o mapa atual; cenário próprio, persistência completa e conteúdo de campanha seguem em desenvolvimento.
 
-
 ## Configurações de interface
 
 A escala do HUD é independente do zoom da câmera e pode ser ajustada no menu de pausa entre 80% e 120%. A preferência fica salva localmente no navegador.
-
 
 ## Estruturas implantáveis
 
