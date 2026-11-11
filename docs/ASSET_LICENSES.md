@@ -11,11 +11,11 @@ The README currently groups these as:
 - Four suspense/ambient variations.
 - Four infected vocalizations.
 
-**License status: pending verification.** The repository does not yet record the ElevenLabs account tier used at generation time or retain the generation receipts/terms applicable to those files. Before treating these files as cleared for a public or commercial release, the maintainer must verify and record:
-1. Whether generation occurred under a paid subscription or the free plan.
-2. The applicable ElevenLabs terms on the generation date and whether the subscription's commercial-use conditions were met.
-3. That the files are distributed only as integrated game audio, not as a standalone sound-effects library.
-4. Any attribution requirement applicable to the plan and generation date.
+**Known restriction: generated under the ElevenLabs Free plan (confirmed by the maintainer on 2026-11-11).** The Free plan does not include a commercial license; its outputs are for personal/non-commercial use only. ElevenLabs also requires attribution when Free-plan output is shared non-commercially. Therefore, these WAV files are **not cleared for commercial distribution or monetized use** in the current state of the project.
+
+Before a commercial release, replace these files with audio whose license permits the intended use, or obtain a valid commercial license that explicitly covers these already-generated outputs. Do not assume upgrading later retroactively grants commercial rights to outputs generated while on the Free plan; obtain written confirmation from ElevenLabs if considering that route.
+
+For non-commercial sharing, follow the attribution requirement in the ElevenLabs agreement applicable to the account and generation date. Keep the generation records and prompts where possible. Also ensure the WAV files are distributed only as integrated game audio, not as a standalone sound-effects library.
 
 Do not describe these WAV files as MIT-licensed. The repository's MIT license applies to the project's original code, not automatically to audio or other third-party/generated assets.
 
@@ -25,4 +25,4 @@ Inventory and verify the provenance and license of all other image, sprite, tile
 
 ## Review record
 
-- 2026-11-11: Maintainer identified ElevenLabs Sound Effects as the generation tool for the 12 WAV files. Account tier and applicable generation terms remain to be confirmed.
+- 2026-11-11: Maintainer confirmed the 12 WAV files were generated with ElevenLabs Sound Effects on the Free plan. Commercial-use clearance is not available under that plan.
