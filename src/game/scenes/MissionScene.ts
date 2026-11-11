@@ -517,10 +517,10 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.build.x = viewX + 20;
     this.hudBounds.build.y = height / this.hudScale - 84;
 
-    // Tactical HUD remains anchored to the viewport while following camera zoom.
+    // Tactical HUD lives in world space so camera panning and zoom affect every panel.
     const hudLabels: Phaser.GameObjects.Text[] = [];
-    this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
-    this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
+    this.hudPanels = this.add.graphics().setDepth(1500);
+    this.minimapGraphics = this.add.graphics().setDepth(1502);
     // Selection marquee is drawn in pointer screen coordinates, not world coordinates.
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
@@ -549,7 +549,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '29px',
       color: '#e8e3d8',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
+    }).setOrigin(0.5).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.settingsButton.on('pointerdown', () => this.openPauseMenu());
 
@@ -558,7 +558,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontSize: '27px',
       color: '#e8e3d8',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
+    }).setOrigin(0.5).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.fullscreenButton.setData('action-label', 'Entrar em tela cheia');
     this.fullscreenButton.on('pointerdown', () => this.toggleFullscreen());
@@ -575,7 +575,7 @@ export class MissionScene extends Phaser.Scene {
       color: '#f4f1e9',
       lineSpacing: 6,
       wordWrap: { width: 244 },
-    }).setScrollFactor(0).setDepth(1505);
+    }).setDepth(1505);
 
     hudLabels.push(this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
       fontFamily: 'Arial, sans-serif',
@@ -583,7 +583,7 @@ export class MissionScene extends Phaser.Scene {
       fontStyle: 'bold',
       color: '#f4f1e9',
       letterSpacing: 1.4,
-    }).setScrollFactor(0).setDepth(1505));
+    }).setDepth(1505));
     [
       { x: mapX + 28, label: 'POLICIAIS' },
       { x: mapX + 122, label: 'CIVIS' },
@@ -593,7 +593,7 @@ export class MissionScene extends Phaser.Scene {
         fontFamily: 'Arial, sans-serif',
         fontSize: '8px',
         color: '#c0c5bd',
-      }).setScrollFactor(0).setDepth(1505));
+      }).setDepth(1505));
     });
 
     this.teamText = this.add.text(mapX + 12, mapY + 376, '', {
@@ -602,11 +602,11 @@ export class MissionScene extends Phaser.Scene {
       color: '#f4f1e9',
       lineSpacing: 6,
       wordWrap: { width: 296 },
-    }).setScrollFactor(0).setDepth(1505);
+    }).setDepth(1505);
 
     const buildTitle = this.add.text(viewX + 32, height / this.hudScale - 78, 'CONSTRUÇÕES  /  CLIQUE E POSICIONE NO MAPA', {
       fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#c0c5bd', letterSpacing: 0.8,
-    }).setScrollFactor(0).setDepth(1505);
+    }).setDepth(1505);
     hudLabels.push(buildTitle);
     this.buildButtons.splice(0, this.buildButtons.length,
       this.createBuildButton(viewX + 76, height / this.hudScale - 47, 'ABRIGO 30/8', 'shelter-tent'),
@@ -616,12 +616,12 @@ export class MissionScene extends Phaser.Scene {
     );
 
     const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
-      .setScrollFactor(0).setDepth(1507)
+      .setDepth(1507)
       .setInteractive({ useHandCursor: true });
     teamHitArea.on('pointerdown', () => this.selectAllOfficers());
 
     // Keep the HUD in viewport space so it remains visible while the world camera pans.
-    this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
+    this.hudRoot = this.add.container(0, 0).setDepth(1500);
     this.hudRoot.add([
       this.hudPanels, this.minimapGraphics, this.settingsButton, this.fullscreenButton,
       this.missionText, this.teamText, teamHitArea, ...hudLabels, ...this.buildButtons,
@@ -891,9 +891,9 @@ export class MissionScene extends Phaser.Scene {
 
   private applyHudScale(): void {
     if (!this.hudRoot) return;
-    // Scroll-factor 0 keeps the HUD anchored to the viewport. Phaser still applies
-    // camera zoom to it, so only the independent user scale belongs on the root.
-    this.hudRoot.setScale(this.hudScale).setPosition(0, 0);
+    // The HUD shares the world camera transform. Phaser applies camera zoom
+    // automatically; this scale remains only the user's independent preference.
+    this.hudRoot.setScale(this.hudScale);
   }
 
   private adjustHudScale(delta: number): void {
@@ -954,12 +954,9 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private isHudPoint(x: number, y: number): boolean {
-    const camera = this.cameras.main;
-    const originX = camera.x + camera.width * camera.originX;
-    const originY = camera.y + camera.height * camera.originY;
-    // Invert the camera's zoom around its origin, then invert the user's HUD scale.
-    const localX = (originX + (x - originX) / camera.zoom) / this.hudScale;
-    const localY = (originY + (y - originY) / camera.zoom) / this.hudScale;
+    const worldPoint = this.cameras.main.getWorldPoint(x, y);
+    const localX = (worldPoint.x - this.hudRoot.x) / this.hudScale;
+    const localY = (worldPoint.y - this.hudRoot.y) / this.hudScale;
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
       localX >= rect.x && localX <= rect.x + rect.width &&
       localY >= rect.y && localY <= rect.y + rect.height;
