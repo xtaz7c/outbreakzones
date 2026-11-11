@@ -64,6 +64,11 @@ Uma tarefa só é marcada como concluída quando:
 
 - Apenas assets originais ou com licença verificada.
 - Não commitar binários grandes sem necessidade.
+- Registre cada asset novo em [`docs/ASSET_LICENSES.md`](./ASSET_LICENSES.md) no mesmo Pull Request.
+- Para assets externos, informe autor/fonte, licença exata, atribuição exigida e evidência da permissão de redistribuição.
+- A licença MIT do código não se aplica automaticamente a assets.
+- Não considere um asset liberado apenas por estar disponível publicamente ou por ser descrito como "royalty-free".
+- Se a procedência ou permissão não puder ser comprovada, substitua o asset ou não o inclua na release.
 
 ## Versionamento e identificação de builds
 
