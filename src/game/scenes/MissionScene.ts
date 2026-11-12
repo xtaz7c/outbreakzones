@@ -556,6 +556,20 @@ export class MissionScene extends Phaser.Scene {
     panel(rightX, teamY, 260, 142);
     panel(buildX, buildY, buildWidth, buildHeight);
 
+    // Purple separators and compact icon badges from the approved HUD reference.
+    this.hudPanels.fillStyle(HUD_COLORS.accent, 0.95);
+    this.hudPanels.fillRoundedRect(missionX + 12, missionY + 12, 26, 26, 5);
+    this.hudPanels.fillRoundedRect(buildX + 16, buildY + 14, 30, 30, 5);
+    this.hudPanels.fillStyle(0xffffff, 0.9);
+    this.hudPanels.fillRect(missionX + 12, missionY + 51, 296, 2);
+    this.hudPanels.fillRect(buildX + 16, buildY + 48, buildWidth - 32, 2);
+    this.hudPanels.fillStyle(HUD_COLORS.officer, 0.95);
+    [0, 1, 2].forEach((index) => {
+      this.hudPanels.fillRoundedRect(rightX + 34 + index * 78, teamY + 94, 48, 4, 2);
+    });
+    this.hudPanels.fillStyle(HUD_COLORS.accent, 0.85);
+    this.hudPanels.fillRect(edge + 61, edge + 8, 2, 40);
+
     this.settingsButton = this.add.text(edge + 28, edge + 28, '⚙', {
       fontFamily: 'Arial, sans-serif', fontSize: '29px', color: '#e8e3d8',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
@@ -975,7 +989,7 @@ export class MissionScene extends Phaser.Scene {
     const day = Math.floor(absoluteMinutes / (24 * 60)) + 1;
     const clockMinutes = absoluteMinutes % (24 * 60);
     const clock = `${String(Math.floor(clockMinutes / 60)).padStart(2, '0')}:${String(clockMinutes % 60).padStart(2, '0')}`;
-    this.missionClockText.setText(`DIA ${day}     ${clock}`);
+    this.missionClockText.setText(`☀  DIA ${day}  •  ${clock}`);
     const hour = clockMinutes / 60;
     const daylight = Phaser.Math.Clamp((hour - 6) / 1.5, 0, 1) *
       (1 - Phaser.Math.Clamp((hour - 17) / 1.5, 0, 1));
