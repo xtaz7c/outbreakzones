@@ -141,6 +141,10 @@ export class BootScene extends Phaser.Scene {
       frameHeight: 32,
     });
     this.load.image('mission-tiles', '/tiles/mission-tiles.svg');
+    this.load.image('building-shelter-tent', '/sprites/buildings/shelter-tent.svg');
+    this.load.image('building-sniper-post', '/sprites/buildings/sniper-post.svg');
+    this.load.image('building-resource-tent', '/sprites/buildings/resource-tent.svg');
+    this.load.image('building-barricade', '/sprites/buildings/barricade.svg');
 
     // Pick one ambient track per mission; avoid downloading unused full-length variants.
     const ambientVariant = Phaser.Math.Between(1, 4);
