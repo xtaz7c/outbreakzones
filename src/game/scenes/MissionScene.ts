@@ -991,7 +991,7 @@ export class MissionScene extends Phaser.Scene {
       `RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
       `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`,
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
-    ].join('\\n'));
+    ].join('\n'));
 
     const waveLabel = state.wavePhase === 'preparing'
       ? `ONDA ${Math.max(1, state.waveNumber)}  ·  ${Math.ceil(state.preparationRemaining)}s`
@@ -1007,7 +1007,7 @@ export class MissionScene extends Phaser.Scene {
       const health = Math.max(0, Math.round((officer.health / officer.maxHealth) * 100));
       return `${officer.id}: ${health}% · ${action}${selected ? ' · SELECIONADO' : ''}`;
     });
-    this.teamText.setText(teamLines.join('\\n'));
+    this.teamText.setText(teamLines.join('\n'));
     this.officerHudButtons.forEach((button, index) => {
       const officer = officers[index];
       if (!officer) return;
