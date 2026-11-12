@@ -598,7 +598,7 @@ export class MissionScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: '#e8e3d8', letterSpacing: 1,
     }).setScrollFactor(0).setDepth(1505);
-    this.missionText = this.add.text(missionX + 16, missionY + 42, '', {
+    this.missionText = this.add.text(missionX + 16, missionY + 64, '', {
       fontFamily: 'Arial, sans-serif', fontSize: '12px', color: '#f4f1e9',
       lineSpacing: 7, wordWrap: { width: 266 },
     }).setScrollFactor(0).setDepth(1505);
@@ -636,7 +636,7 @@ export class MissionScene extends Phaser.Scene {
       button.on('pointerdown', () => this.selectOfficer(id));
       this.officerHudButtons.push(button);
     });
-    this.teamText = this.add.text(rightX + 12, teamY + 88, '', {
+    this.teamText = this.add.text(rightX + 12, teamY + 96, '', {
       fontFamily: 'Arial, sans-serif', fontSize: '8px', color: '#c0c5bd',
       lineSpacing: 3, wordWrap: { width: 236 },
     }).setScrollFactor(0).setDepth(1505);
