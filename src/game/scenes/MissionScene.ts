@@ -516,8 +516,10 @@ export class MissionScene extends Phaser.Scene {
     const minimapY = edge;
     const missionX = edge;
     const missionY = 116 / this.hudScale;
-    const buildX = edge;
-    const buildY = hudHeight - edge - 220;
+    const buildWidth = 640;
+    const buildHeight = 190;
+    const buildX = (hudWidth - buildWidth) / 2;
+    const buildY = hudHeight - edge - buildHeight;
     const teamY = 356 / this.hudScale;
 
     this.hudBounds.settings = { x: edge, y: edge, width: 124, height: 56 };
@@ -525,7 +527,7 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.clock = { x: hudWidth / 2 - 174, y: edge, width: 348, height: 56 };
     this.hudBounds.minimap = { x: minimapX, y: minimapY, width: 260, height: 240 };
     this.hudBounds.team = { x: rightX, y: teamY, width: 260, height: 142 };
-    this.hudBounds.build = { x: buildX, y: buildY, width: 420, height: 220 };
+    this.hudBounds.build = { x: buildX, y: buildY, width: buildWidth, height: buildHeight };
 
     const hudLabels: Phaser.GameObjects.Text[] = [];
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
@@ -552,7 +554,7 @@ export class MissionScene extends Phaser.Scene {
     this.missionPanelGraphics.lineStyle(2, HUD_COLORS.accent, 0.72);
     this.missionPanelGraphics.strokeRoundedRect(missionX, missionY, 320, 190, 8);
     panel(rightX, teamY, 260, 142);
-    panel(buildX, buildY, 420, 220);
+    panel(buildX, buildY, buildWidth, buildHeight);
 
     this.settingsButton = this.add.text(edge + 28, edge + 28, '⚙', {
       fontFamily: 'Arial, sans-serif', fontSize: '29px', color: '#e8e3d8',
@@ -578,7 +580,7 @@ export class MissionScene extends Phaser.Scene {
       color: '#f4f1e9', letterSpacing: 1.2,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1505);
 
-    this.missionPanelTitle = this.add.text(missionX + 16, missionY + 13, 'MISSÃO', {
+    this.missionPanelTitle = this.add.text(missionX + 48, missionY + 13, 'MISSÃO', {
       fontFamily: 'Arial, sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: '#e8e3d8', letterSpacing: 1,
     }).setScrollFactor(0).setDepth(1505);
@@ -625,15 +627,15 @@ export class MissionScene extends Phaser.Scene {
       lineSpacing: 3, wordWrap: { width: 236 },
     }).setScrollFactor(0).setDepth(1505);
 
-    hudLabels.push(this.add.text(buildX + 18, buildY + 16, '⚒  CONSTRUÇÕES', {
+    hudLabels.push(this.add.text(buildX + 58, buildY + 16, 'CONSTRUÇÕES', {
       fontFamily: 'Arial, sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: '#e8e3d8', letterSpacing: 1,
     }).setScrollFactor(0).setDepth(1505));
     this.buildButtons.splice(0, this.buildButtons.length,
-      this.createBuildButton(buildX + 112, buildY + 82, '⌂  ABRIGO', 'shelter-tent'),
-      this.createBuildButton(buildX + 308, buildY + 82, '✥  ATIRADOR', 'sniper-post'),
-      this.createBuildButton(buildX + 112, buildY + 164, '▲  BARRACA', 'resource-tent'),
-      this.createBuildButton(buildX + 308, buildY + 164, '▤  BARRICADA', 'barricade'),
+      this.createBuildButton(buildX + 90, buildY + 112, '⌂\nABRIGO', 'shelter-tent'),
+      this.createBuildButton(buildX + 244, buildY + 112, '✥\nATIRADOR', 'sniper-post'),
+      this.createBuildButton(buildX + 398, buildY + 112, '▲\nBARRACA', 'resource-tent'),
+      this.createBuildButton(buildX + 552, buildY + 112, '▤\nBARRICADA', 'barricade'),
     );
 
     this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
@@ -700,8 +702,8 @@ export class MissionScene extends Phaser.Scene {
       fontStyle: 'bold',
       color: '#e8e3d8',
       backgroundColor: '#171625',
-      padding: { x: 12, y: 16 },
-      fixedWidth: 160,
+      padding: { x: 10, y: 12 },
+      fixedWidth: 138,
       align: 'center',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1506)
       .setInteractive({ useHandCursor: true });
