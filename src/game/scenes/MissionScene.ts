@@ -54,11 +54,12 @@ const MINIMAP_CONFIG_KEY = 'outbreakzones:minimap-visibility';
 const HUD_SCALE_STORAGE_KEY = 'outbreakzones:hud-scale';
 const HUD_COLORS = {
   ink: 0x111415,
-  panel: 0x101516,
-  metal: 0xb9b9b0,
+  panel: 0x0d0c19,
+  metal: 0x81769b,
   muted: 0xc0c5bd,
   paper: 0xe8e3d8,
   red: 0xc33a36,
+  accent: 0x914cff,
   officer: 0x5c9be6,
   civilian: 0xe7c66a,
   infected: 0xc33a36,
@@ -539,7 +540,7 @@ export class MissionScene extends Phaser.Scene {
     const panel = (x: number, y: number, w: number, h: number, radius = 8, alpha = 0.97) => {
       this.hudPanels.fillStyle(HUD_COLORS.panel, alpha);
       this.hudPanels.fillRoundedRect(x, y, w, h, radius);
-      this.hudPanels.lineStyle(1, HUD_COLORS.metal, 0.5);
+      this.hudPanels.lineStyle(2, HUD_COLORS.accent, 0.58);
       this.hudPanels.strokeRoundedRect(x, y, w, h, radius);
     };
     panel(edge, edge, 124, 56);
@@ -548,7 +549,7 @@ export class MissionScene extends Phaser.Scene {
     panel(minimapX, 292 / this.hudScale, 260, 52, 8);
     this.missionPanelGraphics.fillStyle(HUD_COLORS.panel, 0.97);
     this.missionPanelGraphics.fillRoundedRect(missionX, missionY, 320, 190, 8);
-    this.missionPanelGraphics.lineStyle(1, HUD_COLORS.metal, 0.5);
+    this.missionPanelGraphics.lineStyle(2, HUD_COLORS.accent, 0.72);
     this.missionPanelGraphics.strokeRoundedRect(missionX, missionY, 320, 190, 8);
     panel(rightX, teamY, 260, 142);
     panel(buildX, buildY, 420, 220);
@@ -572,12 +573,12 @@ export class MissionScene extends Phaser.Scene {
       this.fullscreenButton.setText('⛶').setData('action-label', 'Entrar em tela cheia');
     });
 
-    this.missionClockText = this.add.text(hudWidth / 2, edge + 28, 'DIA 1     08:00', {
+    this.missionClockText = this.add.text(hudWidth / 2, edge + 28, '☀  DIA 1  •  08:00', {
       fontFamily: 'Arial, sans-serif', fontSize: '17px', fontStyle: 'bold',
       color: '#f4f1e9', letterSpacing: 1.2,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1505);
 
-    this.missionPanelTitle = this.add.text(missionX + 16, missionY + 13, 'OBJETIVOS DA MISSÃO', {
+    this.missionPanelTitle = this.add.text(missionX + 16, missionY + 13, 'MISSÃO', {
       fontFamily: 'Arial, sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: '#e8e3d8', letterSpacing: 1,
     }).setScrollFactor(0).setDepth(1505);
@@ -624,15 +625,15 @@ export class MissionScene extends Phaser.Scene {
       lineSpacing: 3, wordWrap: { width: 236 },
     }).setScrollFactor(0).setDepth(1505);
 
-    hudLabels.push(this.add.text(buildX + 18, buildY + 16, 'CONSTRUÇÕES', {
+    hudLabels.push(this.add.text(buildX + 18, buildY + 16, '⚒  CONSTRUÇÕES', {
       fontFamily: 'Arial, sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: '#e8e3d8', letterSpacing: 1,
     }).setScrollFactor(0).setDepth(1505));
     this.buildButtons.splice(0, this.buildButtons.length,
       this.createBuildButton(buildX + 112, buildY + 82, '⌂  ABRIGO', 'shelter-tent'),
-      this.createBuildButton(buildX + 308, buildY + 82, '◎  ATIRADOR', 'sniper-post'),
-      this.createBuildButton(buildX + 112, buildY + 164, '△  BARRACA', 'resource-tent'),
-      this.createBuildButton(buildX + 308, buildY + 164, '▥  BARRICADA', 'barricade'),
+      this.createBuildButton(buildX + 308, buildY + 82, '✥  ATIRADOR', 'sniper-post'),
+      this.createBuildButton(buildX + 112, buildY + 164, '▲  BARRACA', 'resource-tent'),
+      this.createBuildButton(buildX + 308, buildY + 164, '▤  BARRICADA', 'barricade'),
     );
 
     this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
@@ -698,7 +699,7 @@ export class MissionScene extends Phaser.Scene {
       fontSize: '12px',
       fontStyle: 'bold',
       color: '#e8e3d8',
-      backgroundColor: '#252c2d',
+      backgroundColor: '#171625',
       padding: { x: 12, y: 16 },
       fixedWidth: 160,
       align: 'center',
@@ -716,7 +717,8 @@ export class MissionScene extends Phaser.Scene {
     const kinds: DeployableKind[] = ['shelter-tent', 'resource-tent', 'sniper-post', 'barricade'];
     this.buildButtons.forEach((button, index) => {
       const kind = kinds[index];
-      button.setBackgroundColor(this.placementMode === kind ? '#a72b2e' : '#252c2d');
+      button.setBackgroundColor(this.placementMode === kind ? '#4a2475' : '#171625');
+      button.setStyle({ stroke: '#8f4cff', strokeThickness: this.placementMode === kind ? 2 : 1 });
     });
   }
 
