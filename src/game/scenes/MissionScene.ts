@@ -134,8 +134,9 @@ export class MissionScene extends Phaser.Scene {
   private pauseMenuOpen = false;
   private readonly hudBounds = {
     settings: { x: 20, y: 20, width: 124, height: 56 },
-    mission: { x: 20, y: 88, width: 276, height: 142 },
-    minimap: { x: 0, y: 20, width: 320, height: 354 },
+    mission: { x: 20, y: 96, width: 300, height: 190 },
+    clock: { x: 0, y: 20, width: 0, height: 56 },
+    minimap: { x: 0, y: 20, width: 320, height: 302 },
     team: { x: 0, y: 384, width: 320, height: 154 },
     build: { x: 20, y: 0, width: 440, height: 64 },
   };
@@ -515,6 +516,7 @@ export class MissionScene extends Phaser.Scene {
 
     this.hudBounds.settings = { x: 20, y: 20, width: 124, height: 56 };
     this.hudBounds.mission = { x: missionX, y: missionY, width: 300, height: 190 };
+    this.hudBounds.clock = { x: width / 2 - 174, y: 20, width: 348, height: 56 };
     this.hudBounds.minimap = { x: minimapX, y: minimapY, width: 240, height: 240 };
     this.hudBounds.team = { x: rightX, y: teamY, width: 240, height: 142 };
     this.hudBounds.build = { x: buildX, y: buildY, width: 284, height: 154 };
@@ -954,7 +956,7 @@ export class MissionScene extends Phaser.Scene {
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
       localX >= rect.x && localX <= rect.x + rect.width &&
       localY >= rect.y && localY <= rect.y + rect.height;
-    return inside(this.hudBounds.settings) || inside(this.hudBounds.mission) ||
+    return inside(this.hudBounds.settings) || inside(this.hudBounds.clock) || inside(this.hudBounds.mission) ||
       inside(this.hudBounds.minimap) || inside(this.hudBounds.team) || inside(this.hudBounds.build) ||
       this.pauseMenuOpen;
   }
