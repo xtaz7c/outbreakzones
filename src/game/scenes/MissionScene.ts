@@ -1019,9 +1019,9 @@ export class MissionScene extends Phaser.Scene {
 
     this.minimapGraphics.clear();
     const mapX = this.hudBounds.minimap.x + 12;
-    const mapY = this.hudBounds.minimap.y + 30;
+    const mapY = this.hudBounds.minimap.y + 12;
     const mapWidth = 236;
-    const mapHeight = 192;
+    const mapHeight = 216;
     const markerInset = 14;
     this.minimapGraphics.fillStyle(0x080c0d, 1);
     this.minimapGraphics.fillRoundedRect(mapX, mapY, mapWidth, mapHeight, 12);
