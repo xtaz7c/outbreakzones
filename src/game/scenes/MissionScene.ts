@@ -992,12 +992,20 @@ export class MissionScene extends Phaser.Scene {
     const teamLines = officers.map((officer) => {
       const selected = this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated;
       const status = officer.isIncapacitated ? 'FORA DE COMBATE' : selected ? 'SELECIONADO' : 'OPERACIONAL';
+      const action = officer.isIncapacitated
+        ? 'INATIVO'
+        : officer.hasMoveOrder
+          ? 'MOVENDO'
+          : officer.state === 'attacking'
+            ? 'COMBATENDO'
+            : 'PARADO';
+      const posture = officer.tacticalPosture === 'hold_fire' ? 'SEGURA FOGO' : 'FOGO AUTO';
       const health = Math.max(0, Math.round((officer.health / officer.maxHealth) * 100));
       const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
       const ammunition = ammo.reloading
         ? `RECARGA ${ammo.reloadRemaining.toFixed(1)}s`
         : `MUN ${ammo.current}/${ammo.capacity}`;
-      return `[${selected ? '◆' : ' '}]${officer.id} ${status}  HP ${health}%  ${ammunition}`;
+      return `[${selected ? '◆' : ' '}] ${officer.id} ${status}  HP ${health}%  ${action} · ${posture}  ${ammunition}`;
     });
     const maintenance = this.simulation.getMaintenanceState();
     const maintenanceJobs = maintenance?.jobs.map((job) =>
