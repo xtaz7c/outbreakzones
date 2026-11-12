@@ -507,19 +507,21 @@ export class MissionScene extends Phaser.Scene {
   private createHud(): void {
     const width = this.scale.width;
     const height = this.scale.height;
-    const edge = 40;
-    const rightX = width - edge - 260;
+    const hudWidth = width / this.hudScale;
+    const hudHeight = height / this.hudScale;
+    const edge = 40 / this.hudScale;
+    const rightX = hudWidth - edge - 260;
     const minimapX = rightX;
     const minimapY = edge;
     const missionX = edge;
-    const missionY = 116;
+    const missionY = 116 / this.hudScale;
     const buildX = edge;
-    const buildY = height - edge - 220;
-    const teamY = 356;
+    const buildY = hudHeight - edge - 220;
+    const teamY = 356 / this.hudScale;
 
     this.hudBounds.settings = { x: edge, y: edge, width: 124, height: 56 };
     this.hudBounds.mission = { x: missionX, y: missionY, width: 320, height: 190 };
-    this.hudBounds.clock = { x: width / 2 - 174, y: edge, width: 348, height: 56 };
+    this.hudBounds.clock = { x: hudWidth / 2 - 174, y: edge, width: 348, height: 56 };
     this.hudBounds.minimap = { x: minimapX, y: minimapY, width: 260, height: 240 };
     this.hudBounds.team = { x: rightX, y: teamY, width: 260, height: 142 };
     this.hudBounds.build = { x: buildX, y: buildY, width: 420, height: 220 };
@@ -527,7 +529,7 @@ export class MissionScene extends Phaser.Scene {
     const hudLabels: Phaser.GameObjects.Text[] = [];
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
     this.missionPanelGraphics = this.add.graphics().setScrollFactor(0).setDepth(1500);
-    this.dayNightOverlay = this.add.rectangle(0, 0, width, height, 0x0a1630, 0)
+    this.dayNightOverlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1630, 0)
       .setOrigin(0).setScrollFactor(0).setDepth(1400);
     this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
@@ -541,9 +543,9 @@ export class MissionScene extends Phaser.Scene {
       this.hudPanels.strokeRoundedRect(x, y, w, h, radius);
     };
     panel(edge, edge, 124, 56);
-    panel(width / 2 - 174, edge, 348, 56, 8, 0.75);
+    panel(hudWidth / 2 - 174, edge, 348, 56, 8, 0.75);
     panel(minimapX, minimapY, 260, 240, 10);
-    panel(minimapX, 292, 260, 52, 8);
+    panel(minimapX, 292 / this.hudScale, 260, 52, 8);
     this.missionPanelGraphics.fillStyle(HUD_COLORS.panel, 0.97);
     this.missionPanelGraphics.fillRoundedRect(missionX, missionY, 320, 190, 8);
     this.missionPanelGraphics.lineStyle(1, HUD_COLORS.metal, 0.5);
@@ -570,7 +572,7 @@ export class MissionScene extends Phaser.Scene {
       this.fullscreenButton.setText('⛶').setData('action-label', 'Entrar em tela cheia');
     });
 
-    this.missionClockText = this.add.text(width / 2, edge + 28, 'DIA 1     08:00', {
+    this.missionClockText = this.add.text(hudWidth / 2, edge + 28, 'DIA 1     08:00', {
       fontFamily: 'Arial, sans-serif', fontSize: '17px', fontStyle: 'bold',
       color: '#f4f1e9', letterSpacing: 1.2,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1505);
@@ -597,7 +599,7 @@ export class MissionScene extends Phaser.Scene {
       this.missionCloseButton.setData('action-label', this.missionPanelVisible ? 'Ocultar painel da missão' : 'Mostrar painel da missão');
     });
 
-    this.waveStatusText = this.add.text(minimapX + 12, 310, 'ONDA 0 / 0', {
+    this.waveStatusText = this.add.text(minimapX + 12, 310 / this.hudScale, 'ONDA 0 / 0', {
       fontFamily: 'Arial, sans-serif', fontSize: '12px', fontStyle: 'bold',
       color: '#f4f1e9', letterSpacing: 0.6,
     }).setScrollFactor(0).setDepth(1505);
