@@ -618,9 +618,9 @@ export class MissionScene extends Phaser.Scene {
       color: '#e8e3d8', letterSpacing: 1,
     }).setScrollFactor(0).setDepth(1505));
     this.buildButtons.splice(0, this.buildButtons.length,
-      this.createBuildButton(buildX + 76, buildY + 57, '⌂  ABRIGO', 'shelter-tent'),
-      this.createBuildButton(buildX + 214, buildY + 57, '▤  SUPRIMENTOS', 'resource-tent'),
-      this.createBuildButton(buildX + 76, buildY + 112, '◎  ATIRADOR', 'sniper-post'),
+      this.createBuildButton(buildX + 76, buildY + 57, '⌂  CASA', 'shelter-tent'),
+      this.createBuildButton(buildX + 214, buildY + 57, '◎  ATIRADOR', 'sniper-post'),
+      this.createBuildButton(buildX + 76, buildY + 112, '△  BARRACA', 'resource-tent'),
       this.createBuildButton(buildX + 214, buildY + 112, '▥  BARRICADA', 'barricade'),
     );
 
