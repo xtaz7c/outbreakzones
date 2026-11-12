@@ -78,6 +78,7 @@ export class MissionScene extends Phaser.Scene {
   private placementMode: DeployableKind | null = null;
   private selectedDeployableId: number | null = null;
   private readonly buildButtons: Phaser.GameObjects.Text[] = [];
+  private readonly buildIcons: Phaser.GameObjects.Image[] = [];
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
   private readonly civilianVisuals = new Map<number, TacticalCivilian>();
@@ -646,17 +647,25 @@ export class MissionScene extends Phaser.Scene {
       color: '#e8e3d8', letterSpacing: 1,
     }).setScrollFactor(0).setDepth(1505));
     this.buildButtons.splice(0, this.buildButtons.length,
-      this.createBuildButton(buildX + 90, buildY + 112, '⌂\nABRIGO', 'shelter-tent'),
-      this.createBuildButton(buildX + 244, buildY + 112, '✥\nATIRADOR', 'sniper-post'),
-      this.createBuildButton(buildX + 398, buildY + 112, '▲\nBARRACA', 'resource-tent'),
-      this.createBuildButton(buildX + 552, buildY + 112, '▤\nBARRICADA', 'barricade'),
+      this.createBuildButton(buildX + 90, buildY + 130, 'ABRIGO', 'shelter-tent'),
+      this.createBuildButton(buildX + 244, buildY + 130, 'ATIRADOR', 'sniper-post'),
+      this.createBuildButton(buildX + 398, buildY + 130, 'BARRACA', 'resource-tent'),
+      this.createBuildButton(buildX + 552, buildY + 130, 'BARRICADA', 'barricade'),
     );
+    this.buildIcons.splice(0, this.buildIcons.length,
+      this.add.image(buildX + 90, buildY + 78, 'building-shelter-tent'),
+      this.add.image(buildX + 244, buildY + 78, 'building-sniper-post'),
+      this.add.image(buildX + 398, buildY + 78, 'building-resource-tent'),
+      this.add.image(buildX + 552, buildY + 78, 'building-barricade'),
+    );
+    this.buildIcons.forEach((icon) => icon
+      .setDisplaySize(56, 56).setOrigin(0.5).setScrollFactor(0).setDepth(1506));
 
     this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
     this.hudRoot.add([
       this.hudPanels, this.missionPanelGraphics, this.minimapGraphics, this.settingsButton, this.fullscreenButton,
       this.missionClockText, this.missionPanelTitle, this.missionText, this.missionCloseButton, this.teamText,
-      this.waveStatusText, ...this.officerHudButtons, ...hudLabels, ...this.buildButtons,
+      this.waveStatusText, ...this.officerHudButtons, ...hudLabels, ...this.buildIcons, ...this.buildButtons,
     ]);
     this.applyHudScale();
     this.refreshBuildButtons();
@@ -733,8 +742,10 @@ export class MissionScene extends Phaser.Scene {
     const kinds: DeployableKind[] = ['shelter-tent', 'resource-tent', 'sniper-post', 'barricade'];
     this.buildButtons.forEach((button, index) => {
       const kind = kinds[index];
-      button.setBackgroundColor(this.placementMode === kind ? '#4a2475' : '#171625');
-      button.setStyle({ stroke: '#8f4cff', strokeThickness: this.placementMode === kind ? 2 : 1 });
+      const selected = this.placementMode === kind;
+      button.setBackgroundColor(selected ? '#4a2475' : '#171625');
+      button.setStyle({ stroke: '#8f4cff', strokeThickness: selected ? 2 : 1 });
+      this.buildIcons[index]?.setTint(selected ? 0xd8c0ff : 0xffffff).setAlpha(selected ? 1 : 0.9);
     });
   }
 
