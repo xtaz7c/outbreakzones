@@ -641,7 +641,10 @@ export class MissionScene extends Phaser.Scene {
     ]);
     this.applyHudScale();
     this.refreshBuildButtons();
-    this.scale.on('resize', () => this.applyHudScale());
+    this.scale.on('resize', () => {
+      this.dayNightOverlay.setSize(this.scale.width, this.scale.height);
+      this.applyHudScale();
+    });
 
     this.pauseOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x080a0a, 0.72)
       .setScrollFactor(0).setDepth(1900).setVisible(false);
