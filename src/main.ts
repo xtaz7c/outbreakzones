@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import './home.css';
 import { gameConfig } from './game/config';
-import { APP_VERSION, BUILD_LABEL } from './buildInfo';
+import { APP_VERSION } from './buildInfo';
 
 const CAMPAIGN_UNLOCK_STORAGE_KEY = 'outbreakzones:campaign-unlocked';
 
@@ -49,7 +49,7 @@ if (
   throw new Error('Required home screen elements are missing.');
 }
 
-buildVersion.textContent = BUILD_LABEL;
+buildVersion.textContent = `ÚLTIMA RELEASE · v${APP_VERSION}`;
 releaseVersion.textContent = `v${APP_VERSION}`;
 releaseDialogVersion.textContent = `v${APP_VERSION}`;
 
