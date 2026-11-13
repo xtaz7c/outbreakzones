@@ -1038,7 +1038,9 @@ export class MissionScene extends Phaser.Scene {
         ? 'MOVENDO' : officer.state === 'attacking' ? 'COMBATENDO' : 'PARADO';
       const posture = officer.tacticalPosture === 'hold_fire' ? 'SEGURA FOGO' : 'FOGO AUTO';
       const health = Math.max(0, Math.round((officer.health / officer.maxHealth) * 100));
-      return `${officer.id}: ${health}% · ${action} · ${posture}${selected ? ' · SELECIONADO' : ''}`;
+      const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
+      const ammunition = ammo.reloading ? 'RECARGA' : `${ammo.current}/${ammo.capacity}`;
+      return `${officer.id}: ${health}% · ${action} · ${posture} · MUN ${ammunition}${selected ? ' · SELECIONADO' : ''}`;
     });
     this.teamText.setText(teamLines.join('\n'));
     this.officerHudButtons.forEach((button, index) => {
