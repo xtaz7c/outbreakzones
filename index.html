@@ -3,10 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Outbreak Zones — sobreviva, proteja os civis e atravesse a zona de infecção."
-    />
+    <meta name="description" content="Outbreak Zones — sobreviva, proteja os civis e atravesse a zona de infecção." />
     <meta name="theme-color" content="#171a1b" />
     <link rel="icon" type="image/svg+xml" href="/images/outbreak-zones-icon.svg" />
     <title>Outbreak Zones</title>
@@ -37,7 +34,7 @@
           </p>
           <div class="hero__actions">
             <button class="primary-button" id="start-game" type="button">
-              <span>INICIAR OPERAÇÃO</span>
+              <span>ESCOLHER OPERAÇÃO</span>
               <span class="primary-button__arrow" aria-hidden="true">↗</span>
             </button>
             <button class="text-button" id="open-controls" type="button">
@@ -46,7 +43,7 @@
             </button>
           </div>
           <div class="mission-meta">
-            <span> <b>01</b> MISSÃO DISPONÍVEL</span>
+            <span><b>01</b> TUTORIAL DISPONÍVEL</span>
             <span class="mission-meta__line"></span>
             <span>JOGADOR ÚNICO</span>
           </div>
@@ -67,10 +64,85 @@
 
       <footer class="bottombar">
         <span>OUTBREAK ZONES <b>© 2026</b></span>
-        <span class="bottombar__center"><i></i> NÃO HÁ GARANTIA DE EXTRAÇÃO</span>
+        <button class="release-link" id="open-release" type="button">
+          <span class="release-link__dot" aria-hidden="true"></span>
+          VERSÃO <b id="release-version">0.1.0</b> · NOTAS DA VERSÃO
+        </button>
         <span>ESTADO DO SISTEMA <b>ESTÁVEL</b></span>
       </footer>
     </main>
+
+    <dialog class="mode-dialog" id="mode-dialog" aria-labelledby="mode-title">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">CENTRAL DE OPERAÇÕES · SETOR 07</p>
+          <h2 id="mode-title">SELECIONE O MODO</h2>
+          <p class="dialog-description">Escolha como deseja iniciar sua operação.</p>
+        </div>
+        <button class="dialog-close" id="close-modes" type="button" aria-label="Fechar seleção de modo">×</button>
+      </div>
+      <div class="mode-list">
+        <button class="mode-card mode-card--available" id="start-tutorial" type="button">
+          <span class="mode-card__index">01 / TREINAMENTO</span>
+          <strong>TUTORIAL</strong>
+          <span>Aprenda os comandos, coordene os policiais e resgate os civis na primeira operação.</span>
+          <span class="mode-card__action">INICIAR TUTORIAL <b>↗</b></span>
+        </button>
+        <button class="mode-card" id="start-campaign" type="button">
+          <span class="mode-card__index">02 / CAMPANHA</span>
+          <strong>CAMPANHA: HISTÓRIA</strong>
+          <span id="campaign-description">Conclua o tutorial para desbloquear a campanha e continuar a história.</span>
+          <span class="mode-card__action" id="campaign-action">BLOQUEADO <b>⌑</b></span>
+        </button>
+        <div class="mode-card mode-card--disabled" aria-disabled="true">
+          <span class="mode-card__index">03 / INDISPONÍVEL</span>
+          <strong>EM BREVE</strong>
+          <span>Novos modos e desafios estão em planejamento.</span>
+          <span class="mode-card__action">EM DESENVOLVIMENTO <b>…</b></span>
+        </div>
+      </div>
+      <p class="mode-dialog__footnote">O progresso da campanha é salvo neste navegador.</p>
+    </dialog>
+
+    <dialog class="release-dialog" id="release-dialog" aria-labelledby="release-title">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">REGISTRO DE DESENVOLVIMENTO</p>
+          <h2 id="release-title">VERSÃO <span id="release-dialog-version">0.1.0</span></h2>
+          <p class="dialog-description">Primeira versão jogável pública em preparação.</p>
+        </div>
+        <button class="dialog-close" id="close-release" type="button" aria-label="Fechar notas da versão">×</button>
+      </div>
+      <div class="release-notes">
+        <section>
+          <h3>JOGABILIDADE</h3>
+          <ul>
+            <li>Controle tático de uma equipe com três policiais.</li>
+            <li>Seleção individual e múltipla, movimentação e prioridade de alvos.</li>
+            <li>Pausa estratégica e comandos de postura.</li>
+            <li>Infectados com movimentação, perseguição e reação a estímulos.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>MISSÕES E SOBREVIVÊNCIA</h3>
+          <ul>
+            <li>Tutorial “O Resgate”, com objetivo de retirar dois civis da área.</li>
+            <li>Progressão inicial para a missão “Refúgio”.</li>
+            <li>Portas, janelas e garagem com estados e integridade próprios.</li>
+            <li>Estruturas implantáveis, recursos e persistência local por missão.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>SISTEMAS</h3>
+          <ul>
+            <li>HUD tática, minimapa, configurações de interface e áudio ambiente.</li>
+            <li>Build identificada por versão e commit.</li>
+            <li>Projeto em desenvolvimento ativo; conteúdo e balanceamento podem mudar.</li>
+          </ul>
+        </section>
+      </div>
+      <p class="release-dialog__note">Estas notas são um rascunho baseado nas funcionalidades presentes no repositório. A publicação oficial da release deve ser feita após a validação da versão.</p>
+    </dialog>
 
     <dialog class="controls-dialog" id="controls-dialog" aria-labelledby="controls-title">
       <div class="controls-dialog__header">
