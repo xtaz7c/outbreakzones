@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Outbreak Zones — sobreviva, proteja os civis e atravesse a zona de infecção."
+    />
+    <meta name="theme-color" content="#171a1b" />
+    <link rel="icon" type="image/svg+xml" href="/images/outbreak-zones-icon.svg" />
+    <title>Outbreak Zones — Jogar</title>
+  </head>
+  <body>
+    <main id="home-screen" class="home-screen">
+      <div class="home-screen__noise" aria-hidden="true"></div>
+      <header class="topbar">
+        <a class="wordmark" href="/" aria-label="Outbreak Zones — apresentação">
+          <span class="wordmark__mark">OZ</span>
+          <span class="wordmark__name">OUTBREAK<span> ZONES</span></span>
+        </a>
+        <div class="topbar__status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>SISTEMA OPERACIONAL</span>
+          <span class="topbar__divider">/</span>
+          <span id="build-version">BUILD</span>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__copy">
+          <p class="eyebrow"><span></span> PROTOCOLO DE SOBREVIVÊNCIA · SETOR 07</p>
+          <h1 id="hero-title">A CIDADE<br />CAIU<span>.</span><br /><em>A MISSÃO</em><br />CONTINUA<span class="hero__period">.</span></h1>
+          <p class="hero__description">
+            Ruas tomadas. Recursos escassos. Nenhum reforço a caminho.
+            Coordene sua equipe, proteja os sobreviventes e encontre uma saída.
+          </p>
+          <div class="hero__actions">
+            <button class="primary-button" id="start-game" type="button">
+              <span>INICIAR OPERAÇÃO</span>
+              <span class="primary-button__arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="text-button" id="open-controls" type="button">
+              <span class="text-button__icon" aria-hidden="true">⌘</span>
+              CONTROLES
+            </button>
+          </div>
+          <div class="mission-meta">
+            <span> <b>01</b> MISSÃO DISPONÍVEL</span>
+            <span class="mission-meta__line"></span>
+            <span>JOGADOR ÚNICO</span>
+          </div>
+        </div>
+
+        <div class="hero__visual" aria-hidden="true">
+          <div class="visual-grid"></div>
+          <div class="visual-ring visual-ring--outer"></div>
+          <div class="visual-ring visual-ring--inner"></div>
+          <div class="visual-crosshair visual-crosshair--top"></div>
+          <div class="visual-crosshair visual-crosshair--bottom"></div>
+          <div class="visual-label visual-label--top">ZONA DE CONTAMINAÇÃO <b>07-B</b></div>
+          <img class="hero__emblem" src="/images/outbreak-zones-icon.svg" alt="" />
+          <div class="visual-coordinate">23°32' S&nbsp; 46°38' W</div>
+          <div class="visual-warning"><span></span> ÁREA DE RISCO · ACESSO RESTRITO</div>
+        </div>
+      </section>
+
+      <footer class="bottombar">
+        <span>OUTBREAK ZONES <b>© 2026</b></span>
+        <span class="bottombar__center"><i></i> NÃO HÁ GARANTIA DE EXTRAÇÃO</span>
+        <span>ESTADO DO SISTEMA <b>ESTÁVEL</b></span>
+      </footer>
+    </main>
+
+    <dialog class="controls-dialog" id="controls-dialog" aria-labelledby="controls-title">
+      <div class="controls-dialog__header">
+        <div>
+          <p class="eyebrow">MANUAL DE CAMPO · 001</p>
+          <h2 id="controls-title">CONTROLES</h2>
+        </div>
+        <button class="dialog-close" id="close-controls" type="button" aria-label="Fechar controles">×</button>
+      </div>
+      <div class="controls-list">
+        <div><span>Selecionar policial</span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></div>
+        <div><span>Selecionar unidade</span><kbd>CLIQUE ESQUERDO</kbd></div>
+        <div><span>Seleção múltipla</span><kbd>SHIFT</kbd> <kbd>+ CLIQUE</kbd></div>
+        <div><span>Movimentar equipe</span><kbd>CLIQUE DIREITO</kbd></div>
+        <div><span>Priorizar alvo</span><kbd>CLIQUE DIREITO</kbd> <small>NO INFECTADO</small></div>
+        <div><span>Mover câmera</span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></div>
+        <div><span>Zoom</span><kbd>SCROLL</kbd></div>
+        <div><span>Pausar / retomar</span><kbd>ESPAÇO</kbd></div>
+        <div><span>Interagir com acesso</span><kbd>E</kbd></div>
+        <div><span>Manter posição</span><kbd>X</kbd></div>
+      </div>
+      <p class="controls-dialog__note">Comandos adicionais podem ser consultados durante a missão.</p>
+    </dialog>
+
+    <div id="game-container" hidden></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
