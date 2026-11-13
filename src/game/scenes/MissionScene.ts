@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { AudioManager } from '../audio/AudioManager';
 import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
-import { canStartCampaign, getMissionDefinition, type MissionId } from '../MissionProgression';
+import { canStartCampaign, getMissionDefinition, getMissionResultMessage, type MissionId } from '../MissionProgression';
 import { Simulation } from '../../simulation/Simulation';
 import type { CombatEvent } from '../../simulation/systems/CombatSystem';
 import { GridMap } from '../../simulation/world/GridMap';
