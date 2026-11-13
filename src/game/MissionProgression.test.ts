@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canStartCampaign, getMissionDefinition } from './MissionProgression';
+import { canStartCampaign, getMissionDefinition, getMissionResultMessage } from './MissionProgression';
 
 describe('Mission progression', () => {
   it('keeps the tutorial focused on civilian extraction', () => {
@@ -23,5 +23,30 @@ describe('Mission progression', () => {
     expect(canStartCampaign(0, 'defeat', true)).toBe(false);
     expect(canStartCampaign(0, 'victory', false)).toBe(false);
     expect(canStartCampaign(1, 'victory', true)).toBe(false);
+  });
+});
+
+describe('Mission result messages', () => {
+  it('formats tutorial victory as separate lines', () => {
+    expect(getMissionResultMessage(0, 'victory').split('\n')).toEqual([
+      'O RESGATE CONCLUÍDO',
+      'Sobreviventes extraídos',
+      'Todas as ondas eliminadas',
+    ]);
+  });
+
+  it('formats campaign victory as separate lines', () => {
+    expect(getMissionResultMessage(1, 'victory').split('\n')).toEqual([
+      'REFÚGIO DEFENDIDO',
+      'Todas as ondas eliminadas',
+      'Setor estabilizado',
+    ]);
+  });
+
+  it('formats defeat as separate lines', () => {
+    expect(getMissionResultMessage(0, 'defeat').split('\n')).toEqual([
+      'MISSÃO FALHOU',
+      'Todos os policiais foram incapacitados',
+    ]);
   });
 });
