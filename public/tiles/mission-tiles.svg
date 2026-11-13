@@ -1,19 +1,92 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" shape-rendering="crispEdges">
-<defs><pattern id="grass" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M1 2h1M5 6h1M7 1h1" stroke="#718052"/></pattern><pattern id="grain" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M1 1h1M5 3h1M3 7h1" stroke="#77796f"/></pattern></defs>
-<!-- 1 grass --><g><rect width="32" height="32" fill="#46583a"/><rect width="32" height="32" fill="url(#grass)"/><path d="M4 6h3v2H4zm16 2h2v3h-2zM9 19h4v2H9zm14 7h3v2h-3zM2 27h2v2H2z" fill="#82905b"/><path d="M13 5h1v3h-1zm-5 12h1v3H8zm17-7h1v2h-1zM17 24h1v3h-1z" fill="#a0a06a"/></g>
-<!-- 2 asphalt --><g transform="translate(32)"><rect width="32" height="32" fill="#414749"/><path d="M0 5h32M0 21h32" stroke="#50585a"/><path d="M3 3h2v1H3zm12 7h1v2h-1zm11-5h2v1h-2zM7 25h2v1H7zm17-8h1v2h-1z" fill="#687071"/><path d="M15 0v4m0 5v3m0 5v3m0 5v3" stroke="#b6a56f" stroke-width="1.5"/></g>
-<!-- 3 dirt --><g transform="translate(64)"><rect width="32" height="32" fill="#796346"/><path d="M2 5l5-2 2 2-5 2zm16 5 6-2 2 2-6 2zM5 22l4-2 3 2-5 2zm16 5 6-2 2 2-6 2z" fill="#9b8057"/><path d="M14 4h2v2h-2zm-7 12h3v1H7zm17-3h2v2h-2zM15 25h2v2h-2z" fill="#594a39"/></g>
-<!-- 4 sidewalk --><g transform="translate(96)"><rect width="32" height="32" fill="#77796f"/><path d="M0 8h32M0 24h32M8 0v32M24 0v32" stroke="#96978a"/><path d="M1 1h6v1H1zm17 9h4v1h-4zM10 26h3v1h-3z" fill="#b2ad99"/><path d="M8 8l3 2-2 2m15 4-2 2 2 2" stroke="#535a56" fill="none"/></g>
-<!-- 5 timber --><g transform="translate(0 32)"><rect width="32" height="32" fill="#806849"/><path d="M0 7h32M0 16h32M0 25h32" stroke="#594b39" stroke-width="1.5"/><path d="M8 0v7m16 0v9M12 16v9m13 0v7" stroke="#a68a5e"/><path d="M2 3h4m18 7h5M3 20h5m16 9h4" stroke="#b39768"/></g>
-<!-- 6 concrete floor --><g transform="translate(32 32)"><rect width="32" height="32" fill="#8a887d"/><rect x="2" y="2" width="28" height="28" fill="url(#grain)"/><path d="M0 0h32v32H0z" fill="none" stroke="#5d625d" stroke-width="2"/><path d="M3 16h26M16 3v26" stroke="#77796f" opacity=".6"/></g>
-<!-- 7 scrub --><g transform="translate(64 32)"><rect width="32" height="32" fill="#344b31"/><path d="M2 10l4-7 6 2 3 7-5 5-7-2zm12 10 4-8 8 1 5 7-4 8-9 1zm-12 6 4-5 7 2 1 6-7 3z" fill="#4e7040"/><path d="M5 8l3-3 3 1 1 4-4 2zm14 11 3-4 5 2 2 4-4 4-5-2zM5 27l3-3 3 1v4l-4 1z" fill="#729052"/><path d="M0 0h32v32H0z" fill="none" stroke="#273b2a" stroke-width="2"/></g>
-<!-- 8 rubble --><g transform="translate(96 32)"><rect width="32" height="32" fill="#555b58"/><path d="M2 23l4-12 7-2 5 7-3 9-8 2zm13-12 6-6 7 3 2 8-7 4-7-3z" fill="#85877d"/><path d="M4 22l4-8 4 1 2 7-5 4zm14-10 4-4 5 3-1 6-6 1z" fill="#a09c8c"/></g>
-<!-- 9 grass variant --><g transform="translate(0 64)"><rect width="32" height="32" fill="#4b5b3b"/><path d="M2 7h2v2H2zm8 4h3v2h-3zm15-5h2v3h-2zM4 24h3v2H4zm18 3h2v2h-2z" fill="#81905a"/><path d="M13 17l5-3 4 3-2 4h-6zM1 15l3-2 3 2-1 3H2z" fill="#716348"/><rect width="32" height="32" fill="url(#grass)" opacity=".5"/></g>
-<!-- 10 coarse grass --><g transform="translate(32 64)"><rect width="32" height="32" fill="#3d5036"/><path d="M3 5l2-3 2 4m8 6 2-4 2 5m7 9 2-4 2 5M6 26l2-4 2 5" stroke="#82935b" stroke-width="2" fill="none"/><path d="M12 4h3v2h-3zm12 5h3v2h-3zM2 17h3v2H2zm17 12h3v2h-3z" fill="#a0a06a"/></g>
-<!-- 11 dry grass --><g transform="translate(64 64)"><rect width="32" height="32" fill="#555a3d"/><path d="M4 9l3-6m-1 6 5-3M18 16l3-7m-2 7 6-3M7 29l2-7m-1 7 5-3" stroke="#aa9a60" stroke-width="1.5" fill="none"/><path d="M14 4h3v2h-3zm13 11h2v2h-2zM1 19h3v2H1zm17 10h3v2h-3z" fill="#8c8c58"/></g>
-<!-- 12 shaded grass --><g transform="translate(96 64)"><rect width="32" height="32" fill="#394b35"/><path d="M2 5h3v2H2zm13 5h2v3h-2zm10 14h4v2h-4zM5 26h2v2H5z" fill="#687d4c"/><path d="M8 14l4-3 3 2-2 4H9zm12 9 3-4 4 2-1 4h-4z" fill="#4d5c3d"/><path d="M3 19h2v3H3zm21-15h2v2h-2zM14 28h3v1h-3z" fill="#8b9360"/></g>
-<!-- 13 cracked asphalt --><g transform="translate(0 96)"><rect width="32" height="32" fill="#3c4446"/><path d="M0 5h32M0 21h32" stroke="#50595a"/><path d="M8 3L6 9l3 3-4 5m4-5 4 1m10-9-2 5 3 4-4 5m4-5 4 1" stroke="#252d30" stroke-width="1.5" fill="none"/></g>
-<!-- 14 patched asphalt --><g transform="translate(32 96)"><rect width="32" height="32" fill="#484e4e"/><path d="M2 6h11v5H2zm16 13h12v6H18z" fill="#383f40"/><path d="M3 7h9m8 13h10" stroke="#69706c"/><path d="M15 0v4m0 5v3m0 5v3m0 5v3" stroke="#b4a36c" stroke-width="1.5" opacity=".75"/></g>
-<!-- 15 broken masonry --><g transform="translate(64 96)"><rect width="32" height="32" fill="#4d5552"/><path d="M1 20l5-12 8 1 3 8-5 9-8 1zm15-12 7-5 7 5-1 9-8 3-5-5z" fill="#777c73"/><path d="M4 19l4-7 5 2 1 6-5 4zm15-8 4-3 4 3-1 6-5 1z" fill="#a09d8c"/></g>
-<!-- 16 gravel --><g transform="translate(96 96)"><rect width="32" height="32" fill="#625c4e"/><path d="M3 6h3v2H3zm10 4h2v2h-2zm11-5h4v2h-4zM6 22h4v2H6zm17 6h3v2h-3zM2 16h4v3H2zm12 8h3v2h-3zm10-11h5v3h-5z" fill="#a0957b"/><path d="M8 3h2v2H8zm13 15h2v2h-2zM3 28h2v2H3z" fill="#3d423e"/></g>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" shape-rendering="crispEdges">
+<title>Outbreak Zones mission tiles 64×64</title>
+<g transform="translate(0 0)">
+<rect width="64" height="64" fill="#46583a"/>
+<path d="M2 4h2M10 12h2M20 6h2M40 18h2M50 8h2M8 40h2M30 48h2M52 36h2M16 56h2M44 52h2" stroke="#718052" stroke-width="2"/>
+<path d="M8 12h6v4H8zm32 4h4v6h-4zM18 38h8v4h-8zm28 14h6v4h-6zM4 54h4v4H4z" fill="#82905b"/>
+<path d="M26 10h2v6h-2zm-10 24h2v6h-2zm34-14h2v4h-2zM34 48h2v6h-2z" fill="#a0a06a"/>
+</g>
+<g transform="translate(64 0)">
+<rect width="64" height="64" fill="#414749"/>
+<path d="M0 10h64M0 42h64" stroke="#50585a" stroke-width="2"/>
+<path d="M6 6h4v2H6zm24 14h2v4h-2zm22-10h4v2h-4zM14 50h4v2h-4zm34-16h2v4h-2z" fill="#687071"/>
+<path d="M30 0v8m0 10v6m0 10v6m0 10v6" stroke="#b6a56f" stroke-width="3"/>
+</g>
+<g transform="translate(128 0)">
+<rect width="64" height="64" fill="#796346"/>
+<path d="M4 10l10-4 4 4-10 4zm32 10 12-4 4 4-12 4zM10 44l8-4 6 4-10 4zm32 10 12-4 4 4-12 4z" fill="#9b8057"/>
+<path d="M28 8h4v4h-4zm-14 24h6v2h-6zm34-6h4v4h-4zM30 50h4v4h-4z" fill="#594a39"/>
+</g>
+<g transform="translate(192 0)">
+<rect width="64" height="64" fill="#77796f"/>
+<path d="M0 16h64M0 48h64M16 0v64M48 0v64" stroke="#96978a" stroke-width="2"/>
+<path d="M2 2h12v2H2zm34 18h8v2h-8zM20 52h6v2h-6z" fill="#b2ad99"/>
+<path d="M16 16l6 4-4 4m30 8-4 4 4 4" stroke="#535a56" fill="none" stroke-width="2"/>
+</g>
+<g transform="translate(0 64)">
+<rect width="64" height="64" fill="#806849"/>
+<path d="M0 14h64M0 32h64M0 50h64" stroke="#594b39" stroke-width="3"/>
+<path d="M16 0v14m32 0v18M24 32v18m26 0v14" stroke="#a68a5e" stroke-width="2"/>
+<path d="M4 6h8m36 14h10M6 40h10m32 18h8" stroke="#b39768" stroke-width="2"/>
+</g>
+<g transform="translate(64 64)">
+<rect width="64" height="64" fill="#8a887d"/>
+<path d="M2 2h2M10 6h2M20 14h2M40 8h2M50 20h2M8 40h2M30 48h2M52 36h2" stroke="#77796f" stroke-width="2"/>
+<path d="M0 0h64v64H0z" fill="none" stroke="#5d625d" stroke-width="4"/>
+<path d="M6 32h52M32 6v52" stroke="#77796f" opacity=".6" stroke-width="2"/>
+</g>
+<g transform="translate(128 64)">
+<rect width="64" height="64" fill="#344b31"/>
+<path d="M4 20l8-14 12 4 6 14-10 10-14-4zm24 20 8-16 16 2 10 14-8 16-18 2zm-24 12 8-10 14 4 2 12-14 6z" fill="#4e7040"/>
+<path d="M10 16l6-6 6 2 2 8-8 4zm28 22 6-8 10 4 4 8-8 8-10-4zM10 54l6-6 6 2v8l-8 2z" fill="#729052"/>
+<path d="M0 0h64v64H0z" fill="none" stroke="#273b2a" stroke-width="4"/>
+</g>
+<g transform="translate(192 64)">
+<rect width="64" height="64" fill="#555b58"/>
+<path d="M4 46l8-24 14-4 10 14-6 18-16 4zm26-24 12-12 14 6 4 16-14 8-14-6z" fill="#85877d"/>
+<path d="M8 44l8-16 8 2 4 14-10 8zm28-20 8-8 10 6-2 12-12 2z" fill="#a09c8c"/>
+</g>
+<g transform="translate(0 128)">
+<rect width="64" height="64" fill="#4b5b3b"/>
+<path d="M4 14h4v4H4zm16 8h6v4h-6zm30-10h4v6h-4zM8 48h6v4H8zm36 6h4v4h-4z" fill="#81905a"/>
+<path d="M26 34l10-6 8 6-4 8H28zM2 30l6-4 6 4-2 6H4z" fill="#716348"/>
+<path d="M2 4h2M10 12h2M20 6h2M40 18h2M50 8h2" stroke="#718052" stroke-width="2" opacity=".5"/>
+</g>
+<g transform="translate(64 128)">
+<rect width="64" height="64" fill="#3d5036"/>
+<path d="M6 10l4-6 4 8m16 12 4-8 4 10m14 18 4-8 4 10M12 52l4-8 4 10" stroke="#82935b" stroke-width="3" fill="none"/>
+<path d="M24 8h6v4h-6zm24 10h6v4h-6zM4 34h6v4H4zm34 24h6v4h-6z" fill="#a0a06a"/>
+</g>
+<g transform="translate(128 128)">
+<rect width="64" height="64" fill="#555a3d"/>
+<path d="M8 18l6-12m-2 12 10-6M36 32l6-14m-4 14 12-6M14 58l4-14m-2 14 10-6" stroke="#aa9a60" stroke-width="3" fill="none"/>
+<path d="M28 8h6v4h-6zm26 22h4v4h-4zM2 38h6v4H2zm34 20h6v4h-6z" fill="#8c8c58"/>
+</g>
+<g transform="translate(192 128)">
+<rect width="64" height="64" fill="#394b35"/>
+<path d="M4 10h6v4H4zm26 10h4v6h-4zm20 28h8v4h-8zM10 52h4v4h-4z" fill="#687d4c"/>
+<path d="M16 28l8-6 6 4-4 8H18zm24 18 6-8 8 4-2 8h-8z" fill="#4d5c3d"/>
+<path d="M6 38h4v6H6zm42-30h4v4h-4zM28 56h6v2h-6z" fill="#8b9360"/>
+</g>
+<g transform="translate(0 192)">
+<rect width="64" height="64" fill="#3c4446"/>
+<path d="M0 10h64M0 42h64" stroke="#50595a" stroke-width="2"/>
+<path d="M16 6L12 18l6 6-8 10m8-10 8 2m20-18-4 10 6 8-8 10m8-10 8 2" stroke="#252d30" stroke-width="3" fill="none"/>
+</g>
+<g transform="translate(64 192)">
+<rect width="64" height="64" fill="#484e4e"/>
+<path d="M4 12h22v10H4zm32 26h24v12H36z" fill="#383f40"/>
+<path d="M6 14h18m16 26h20" stroke="#69706c" stroke-width="2"/>
+<path d="M30 0v8m0 10v6m0 10v6m0 10v6" stroke="#b4a36c" stroke-width="3" opacity=".75"/>
+</g>
+<g transform="translate(128 192)">
+<rect width="64" height="64" fill="#4d5552"/>
+<path d="M2 40l10-24 16 2 6 16-10 18-16 2zm30-24 14-10 14 10-2 18-16 6-10-10z" fill="#777c73"/>
+<path d="M8 38l8-14 10 4 2 12-10 8zm30-16 8-6 8 6-2 12-10 2z" fill="#a09d8c"/>
+</g>
+<g transform="translate(192 192)">
+<rect width="64" height="64" fill="#625c4e"/>
+<path d="M6 12h6v4H6zm20 8h4v4h-4zm22-10h8v4h-8zM12 44h8v4h-8zm34 12h6v4h-6zM4 32h8v6H4zm24 16h6v4h-6zm20-22h10v6H48z" fill="#a0957b"/>
+<path d="M16 6h4v4h-4zm26 30h4v4h-4zM6 56h4v4H6z" fill="#3d423e"/>
+</g>
 </svg>
