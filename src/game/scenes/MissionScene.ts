@@ -12,6 +12,7 @@ import { BuildingSystem, type AccessKind } from '../../simulation/systems/buildi
 import type { WaveSpawnPoint } from '../../simulation/systems/WaveSystem';
 import type { MaintenanceAction, MaintenanceState } from '../../simulation/systems/buildings/BuildingMaintenanceSystem';
 import { DeployableStructureSystem, type DeployableKind, type DeployableState } from '../../simulation/systems/buildings/DeployableStructureSystem';
+import { getCameraScrollForZoom, getNextCameraZoom } from '../CameraZoom';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -1034,9 +1035,10 @@ export class MissionScene extends Phaser.Scene {
     const teamLines = officers.map((officer) => {
       const selected = this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated;
       const action = officer.isIncapacitated ? 'INATIVO' : officer.hasMoveOrder
-        ? 'MOVENDO' : officer.state === 'attacking' ? 'COMBATE' : 'PARADO';
+        ? 'MOVENDO' : officer.state === 'attacking' ? 'COMBATENDO' : 'PARADO';
+      const posture = officer.tacticalPosture === 'hold_fire' ? 'SEGURA FOGO' : 'FOGO AUTO';
       const health = Math.max(0, Math.round((officer.health / officer.maxHealth) * 100));
-      return `${officer.id}: ${health}% · ${action}${selected ? ' · SELECIONADO' : ''}`;
+      return `${officer.id}: ${health}% · ${action} · ${posture}${selected ? ' · SELECIONADO' : ''}`;
     });
     this.teamText.setText(teamLines.join('\n'));
     this.officerHudButtons.forEach((button, index) => {
@@ -1121,21 +1123,43 @@ export class MissionScene extends Phaser.Scene {
     this.input.on(
       'wheel',
       (
-        _pointer: Phaser.Input.Pointer,
+        pointer: Phaser.Input.Pointer,
         _currentlyOver: Phaser.GameObjects.GameObject[],
         _deltaX: number,
         deltaY: number,
       ) => {
+        (pointer.event as WheelEvent).preventDefault();
         const camera = this.cameras.main;
         const minimumZoom = Math.max(
           MIN_CAMERA_ZOOM,
           camera.width / this.cameraWorldWidth,
           camera.height / this.cameraWorldHeight,
         );
-        const nextZoom = camera.zoom * (deltaY > 0 ? 0.9 : 1.1);
-        camera.setZoom(Phaser.Math.Clamp(nextZoom, minimumZoom, MAX_CAMERA_ZOOM));
+        const nextZoom = getNextCameraZoom(
+          camera.zoom,
+          deltaY,
+          minimumZoom,
+          MAX_CAMERA_ZOOM,
+        );
+        if (nextZoom === camera.zoom) return;
+
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        camera.setZoom(nextZoom);
+        const scroll = getCameraScrollForZoom(
+          worldPoint.x,
+          worldPoint.y,
+          pointer.x,
+          pointer.y,
+          camera.x,
+          camera.y,
+          camera.width,
+          camera.height,
+          nextZoom,
+          camera.originX,
+          camera.originY,
+        );
+        camera.setScroll(scroll.x, scroll.y);
         this.clampCamera();
-        // Refresh the minimap viewport immediately after wheel zoom.
         this.updateHud();
       },
     );
@@ -1527,11 +1551,17 @@ export class MissionScene extends Phaser.Scene {
       camera.height / this.cameraWorldHeight,
     );
     if (camera.zoom < minimumZoom) camera.setZoom(minimumZoom);
-    const maxScrollX = Math.max(0, this.cameraWorldWidth - camera.width / camera.zoom);
-    const maxScrollY = Math.max(0, this.cameraWorldHeight - camera.height / camera.zoom);
+    // Phaser's camera matrix is centered on its origin. The legal scroll
+    // range therefore includes a small negative offset when zoomed in.
+    const originOffsetX = camera.width * camera.originX;
+    const originOffsetY = camera.height * camera.originY;
+    const minScrollX = originOffsetX * (1 / camera.zoom - 1);
+    const minScrollY = originOffsetY * (1 / camera.zoom - 1);
+    const maxScrollX = this.cameraWorldWidth - camera.width / camera.zoom - originOffsetX * (1 - 1 / camera.zoom);
+    const maxScrollY = this.cameraWorldHeight - camera.height / camera.zoom - originOffsetY * (1 - 1 / camera.zoom);
     camera.setScroll(
-      Phaser.Math.Clamp(camera.scrollX, 0, maxScrollX),
-      Phaser.Math.Clamp(camera.scrollY, 0, maxScrollY),
+      Phaser.Math.Clamp(camera.scrollX, minScrollX, Math.max(minScrollX, maxScrollX)),
+      Phaser.Math.Clamp(camera.scrollY, minScrollY, Math.max(minScrollY, maxScrollY)),
     );
   }
 
