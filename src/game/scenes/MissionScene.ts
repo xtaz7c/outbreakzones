@@ -12,6 +12,7 @@ import { BuildingSystem, type AccessKind } from '../../simulation/systems/buildi
 import type { WaveSpawnPoint } from '../../simulation/systems/WaveSystem';
 import type { MaintenanceAction, MaintenanceState } from '../../simulation/systems/buildings/BuildingMaintenanceSystem';
 import { DeployableStructureSystem, type DeployableKind, type DeployableState } from '../../simulation/systems/buildings/DeployableStructureSystem';
+import { getCameraScrollForZoom, getNextCameraZoom } from '../CameraZoom';
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
@@ -54,11 +55,12 @@ const MINIMAP_CONFIG_KEY = 'outbreakzones:minimap-visibility';
 const HUD_SCALE_STORAGE_KEY = 'outbreakzones:hud-scale';
 const HUD_COLORS = {
   ink: 0x111415,
-  panel: 0x101516,
-  metal: 0xb9b9b0,
+  panel: 0x0d0c19,
+  metal: 0x81769b,
   muted: 0xc0c5bd,
   paper: 0xe8e3d8,
   red: 0xc33a36,
+  accent: 0x914cff,
   officer: 0x5c9be6,
   civilian: 0xe7c66a,
   infected: 0xc33a36,
@@ -76,8 +78,8 @@ export class MissionScene extends Phaser.Scene {
   private deployableGraphics!: Phaser.GameObjects.Graphics;
   private placementMode: DeployableKind | null = null;
   private selectedDeployableId: number | null = null;
-  private buildStatus = '';
   private readonly buildButtons: Phaser.GameObjects.Text[] = [];
+  private readonly buildIcons: Phaser.GameObjects.Image[] = [];
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
   private readonly civilianVisuals = new Map<number, TacticalCivilian>();
@@ -104,11 +106,19 @@ export class MissionScene extends Phaser.Scene {
   private hudScaleDownButton!: Phaser.GameObjects.Text;
   private hudScaleUpButton!: Phaser.GameObjects.Text;
   private hudPanels!: Phaser.GameObjects.Graphics;
+  private missionPanelGraphics!: Phaser.GameObjects.Graphics;
+  private dayNightOverlay!: Phaser.GameObjects.Rectangle;
+  private missionPanelTitle!: Phaser.GameObjects.Text;
+  private missionPanelVisible = true;
   private minimapGraphics!: Phaser.GameObjects.Graphics;
   private missionText!: Phaser.GameObjects.Text;
   private teamText!: Phaser.GameObjects.Text;
   private settingsButton!: Phaser.GameObjects.Text;
   private fullscreenButton!: Phaser.GameObjects.Text;
+  private missionCloseButton!: Phaser.GameObjects.Text;
+  private missionClockText!: Phaser.GameObjects.Text;
+  private waveStatusText!: Phaser.GameObjects.Text;
+  private readonly officerHudButtons: Phaser.GameObjects.Text[] = [];
   private pauseOverlay!: Phaser.GameObjects.Rectangle;
   private pausePanel!: Phaser.GameObjects.Rectangle;
   private pauseTitle!: Phaser.GameObjects.Text;
@@ -130,8 +140,9 @@ export class MissionScene extends Phaser.Scene {
   private pauseMenuOpen = false;
   private readonly hudBounds = {
     settings: { x: 20, y: 20, width: 124, height: 56 },
-    mission: { x: 20, y: 88, width: 276, height: 142 },
-    minimap: { x: 0, y: 20, width: 320, height: 354 },
+    mission: { x: 20, y: 96, width: 300, height: 190 },
+    clock: { x: 0, y: 20, width: 0, height: 56 },
+    minimap: { x: 0, y: 20, width: 320, height: 302 },
     team: { x: 0, y: 384, width: 320, height: 154 },
     build: { x: 20, y: 0, width: 440, height: 64 },
   };
@@ -151,7 +162,6 @@ export class MissionScene extends Phaser.Scene {
     this.debugInfectedSpawnIndex = 0;
     this.placementMode = null;
     this.selectedDeployableId = null;
-    this.buildStatus = '';
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
     this.simulation = new Simulation();
@@ -500,62 +510,76 @@ export class MissionScene extends Phaser.Scene {
   private createHud(): void {
     const width = this.scale.width;
     const height = this.scale.height;
-    const viewX = 0;
-    const viewY = 0;
-    const mapX = viewX + width / this.hudScale - 340;
-    const mapY = viewY + 20;
+    const hudWidth = width / this.hudScale;
+    const hudHeight = height / this.hudScale;
+    const edge = 40 / this.hudScale;
+    const rightX = hudWidth - edge - 260;
+    const minimapX = rightX;
+    const minimapY = edge;
+    const missionX = edge;
+    const missionY = 116 / this.hudScale;
+    const buildWidth = 640;
+    const buildHeight = 190;
+    const buildX = (hudWidth - buildWidth) / 2;
+    const buildY = hudHeight - edge - buildHeight;
+    const teamY = 356 / this.hudScale;
 
-    this.hudBounds.settings.x = viewX + 20;
-    this.hudBounds.settings.y = viewY + 20;
-    this.hudBounds.mission.x = viewX + 20;
-    this.hudBounds.mission.y = viewY + 88;
-    this.hudBounds.minimap.x = mapX;
-    this.hudBounds.minimap.y = mapY;
-    this.hudBounds.team.x = mapX;
-    this.hudBounds.team.y = mapY + 364;
-    this.hudBounds.build.x = viewX + 20;
-    this.hudBounds.build.y = height / this.hudScale - 84;
+    this.hudBounds.settings = { x: edge, y: edge, width: 124, height: 56 };
+    this.hudBounds.mission = { x: missionX, y: missionY, width: 320, height: 190 };
+    this.hudBounds.clock = { x: hudWidth / 2 - 174, y: edge, width: 348, height: 56 };
+    this.hudBounds.minimap = { x: minimapX, y: minimapY, width: 260, height: 240 };
+    this.hudBounds.team = { x: rightX, y: teamY, width: 260, height: 142 };
+    this.hudBounds.build = { x: buildX, y: buildY, width: buildWidth, height: buildHeight };
 
-    // Tactical HUD elements are viewport-space UI and must ignore world camera movement.
     const hudLabels: Phaser.GameObjects.Text[] = [];
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
+    this.missionPanelGraphics = this.add.graphics().setScrollFactor(0).setDepth(1500);
+    this.dayNightOverlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1630, 0)
+      .setOrigin(0).setScrollFactor(0).setDepth(1400);
     this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
     this.accessGraphics = this.add.graphics().setDepth(80);
 
-    this.hudPanels.fillStyle(HUD_COLORS.panel, 0.99);
-    this.hudPanels.lineStyle(1, HUD_COLORS.metal, 0.62);
-    this.hudPanels.fillRoundedRect(viewX + 20, viewY + 20, 124, 56, 8);
-    this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 20, 124, 56, 8);
-    this.hudPanels.fillRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
-    this.hudPanels.strokeRoundedRect(viewX + 20, viewY + 88, 276, 142, 8);
-    this.hudPanels.fillRoundedRect(mapX, mapY, 320, 354, 12);
-    this.hudPanels.strokeRoundedRect(mapX, mapY, 320, 354, 12);
-    this.hudPanels.fillStyle(HUD_COLORS.officer, 1);
-    this.hudPanels.fillCircle(mapX + 18, mapY + 338, 3);
-    this.hudPanels.fillStyle(HUD_COLORS.civilian, 1);
-    this.hudPanels.fillCircle(mapX + 112, mapY + 338, 3);
-    this.hudPanels.fillStyle(HUD_COLORS.infected, 1);
-    this.hudPanels.fillCircle(mapX + 194, mapY + 338, 3);
-    this.hudPanels.fillRoundedRect(mapX, mapY + 364, 320, 154, 8);
-    this.hudPanels.strokeRoundedRect(mapX, mapY + 364, 320, 154, 8);
-    this.hudPanels.fillRoundedRect(viewX + 20, height / this.hudScale - 84, 440, 64, 8);
-    this.hudPanels.strokeRoundedRect(viewX + 20, height / this.hudScale - 84, 440, 64, 8);
+    const panel = (x: number, y: number, w: number, h: number, radius = 8, alpha = 0.97) => {
+      this.hudPanels.fillStyle(HUD_COLORS.panel, alpha);
+      this.hudPanels.fillRoundedRect(x, y, w, h, radius);
+      this.hudPanels.lineStyle(2, HUD_COLORS.accent, 0.58);
+      this.hudPanels.strokeRoundedRect(x, y, w, h, radius);
+    };
+    panel(edge, edge, 124, 56);
+    panel(hudWidth / 2 - 174, edge, 348, 56, 8, 0.75);
+    panel(minimapX, minimapY, 260, 240, 10);
+    panel(minimapX, 292 / this.hudScale, 260, 52, 8);
+    this.missionPanelGraphics.fillStyle(HUD_COLORS.panel, 0.97);
+    this.missionPanelGraphics.fillRoundedRect(missionX, missionY, 320, 190, 8);
+    this.missionPanelGraphics.lineStyle(2, HUD_COLORS.accent, 0.72);
+    this.missionPanelGraphics.strokeRoundedRect(missionX, missionY, 320, 190, 8);
+    panel(rightX, teamY, 260, 142);
+    panel(buildX, buildY, buildWidth, buildHeight);
 
-    this.settingsButton = this.add.text(viewX + 48, viewY + 48, '⚙', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '29px',
-      color: '#e8e3d8',
+    // Purple separators and compact icon badges from the approved HUD reference.
+    this.hudPanels.fillStyle(HUD_COLORS.accent, 0.95);
+    this.hudPanels.fillRoundedRect(missionX + 12, missionY + 12, 26, 26, 5);
+    this.hudPanels.fillRoundedRect(buildX + 16, buildY + 14, 30, 30, 5);
+    this.hudPanels.fillStyle(0xffffff, 0.9);
+    this.hudPanels.fillRect(missionX + 12, missionY + 51, 296, 2);
+    this.hudPanels.fillRect(buildX + 16, buildY + 48, buildWidth - 32, 2);
+    this.hudPanels.fillStyle(HUD_COLORS.officer, 0.95);
+    [0, 1, 2].forEach((index) => {
+      this.hudPanels.fillRoundedRect(rightX + 34 + index * 78, teamY + 94, 48, 4, 2);
+    });
+    this.hudPanels.fillStyle(HUD_COLORS.accent, 0.85);
+    this.hudPanels.fillRect(edge + 61, edge + 8, 2, 40);
+
+    this.settingsButton = this.add.text(edge + 28, edge + 28, '⚙', {
+      fontFamily: 'Arial, sans-serif', fontSize: '29px', color: '#e8e3d8',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.settingsButton.on('pointerdown', () => this.openPauseMenu());
 
-    // Keep fullscreen accessible to mouse and touch users; keyboard F remains available.
-    this.fullscreenButton = this.add.text(viewX + 112, viewY + 48, '⛶', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '27px',
-      color: '#e8e3d8',
+    this.fullscreenButton = this.add.text(edge + 92, edge + 28, '⛶', {
+      fontFamily: 'Arial, sans-serif', fontSize: '27px', color: '#e8e3d8',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1505)
       .setInteractive({ useHandCursor: true });
     this.fullscreenButton.setData('action-label', 'Entrar em tela cheia');
@@ -567,83 +591,100 @@ export class MissionScene extends Phaser.Scene {
       this.fullscreenButton.setText('⛶').setData('action-label', 'Entrar em tela cheia');
     });
 
-    this.missionText = this.add.text(viewX + 36, viewY + 102, '', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '12px',
-      color: '#f4f1e9',
-      lineSpacing: 6,
-      wordWrap: { width: 244 },
-    }).setScrollFactor(0).setDepth(1505);
+    this.missionClockText = this.add.text(hudWidth / 2, edge + 28, '☀  DIA 1  •  08:00', {
+      fontFamily: 'Arial, sans-serif', fontSize: '17px', fontStyle: 'bold',
+      color: '#f4f1e9', letterSpacing: 1.2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1505);
 
-    hudLabels.push(this.add.text(mapX + 12, mapY + 9, 'ÁREA DE OPERAÇÃO', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '9px',
-      fontStyle: 'bold',
-      color: '#f4f1e9',
-      letterSpacing: 1.4,
-    }).setScrollFactor(0).setDepth(1505));
-    [
-      { x: mapX + 28, label: 'POLICIAIS' },
-      { x: mapX + 122, label: 'CIVIS' },
-      { x: mapX + 204, label: 'INFECTADOS' },
-    ].forEach(({ x, label }) => {
-      hudLabels.push(this.add.text(x, mapY + 211, label, {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '8px',
-        color: '#c0c5bd',
-      }).setScrollFactor(0).setDepth(1505));
+    this.missionPanelTitle = this.add.text(missionX + 48, missionY + 13, 'MISSÃO', {
+      fontFamily: 'Arial, sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: '#e8e3d8', letterSpacing: 1,
+    }).setScrollFactor(0).setDepth(1505);
+    this.missionText = this.add.text(missionX + 16, missionY + 64, '', {
+      fontFamily: 'Arial, sans-serif', fontSize: '12px', color: '#f4f1e9',
+      lineSpacing: 7, wordWrap: { width: 266 },
+    }).setScrollFactor(0).setDepth(1505);
+    this.missionCloseButton = this.add.text(missionX + 296, missionY + 18, '×', {
+      fontFamily: 'Arial, sans-serif', fontSize: '20px', color: '#c0c5bd',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1506)
+      .setInteractive({ useHandCursor: true });
+    this.missionCloseButton.setData('action-label', 'Ocultar objetivos');
+    this.missionCloseButton.on('pointerdown', () => {
+      this.missionPanelVisible = !this.missionPanelVisible;
+      this.missionPanelGraphics.setVisible(this.missionPanelVisible);
+      this.missionPanelTitle.setVisible(this.missionPanelVisible);
+      this.missionText.setVisible(this.missionPanelVisible);
+      this.missionCloseButton.setText(this.missionPanelVisible ? '×' : '+');
+      this.missionCloseButton.setData('action-label', this.missionPanelVisible ? 'Ocultar painel da missão' : 'Mostrar painel da missão');
     });
 
-    this.teamText = this.add.text(mapX + 12, mapY + 376, '', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '10px',
-      color: '#f4f1e9',
-      lineSpacing: 6,
-      wordWrap: { width: 296 },
+    this.waveStatusText = this.add.text(minimapX + 12, 310 / this.hudScale, 'ONDA 0 / 0', {
+      fontFamily: 'Arial, sans-serif', fontSize: '12px', fontStyle: 'bold',
+      color: '#f4f1e9', letterSpacing: 0.6,
     }).setScrollFactor(0).setDepth(1505);
 
-    const buildTitle = this.add.text(viewX + 32, height / this.hudScale - 78, 'CONSTRUÇÕES  /  CLIQUE E POSICIONE NO MAPA', {
-      fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#c0c5bd', letterSpacing: 0.8,
+    hudLabels.push(this.add.text(rightX + 12, teamY + 8, 'EQUIPE  /  SELECIONE', {
+      fontFamily: 'Arial, sans-serif', fontSize: '9px', fontStyle: 'bold',
+      color: '#f4f1e9', letterSpacing: 1,
+    }).setScrollFactor(0).setDepth(1505));
+    this.officerHudButtons.splice(0, this.officerHudButtons.length);
+    [1, 2, 3].forEach((id, index) => {
+      const button = this.add.text(rightX + 58 + index * 78, teamY + 48, '🛡', {
+        fontFamily: 'Arial, sans-serif', fontSize: '25px', fontStyle: 'bold',
+        color: '#e8e3d8', backgroundColor: '#252c2d',
+        padding: { x: 14, y: 8 }, fixedWidth: 54, align: 'center',
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(1506)
+        .setInteractive({ useHandCursor: true });
+      button.on('pointerdown', () => this.selectOfficer(id));
+      this.officerHudButtons.push(button);
+    });
+    this.teamText = this.add.text(rightX + 12, teamY + 96, '', {
+      fontFamily: 'Arial, sans-serif', fontSize: '8px', color: '#c0c5bd',
+      lineSpacing: 3, wordWrap: { width: 236 },
     }).setScrollFactor(0).setDepth(1505);
-    hudLabels.push(buildTitle);
+
+    hudLabels.push(this.add.text(buildX + 58, buildY + 16, 'CONSTRUÇÕES', {
+      fontFamily: 'Arial, sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: '#e8e3d8', letterSpacing: 1,
+    }).setScrollFactor(0).setDepth(1505));
     this.buildButtons.splice(0, this.buildButtons.length,
-      this.createBuildButton(viewX + 76, height / this.hudScale - 47, 'ABRIGO 30/8', 'shelter-tent'),
-      this.createBuildButton(viewX + 184, height / this.hudScale - 47, 'SUPR. 20/5', 'resource-tent'),
-      this.createBuildButton(viewX + 292, height / this.hudScale - 47, 'SNIPER 45/20', 'sniper-post'),
-      this.createBuildButton(viewX + 400, height / this.hudScale - 47, 'BARREIRA 12/3', 'barricade'),
+      this.createBuildButton(buildX + 90, buildY + 130, 'ABRIGO', 'shelter-tent'),
+      this.createBuildButton(buildX + 244, buildY + 130, 'ATIRADOR', 'sniper-post'),
+      this.createBuildButton(buildX + 398, buildY + 130, 'BARRACA', 'resource-tent'),
+      this.createBuildButton(buildX + 552, buildY + 130, 'BARRICADA', 'barricade'),
     );
+    this.buildIcons.splice(0, this.buildIcons.length,
+      this.add.image(buildX + 90, buildY + 78, 'building-shelter-tent'),
+      this.add.image(buildX + 244, buildY + 78, 'building-sniper-post'),
+      this.add.image(buildX + 398, buildY + 78, 'building-resource-tent'),
+      this.add.image(buildX + 552, buildY + 78, 'building-barricade'),
+    );
+    this.buildIcons.forEach((icon) => icon
+      .setDisplaySize(56, 56).setOrigin(0.5).setScrollFactor(0).setDepth(1506));
 
-    const teamHitArea = this.add.rectangle(mapX + 160, mapY + 441, 296, 142, 0xffffff, 0.001)
-      .setScrollFactor(0).setDepth(1507)
-      .setInteractive({ useHandCursor: true });
-    teamHitArea.on('pointerdown', () => this.selectAllOfficers());
-
-    // Group only the tactical HUD so its scale remains independent of world-camera zoom.
     this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
     this.hudRoot.add([
-      this.hudPanels, this.minimapGraphics, this.settingsButton, this.fullscreenButton,
-      this.missionText, this.teamText, teamHitArea, ...hudLabels, ...this.buildButtons,
+      this.hudPanels, this.missionPanelGraphics, this.minimapGraphics, this.settingsButton, this.fullscreenButton,
+      this.missionClockText, this.missionPanelTitle, this.missionText, this.missionCloseButton, this.teamText,
+      this.waveStatusText, ...this.officerHudButtons, ...hudLabels, ...this.buildIcons, ...this.buildButtons,
     ]);
     this.applyHudScale();
     this.refreshBuildButtons();
-    this.scale.on('resize', () => this.applyHudScale());
+    this.scale.on('resize', () => {
+      this.dayNightOverlay.setSize(this.scale.width, this.scale.height);
+      this.applyHudScale();
+    });
 
     this.pauseOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x080a0a, 0.72)
       .setScrollFactor(0).setDepth(1900).setVisible(false);
     this.pausePanel = this.add.rectangle(width / 2, height / 2, 410, 440, HUD_COLORS.panel, 1)
       .setScrollFactor(0).setDepth(1901).setStrokeStyle(1, HUD_COLORS.red, 0.8).setVisible(false);
     this.pauseTitle = this.add.text(width / 2, height / 2 - 188, 'OPERAÇÃO PAUSADA', {
-      fontFamily: 'Barlow Condensed, Impact, sans-serif',
-      fontSize: '32px',
-      fontStyle: 'bold',
-      color: '#e8e3d8',
-      letterSpacing: 1.5,
+      fontFamily: 'Barlow Condensed, Impact, sans-serif', fontSize: '32px',
+      fontStyle: 'bold', color: '#e8e3d8', letterSpacing: 1.5,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
     this.pauseSubtitle = this.add.text(width / 2, height / 2 - 148, 'ESCOLHA UMA AÇÃO', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '9px',
-      color: '#858a87',
-      letterSpacing: 1.4,
+      fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#858a87', letterSpacing: 1.4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
 
     this.hudScaleDownButton = this.createPauseAction(width / 2, height / 2 - 108, '', () => this.adjustHudScale(-0.05));
@@ -667,11 +708,8 @@ export class MissionScene extends Phaser.Scene {
     this.resultPanel = this.add.rectangle(width / 2, height / 2, 560, 270, 0x111415, 0.97)
       .setScrollFactor(0).setDepth(2000).setStrokeStyle(2, HUD_COLORS.red).setVisible(false);
     this.resultText = this.add.text(width / 2, height / 2 - 48, '', {
-      fontFamily: 'Barlow Condensed, Impact, sans-serif',
-      fontSize: '26px',
-      color: '#e8e3d8',
-      align: 'center',
-      padding: { x: 18, y: 12 },
+      fontFamily: 'Barlow Condensed, Impact, sans-serif', fontSize: '26px',
+      color: '#e8e3d8', align: 'center', padding: { x: 18, y: 12 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2001).setVisible(false);
     this.resultHomeButton = this.createResultAction(width / 2 - 135, height / 2 + 82, 'VOLTAR AO INÍCIO', () => this.returnToHome());
     this.resultCampaignButton = this.createResultAction(width / 2 + 135, height / 2 + 82, 'INICIAR CAMPANHA', () => this.startCampaign());
@@ -684,18 +722,17 @@ export class MissionScene extends Phaser.Scene {
   private createBuildButton(x: number, y: number, label: string, kind: DeployableKind): Phaser.GameObjects.Text {
     const button = this.add.text(x, y, label, {
       fontFamily: 'Arial, sans-serif',
-      fontSize: '8px',
+      fontSize: '12px',
       fontStyle: 'bold',
       color: '#e8e3d8',
-      backgroundColor: '#252c2d',
-      padding: { x: 6, y: 8 },
-      fixedWidth: 96,
+      backgroundColor: '#171625',
+      padding: { x: 10, y: 12 },
+      fixedWidth: 138,
       align: 'center',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1506)
       .setInteractive({ useHandCursor: true });
     button.on('pointerdown', () => {
       this.placementMode = this.placementMode === kind ? null : kind;
-      this.buildStatus = this.placementMode ? 'CLIQUE NO MAPA PARA POSICIONAR' : '';
       this.refreshBuildButtons();
       this.updateHud();
     });
@@ -706,7 +743,10 @@ export class MissionScene extends Phaser.Scene {
     const kinds: DeployableKind[] = ['shelter-tent', 'resource-tent', 'sniper-post', 'barricade'];
     this.buildButtons.forEach((button, index) => {
       const kind = kinds[index];
-      button.setBackgroundColor(this.placementMode === kind ? '#a72b2e' : '#252c2d');
+      const selected = this.placementMode === kind;
+      button.setBackgroundColor(selected ? '#4a2475' : '#171625');
+      button.setStyle({ stroke: '#8f4cff', strokeThickness: selected ? 2 : 1 });
+      this.buildIcons[index]?.setTint(selected ? 0xd8c0ff : 0xffffff).setAlpha(selected ? 1 : 0.9);
     });
   }
 
@@ -718,13 +758,11 @@ export class MissionScene extends Phaser.Scene {
     };
     const placed = this.simulation.placeDeployable(this.placementMode, tile);
     if (!placed) {
-      this.buildStatus = 'SEM RECURSOS OU POSIÇÃO INVÁLIDA';
       this.updateHud();
       return;
     }
     this.selectedDeployableId = placed.id;
     this.placementMode = null;
-    this.buildStatus = 'ESTRUTURA POSICIONADA';
     this.refreshBuildButtons();
     this.persistDeployableState();
     this.updateDeployableVisuals();
@@ -736,7 +774,6 @@ export class MissionScene extends Phaser.Scene {
     const dismantled = this.simulation.dismantleDeployable(this.selectedDeployableId);
     if (dismantled) {
       this.selectedDeployableId = null;
-      this.buildStatus = 'ESTRUTURA DESMONTADA · 50% DOS MATERIAIS RECUPERADOS';
       this.persistDeployableState();
       this.updateDeployableVisuals();
       this.updateHud();
@@ -943,21 +980,13 @@ export class MissionScene extends Phaser.Scene {
     this.openPauseMenu();
   }
 
-  private selectAllOfficers(): void {
-    this.selectedOfficerIds.clear();
-    for (const officer of this.simulation.getOfficers()) {
-      if (!officer.isIncapacitated) this.selectedOfficerIds.add(officer.id);
-    }
-    this.refreshSelectionVisuals();
-  }
-
   private isHudPoint(x: number, y: number): boolean {
     const localX = x / this.hudScale;
     const localY = y / this.hudScale;
     const inside = (rect: { x: number; y: number; width: number; height: number }) =>
       localX >= rect.x && localX <= rect.x + rect.width &&
       localY >= rect.y && localY <= rect.y + rect.height;
-    return inside(this.hudBounds.settings) || inside(this.hudBounds.mission) ||
+    return inside(this.hudBounds.settings) || inside(this.hudBounds.clock) || inside(this.hudBounds.mission) ||
       inside(this.hudBounds.minimap) || inside(this.hudBounds.team) || inside(this.hudBounds.build) ||
       this.pauseMenuOpen;
   }
@@ -967,9 +996,18 @@ export class MissionScene extends Phaser.Scene {
     const state = this.simulation.getState();
     const civilians = this.simulation.getCivilians();
     const officers = this.simulation.getOfficers();
-    const waveLabel = state.wavePhase === 'preparing'
-      ? `PRÓXIMA ONDA EM ${state.preparationRemaining.toFixed(0)}s`
-      : `ONDA ${state.waveNumber || 1} / ${state.totalWaves}`;
+    const elapsedMinutes = Math.floor(state.elapsed / 60);
+    const absoluteMinutes = 8 * 60 + elapsedMinutes;
+    const day = Math.floor(absoluteMinutes / (24 * 60)) + 1;
+    const clockMinutes = absoluteMinutes % (24 * 60);
+    const clock = `${String(Math.floor(clockMinutes / 60)).padStart(2, '0')}:${String(clockMinutes % 60).padStart(2, '0')}`;
+    this.missionClockText.setText(`☀  DIA ${day}  •  ${clock}`);
+    const hour = clockMinutes / 60;
+    const daylight = Phaser.Math.Clamp((hour - 6) / 1.5, 0, 1) *
+      (1 - Phaser.Math.Clamp((hour - 17) / 1.5, 0, 1));
+    const twilight = 1 - daylight;
+    this.dayNightOverlay.setAlpha(Phaser.Math.Clamp(twilight * 0.46, 0, 0.46));
+
     const civilianStates = {
       sheltered: civilians.filter((civilian) => civilian.state === 'sheltered').length,
       following: civilians.filter((civilian) => civilian.state === 'following').length,
@@ -981,42 +1019,44 @@ export class MissionScene extends Phaser.Scene {
         ? 'EQUIPE INCAPACITADA'
         : 'RESGATAR SOBREVIVENTES';
     this.missionText.setText([
-      `MISSÃO ${this.missionId}  /  ${getMissionDefinition(this.missionId).title.toUpperCase()}`,
       objective,
       `RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
       `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`,
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
-      waveLabel,
     ].join('\n'));
+
+    const waveLabel = state.wavePhase === 'preparing'
+      ? `ONDA ${Math.max(1, state.waveNumber)}  ·  ${Math.ceil(state.preparationRemaining)}s`
+      : state.wavePhase === 'completed'
+        ? 'ONDAS CONCLUÍDAS'
+        : `ONDA ${Math.max(1, state.waveNumber)} / ${state.totalWaves}  ·  EM ANDAMENTO`;
+    this.waveStatusText.setText(waveLabel);
 
     const teamLines = officers.map((officer) => {
       const selected = this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated;
-      const status = officer.isIncapacitated ? 'FORA DE COMBATE' : selected ? 'SELECIONADO' : 'OPERACIONAL';
+      const action = officer.isIncapacitated ? 'INATIVO' : officer.hasMoveOrder
+        ? 'MOVENDO' : officer.state === 'attacking' ? 'COMBATENDO' : 'PARADO';
+      const posture = officer.tacticalPosture === 'hold_fire' ? 'SEGURA FOGO' : 'FOGO AUTO';
       const health = Math.max(0, Math.round((officer.health / officer.maxHealth) * 100));
       const ammo = this.simulation.getOfficerAmmoStatus(officer.id);
-      const ammunition = ammo.reloading
-        ? `RECARGA ${ammo.reloadRemaining.toFixed(1)}s`
-        : `MUN ${ammo.current}/${ammo.capacity}`;
-      return `[${selected ? '◆' : ' '}]${officer.id} ${status}  HP ${health}%  ${ammunition}`;
+      const ammunition = ammo.reloading ? 'RECARGA' : `${ammo.current}/${ammo.capacity}`;
+      return `${officer.id}: ${health}% · ${action} · ${posture} · MUN ${ammunition}${selected ? ' · SELECIONADO' : ''}`;
     });
-    const maintenance = this.simulation.getMaintenanceState();
-    const maintenanceJobs = maintenance?.jobs.map((job) =>
-      `${job.action} ${job.accessId}: ${job.remaining.toFixed(1)}s`).join(', ') || 'nenhum';
-    this.teamText.setText([
-      'EQUIPE  /  CLIQUE PARA SELECIONAR TODOS',
-      ...teamLines,
-      `RECURSOS  ${maintenance?.resources.scrap ?? 0} sucata / ${maintenance?.resources.parts ?? 0} peças`,
-      `MANUTENÇÃO  ${maintenanceJobs}`,
-      `ESTRUTURAS  ${this.simulation.getDeployableResources().scrap} sucata / ${this.simulation.getDeployableResources().parts} peças`,
-      `CAPACIDADE DE ABRIGO  ${this.simulation.getShelterCapacity()} vagas`,
-      ...(this.buildStatus ? [this.buildStatus] : []),
-    ].join('\n'));
+    this.teamText.setText(teamLines.join('\n'));
+    this.officerHudButtons.forEach((button, index) => {
+      const officer = officers[index];
+      if (!officer) return;
+      const selected = this.selectedOfficerIds.has(officer.id);
+      button.setColor(officer.isIncapacitated ? '#777d7b' : selected ? '#ffffff' : '#e8e3d8');
+      button.setBackgroundColor(officer.isIncapacitated ? '#303536' : selected ? '#315b43' : '#252c2d');
+      button.setAlpha(officer.isIncapacitated ? 0.55 : 1);
+    });
 
     this.minimapGraphics.clear();
     const mapX = this.hudBounds.minimap.x + 12;
-    const mapY = this.hudBounds.minimap.y + 30;
-    const mapWidth = 296;
-    const mapHeight = 296;
+    const mapY = this.hudBounds.minimap.y + 12;
+    const mapWidth = 236;
+    const mapHeight = 216;
     const markerInset = 14;
     this.minimapGraphics.fillStyle(0x080c0d, 1);
     this.minimapGraphics.fillRoundedRect(mapX, mapY, mapWidth, mapHeight, 12);
@@ -1085,21 +1125,43 @@ export class MissionScene extends Phaser.Scene {
     this.input.on(
       'wheel',
       (
-        _pointer: Phaser.Input.Pointer,
+        pointer: Phaser.Input.Pointer,
         _currentlyOver: Phaser.GameObjects.GameObject[],
         _deltaX: number,
         deltaY: number,
       ) => {
+        (pointer.event as WheelEvent).preventDefault();
         const camera = this.cameras.main;
         const minimumZoom = Math.max(
           MIN_CAMERA_ZOOM,
           camera.width / this.cameraWorldWidth,
           camera.height / this.cameraWorldHeight,
         );
-        const nextZoom = camera.zoom * (deltaY > 0 ? 0.9 : 1.1);
-        camera.setZoom(Phaser.Math.Clamp(nextZoom, minimumZoom, MAX_CAMERA_ZOOM));
+        const nextZoom = getNextCameraZoom(
+          camera.zoom,
+          deltaY,
+          minimumZoom,
+          MAX_CAMERA_ZOOM,
+        );
+        if (nextZoom === camera.zoom) return;
+
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        camera.setZoom(nextZoom);
+        const scroll = getCameraScrollForZoom(
+          worldPoint.x,
+          worldPoint.y,
+          pointer.x,
+          pointer.y,
+          camera.x,
+          camera.y,
+          camera.width,
+          camera.height,
+          nextZoom,
+          camera.originX,
+          camera.originY,
+        );
+        camera.setScroll(scroll.x, scroll.y);
         this.clampCamera();
-        // Refresh the minimap viewport immediately after wheel zoom.
         this.updateHud();
       },
     );
@@ -1126,7 +1188,6 @@ export class MissionScene extends Phaser.Scene {
         if (this.placementMode) {
           this.placementMode = null;
           this.refreshBuildButtons();
-          this.buildStatus = 'POSICIONAMENTO CANCELADO';
           this.updateHud();
           return;
         }
@@ -1492,11 +1553,17 @@ export class MissionScene extends Phaser.Scene {
       camera.height / this.cameraWorldHeight,
     );
     if (camera.zoom < minimumZoom) camera.setZoom(minimumZoom);
-    const maxScrollX = Math.max(0, this.cameraWorldWidth - camera.width / camera.zoom);
-    const maxScrollY = Math.max(0, this.cameraWorldHeight - camera.height / camera.zoom);
+    // Phaser's camera matrix is centered on its origin. The legal scroll
+    // range therefore includes a small negative offset when zoomed in.
+    const originOffsetX = camera.width * camera.originX;
+    const originOffsetY = camera.height * camera.originY;
+    const minScrollX = originOffsetX * (1 / camera.zoom - 1);
+    const minScrollY = originOffsetY * (1 / camera.zoom - 1);
+    const maxScrollX = this.cameraWorldWidth - camera.width / camera.zoom - originOffsetX * (1 - 1 / camera.zoom);
+    const maxScrollY = this.cameraWorldHeight - camera.height / camera.zoom - originOffsetY * (1 - 1 / camera.zoom);
     camera.setScroll(
-      Phaser.Math.Clamp(camera.scrollX, 0, maxScrollX),
-      Phaser.Math.Clamp(camera.scrollY, 0, maxScrollY),
+      Phaser.Math.Clamp(camera.scrollX, minScrollX, Math.max(minScrollX, maxScrollX)),
+      Phaser.Math.Clamp(camera.scrollY, minScrollY, Math.max(minScrollY, maxScrollY)),
     );
   }
 
