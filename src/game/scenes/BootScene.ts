@@ -171,6 +171,9 @@ export class BootScene extends Phaser.Scene {
       return;
     }
 
+    const selectedMission = (window as unknown as { __OZ_SELECTED_MISSION__?: number })
+      .__OZ_SELECTED_MISSION__;
+    this.registry.set('missionId', selectedMission === 1 ? 1 : 0);
     this.scene.start('MissionScene');
   }
 
