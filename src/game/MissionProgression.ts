@@ -48,3 +48,15 @@ export function canStartCampaign(
 ): boolean {
   return missionId === 0 && status === 'victory' && campaignUnlocked;
 }
+
+export function getMissionResultMessage(missionId: MissionId, status: MissionStatus): string {
+  if (status === 'defeat') {
+    return ['MISSÃO FALHOU', 'Todos os policiais foram incapacitados'].join('\n');
+  }
+
+  if (missionId === 0) {
+    return ['O RESGATE CONCLUÍDO', 'Sobreviventes extraídos', 'Todas as ondas eliminadas'].join('\n');
+  }
+
+  return ['REFÚGIO DEFENDIDO', 'Todas as ondas eliminadas', 'Setor estabilizado'].join('\n');
+}

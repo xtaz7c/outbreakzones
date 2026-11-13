@@ -1520,11 +1520,7 @@ export class MissionScene extends Phaser.Scene {
     if (victory && this.missionId === 0) this.writeStorage(CAMPAIGN_UNLOCK_STORAGE_KEY, '1');
     this.resultPanel.setVisible(true).setPosition(centerX, centerY);
     this.resultText
-      .setText(victory
-        ? this.missionId === 0
-          ? 'O RESGATE CONCLUÍDO\\nSobreviventes extraídos\\nTodas as ondas eliminadas'
-          : 'REFÚGIO DEFENDIDO\\nTodas as ondas eliminadas\\nSetor estabilizado'
-        : 'MISSÃO FALHOU\\nTodos os policiais foram incapacitados')
+      .setText(getMissionResultMessage(this.missionId, status))
       .setPosition(centerX, centerY - 48)
       .setVisible(true);
     this.resultHomeButton.setPosition(centerX - 135, centerY + 82).setVisible(true);
