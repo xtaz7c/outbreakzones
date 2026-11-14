@@ -53,10 +53,16 @@ O atlas em public/tiles/mission-tiles.svg usa células de 32 × 32 px. Os IDs ex
 - Efeitos visuais devem responder a eventos existentes na apresentação; não introduzir regras de gameplay no renderer.
 - Assets devem ser originais ou licenciados para uso no projeto, com fonte/licença registrada quando externos.
 
-
 ## Sprites de personagens
 
 - Atlas em `public/sprites/characters.svg`, com células de 32 × 32 px e nearest-neighbor.
 - Linhas reservadas por facção: policial, civil e infectado; seis poses por personagem: idle, dois passos de caminhada, ataque, impacto e incapacitado/morto.
 - A cena apenas seleciona quadros/animações a partir do estado já existente na simulação. O atlas e o renderer não alteram movimento, dano, seleção ou navegação.
 - Silhuetas e equipamentos distinguem as facções mesmo em escala reduzida; cores semânticas reforçam a leitura, sem serem o único identificador.
+
+## Pipeline de atlases
+
+- **Fonte editável:** SVG em `public/tiles/` e `public/sprites/` (grade uniforme, `shape-rendering: crispEdges`).
+- **Raster opcional:** `npm run assets` (ImageMagick `convert`) gera PNG no mesmo caminho para load mais previsível no Phaser.
+- **Runtime:** `pixelArt: true`, `antialias: false`, `roundPixels: true` em `src/game/config.ts`.
+- Manter células alinhadas à grade; evitar antialiasing no asset e no filtro de textura.
