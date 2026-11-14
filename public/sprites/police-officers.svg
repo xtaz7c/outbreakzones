@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="64" viewBox="0 0 384 64" shape-rendering="crispEdges">
+  <title>Outbreak Zones — policiais (referência UI tática)</title>
+  <!--
+    Grade 6×1 · célula 64×64 · top-down pixel art
+    Frames: 0 idle · 1 walk-a · 2 walk-b · 3 attack · 4 hit · 5 down
+    Paleta alinhada à referência: capacete #0d1520, colete #1a2740, azul operacional #3f83d5, arma #2a3038
+    Ainda NÃO integrado ao characters.svg — PR de texturas completa fará o swap.
+  -->
+
+  <!-- ========== 0 IDLE ========== -->
+  <g transform="translate(0 0)">
+    <rect x="22" y="52" width="20" height="6" fill="#0a0e14" opacity="0.45"/>
+    <rect x="22" y="44" width="8" height="12" fill="#121a28"/>
+    <rect x="34" y="44" width="8" height="12" fill="#121a28"/>
+    <rect x="22" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="34" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="20" y="24" width="24" height="22" fill="#1a2740"/>
+    <rect x="22" y="26" width="20" height="6" fill="#243552"/>
+    <rect x="24" y="34" width="16" height="4" fill="#152033"/>
+    <rect x="14" y="26" width="6" height="16" fill="#1a2740"/>
+    <rect x="44" y="26" width="6" height="16" fill="#1a2740"/>
+    <rect x="22" y="10" width="20" height="16" fill="#0d1520"/>
+    <rect x="24" y="8" width="16" height="4" fill="#0d1520"/>
+    <rect x="26" y="6" width="12" height="4" fill="#152033"/>
+    <rect x="24" y="16" width="16" height="6" fill="#1e3a5c"/>
+    <rect x="26" y="18" width="12" height="2" fill="#3f83d5"/>
+    <rect x="20" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="40" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="48" y="16" width="4" height="28" fill="#2a3038"/>
+    <rect x="46" y="14" width="8" height="4" fill="#3a424c"/>
+    <rect x="48" y="40" width="4" height="4" fill="#1a1e24"/>
+  </g>
+
+  <!-- ========== 1 WALK A ========== -->
+  <g transform="translate(64 0)">
+    <rect x="22" y="52" width="20" height="6" fill="#0a0e14" opacity="0.45"/>
+    <rect x="20" y="44" width="8" height="12" fill="#121a28"/>
+    <rect x="36" y="42" width="8" height="14" fill="#121a28"/>
+    <rect x="20" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="36" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="20" y="24" width="24" height="22" fill="#1a2740"/>
+    <rect x="22" y="26" width="20" height="6" fill="#243552"/>
+    <rect x="24" y="34" width="16" height="4" fill="#152033"/>
+    <rect x="14" y="26" width="6" height="16" fill="#1a2740"/>
+    <rect x="44" y="28" width="6" height="16" fill="#1a2740"/>
+    <rect x="22" y="10" width="20" height="16" fill="#0d1520"/>
+    <rect x="24" y="8" width="16" height="4" fill="#0d1520"/>
+    <rect x="26" y="6" width="12" height="4" fill="#152033"/>
+    <rect x="24" y="16" width="16" height="6" fill="#1e3a5c"/>
+    <rect x="26" y="18" width="12" height="2" fill="#3f83d5"/>
+    <rect x="20" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="40" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="48" y="18" width="4" height="28" fill="#2a3038"/>
+    <rect x="46" y="16" width="8" height="4" fill="#3a424c"/>
+  </g>
+
+  <!-- ========== 2 WALK B ========== -->
+  <g transform="translate(128 0)">
+    <rect x="22" y="52" width="20" height="6" fill="#0a0e14" opacity="0.45"/>
+    <rect x="36" y="44" width="8" height="12" fill="#121a28"/>
+    <rect x="20" y="42" width="8" height="14" fill="#121a28"/>
+    <rect x="36" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="20" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="20" y="24" width="24" height="22" fill="#1a2740"/>
+    <rect x="22" y="26" width="20" height="6" fill="#243552"/>
+    <rect x="24" y="34" width="16" height="4" fill="#152033"/>
+    <rect x="14" y="28" width="6" height="16" fill="#1a2740"/>
+    <rect x="44" y="26" width="6" height="16" fill="#1a2740"/>
+    <rect x="22" y="10" width="20" height="16" fill="#0d1520"/>
+    <rect x="24" y="8" width="16" height="4" fill="#0d1520"/>
+    <rect x="26" y="6" width="12" height="4" fill="#152033"/>
+    <rect x="24" y="16" width="16" height="6" fill="#1e3a5c"/>
+    <rect x="26" y="18" width="12" height="2" fill="#3f83d5"/>
+    <rect x="20" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="40" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="48" y="16" width="4" height="28" fill="#2a3038"/>
+    <rect x="46" y="14" width="8" height="4" fill="#3a424c"/>
+  </g>
+
+  <!-- ========== 3 ATTACK ========== -->
+  <g transform="translate(192 0)">
+    <rect x="22" y="52" width="20" height="6" fill="#0a0e14" opacity="0.45"/>
+    <rect x="22" y="44" width="8" height="12" fill="#121a28"/>
+    <rect x="34" y="44" width="8" height="12" fill="#121a28"/>
+    <rect x="22" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="34" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="20" y="24" width="24" height="22" fill="#1a2740"/>
+    <rect x="22" y="26" width="20" height="6" fill="#243552"/>
+    <rect x="24" y="34" width="16" height="4" fill="#152033"/>
+    <rect x="14" y="26" width="6" height="14" fill="#1a2740"/>
+    <rect x="44" y="24" width="8" height="12" fill="#1a2740"/>
+    <rect x="22" y="10" width="20" height="16" fill="#0d1520"/>
+    <rect x="24" y="8" width="16" height="4" fill="#0d1520"/>
+    <rect x="26" y="6" width="12" height="4" fill="#152033"/>
+    <rect x="24" y="16" width="16" height="6" fill="#1e3a5c"/>
+    <rect x="26" y="18" width="12" height="2" fill="#3f83d5"/>
+    <rect x="20" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="40" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="48" y="22" width="14" height="4" fill="#2a3038"/>
+    <rect x="60" y="20" width="4" height="8" fill="#3a424c"/>
+    <rect x="44" y="24" width="6" height="4" fill="#1a1e24"/>
+  </g>
+
+  <!-- ========== 4 HIT ========== -->
+  <g transform="translate(256 0)">
+    <rect x="22" y="52" width="20" height="6" fill="#0a0e14" opacity="0.45"/>
+    <rect x="22" y="44" width="8" height="12" fill="#121a28"/>
+    <rect x="34" y="44" width="8" height="12" fill="#121a28"/>
+    <rect x="22" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="34" y="54" width="8" height="4" fill="#0a1018"/>
+    <rect x="20" y="24" width="24" height="22" fill="#1a2740"/>
+    <rect x="22" y="26" width="20" height="6" fill="#243552"/>
+    <rect x="18" y="22" width="28" height="4" fill="#c33a36"/>
+    <rect x="24" y="34" width="16" height="4" fill="#152033"/>
+    <rect x="14" y="26" width="6" height="16" fill="#1a2740"/>
+    <rect x="44" y="26" width="6" height="16" fill="#1a2740"/>
+    <rect x="22" y="10" width="20" height="16" fill="#0d1520"/>
+    <rect x="24" y="8" width="16" height="4" fill="#0d1520"/>
+    <rect x="26" y="6" width="12" height="4" fill="#152033"/>
+    <rect x="24" y="16" width="16" height="6" fill="#1e3a5c"/>
+    <rect x="26" y="18" width="12" height="2" fill="#c33a36"/>
+    <rect x="20" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="40" y="28" width="4" height="4" fill="#3f83d5"/>
+    <rect x="48" y="20" width="4" height="24" fill="#2a3038"/>
+  </g>
+
+  <!-- ========== 5 DOWN ========== -->
+  <g transform="translate(320 0)">
+    <rect x="16" y="36" width="32" height="12" fill="#0a0e14" opacity="0.4"/>
+    <rect x="12" y="28" width="40" height="16" fill="#1a2740"/>
+    <rect x="16" y="30" width="32" height="4" fill="#243552"/>
+    <rect x="14" y="36" width="8" height="6" fill="#121a28"/>
+    <rect x="42" y="36" width="8" height="6" fill="#121a28"/>
+    <rect x="8" y="24" width="16" height="14" fill="#0d1520"/>
+    <rect x="10" y="26" width="12" height="4" fill="#1e3a5c"/>
+    <rect x="12" y="28" width="8" height="2" fill="#3f83d5"/>
+    <rect x="44" y="40" width="16" height="4" fill="#2a3038"/>
+  </g>
+</svg>
