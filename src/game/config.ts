@@ -12,6 +12,10 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   width: LOGICAL_WIDTH,
   height: LOGICAL_HEIGHT,
   backgroundColor: '#2e2e2e',
+  // Pixel art: nearest-neighbor, sem antialias; reduz shimmer no scroll/zoom.
+  pixelArt: true,
+  antialias: false,
+  roundPixels: true,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
