@@ -91,3 +91,42 @@ jobs:
             src-tauri/target/release/bundle/appimage/*.AppImage
             outbreak-zones-game-*.zip
             outbreak-zones-game-*.zip.sha256
+
+      - name: Update version manifest on main
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          VERSION="${VERSION#v}"
+          git fetch origin main
+          git checkout -B manifest-main origin/main
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const manifestPath = 'releases/manifest.json';
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          const version = process.env.VERSION;
+          const checksumFile = `outbreak-zones-game-${version}.zip.sha256`;
+          const sha256 = fs.readFileSync(checksumFile, 'utf8').trim().split(/\s+/)[0];
+          if (!/^[a-f0-9]{64}$/i.test(sha256)) throw new Error('SHA-256 inválido');
+          const tag = `v${version}`;
+          const archiveUrl = `https://github.com/${process.env.REPOSITORY}/releases/download/${tag}/outbreak-zones-game-${version}.zip`;
+          const entry = {
+            version,
+            archive_url: archiveUrl,
+            sha256,
+            notes: '',
+            released_at: new Date().toISOString()
+          };
+          manifest.schema = 1;
+          manifest.versions = (manifest.versions || []).filter(item => item.version !== version);
+          manifest.versions.unshift(entry);
+          manifest.latest_version = version;
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\\n');
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add releases/manifest.json
+          git commit -m "chore(releases): publish game v${VERSION} manifest"
+          git push origin manifest-main:main
