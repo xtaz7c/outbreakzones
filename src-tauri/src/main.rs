@@ -120,8 +120,8 @@ fn set_preferred_version(app: tauri::AppHandle, version: String) -> Result<(), S
 
 #[tauri::command]
 async fn download_game_version(app: tauri::AppHandle, version: String) -> Result<InstalledVersion, String> {
-    if version.is_empty() || version.len() > 32 || !version.chars().all(|c| c.is_ascii_alphanumeric() || ".-_+".contains(c)) {
-        return Err("Identificador de versão inválido.".into());
+    if version.len() > 32 || semver::Version::parse(&version).is_err() {
+        return Err("Versão inválida. Use o formato semântico, por exemplo 0.2.0.".into());
     }
     let manifest = fetch_manifest().await?;
     let release = manifest.versions.iter().find(|item| item.version == version)
@@ -162,8 +162,13 @@ async fn download_game_version(app: tauri::AppHandle, version: String) -> Result
 
     let extraction = (|| -> Result<(), String> {
         let mut archive = ZipArchive::new(Cursor::new(bytes)).map_err(|e| format!("Pacote ZIP inválido: {e}"))?;
+        let mut expanded_size = 0_u64;
         for index in 0..archive.len() {
             let mut file = archive.by_index(index).map_err(|e| e.to_string())?;
+            expanded_size = expanded_size.checked_add(file.size()).ok_or("Tamanho expandido inválido")?;
+            if expanded_size > 1024 * 1024 * 1024 {
+                return Err("O conteúdo descompactado excede o limite de 1 GiB.".into());
+            }
             let Some(relative) = file.enclosed_name().map(Path::to_path_buf) else {
                 return Err("O pacote contém um caminho inseguro.".into());
             };
