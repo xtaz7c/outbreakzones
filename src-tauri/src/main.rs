@@ -8,6 +8,7 @@ use std::{
     net::SocketAddr,
     path::{Component, Path, PathBuf},
     thread,
+    time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tiny_http::{Header, Response, Server};
@@ -133,10 +134,16 @@ async fn download_game_version(app: tauri::AppHandle, version: String) -> Result
         return Err("Hash SHA-256 ausente ou inválido no manifesto.".into());
     }
 
-    let bytes = reqwest::Client::new().get(parsed).header(reqwest::header::USER_AGENT, "Outbreak-Zones-Launcher")
+    let response = reqwest::Client::new().get(parsed).header(reqwest::header::USER_AGENT, "Outbreak-Zones-Launcher")
         .send().await.map_err(|e| format!("Falha no download: {e}"))?
-        .error_for_status().map_err(|e| format!("Download recusado: {e}"))?
-        .bytes().await.map_err(|e| format!("Falha ao receber arquivo: {e}"))?;
+        .error_for_status().map_err(|e| format!("Download recusado: {e}"))?;
+    if response.content_length().is_some_and(|size| size > 512 * 1024 * 1024) {
+        return Err("O pacote excede o limite de 512 MiB.".into());
+    }
+    let bytes = response.bytes().await.map_err(|e| format!("Falha ao receber arquivo: {e}"))?;
+    if bytes.len() > 512 * 1024 * 1024 {
+        return Err("O pacote excede o limite de 512 MiB.".into());
+    }
 
     let actual_hash = format!("{:x}", Sha256::digest(&bytes));
     if !actual_hash.eq_ignore_ascii_case(&release.sha256) {
@@ -231,7 +238,8 @@ fn launch_game(app: tauri::AppHandle, version: String) -> Result<(), String> {
     }
     let address = serve_version(root)?;
     let url = format!("http://{}:{}/game.html", address.ip(), address.port());
-    WebviewWindowBuilder::new(&app, format!("game-{}", version.replace('.', "-")), WebviewUrl::External(url.parse().map_err(|e| format!("URL inválida: {e}"))?))
+    let unique = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|e| e.to_string())?.as_millis();
+    WebviewWindowBuilder::new(&app, format!("game-{}-{unique}", version.replace('.', "-")), WebviewUrl::External(url.parse().map_err(|e| format!("URL inválida: {e}"))?))
         .title(format!("Outbreak Zones — Jogo v{version}"))
         .inner_size(1440.0, 900.0)
         .min_inner_size(960.0, 640.0)
