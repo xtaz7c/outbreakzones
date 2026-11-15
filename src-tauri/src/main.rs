@@ -275,15 +275,16 @@ async fn install_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
     }
 
     if let Some(appimage) = updated_appimage {
+        let backup = appimage.parent()
+            .and_then(|parent| appimage.file_name().map(|name| parent.join(format!(".{}.backup", name.to_string_lossy()))));
         if let Err(error) = Command::new(&appimage).spawn() {
-            let backup = appimage.parent()
-                .and_then(|parent| appimage.file_name().map(|name| parent.join(format!(".{}.backup", name.to_string_lossy()))));
             if let Some(backup_path) = backup {
                 let _ = fs::rename(&appimage, appimage.with_extension("AppImage.failed"));
                 let _ = fs::rename(backup_path, &appimage);
             }
             return Err(format!("Não foi possível reabrir o AppImage atualizado: {error}"));
         }
+        if let Some(backup_path) = backup { let _ = fs::remove_file(backup_path); }
         app.exit(0);
         return Ok(());
     }
