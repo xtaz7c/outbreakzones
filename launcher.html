@@ -35,7 +35,7 @@
     .actions{display:flex;gap:9px;flex-wrap:wrap}
     .secondary{padding:11px 14px;border:1px solid #555e58;background:transparent;color:#eee9df;font-size:11px;font-weight:800;letter-spacing:.5px}
     .secondary:hover{border-color:#c33a36}.secondary:disabled{opacity:.45;cursor:not-allowed}
-    .status{margin:12px 0 0;color:#8d9691;font-size:11px}
+    .status{margin:12px 0 0;color:#8d9691;font-size:11px}.launcher-update{margin-top:18px;padding-top:16px;border-top:1px solid #343b39}.launcher-update-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.launcher-update-title{font-size:11px;font-weight:800;letter-spacing:.8px}.launcher-update-status{margin:8px 0 12px;color:#9ba39d;font-size:11px;line-height:1.5}.launcher-update-status.available{color:#e7b36c}.launcher-update-status.error{color:#e58b83}
     @media(max-width:480px){.launcher{padding:18px}.brand{font-size:15px}.game-icon{width:46px;height:46px}.main-action{gap:12px}.game-version{min-width:88px}}
   </style>
 </head>
@@ -45,7 +45,7 @@
     <header>
       <img class="game-icon" src="./images/icone_game_zumbi_512.png" alt="Outbreak Zones" />
       <div class="brand">OUTBREAK <span>ZONES</span></div>
-      <div class="launcher-version">LAUNCHER<strong>v0.1.0</strong></div>
+      <div class="launcher-version">LAUNCHER<strong id="launcher-version">v—</strong></div>
       <button class="settings" id="settings-toggle" type="button" aria-label="Configurações" title="Configurações">⚙</button>
     </header>
 
@@ -70,6 +70,13 @@
         <button class="secondary" id="install" type="button" disabled>INSTALAR VERSÃO SELECIONADA</button>
       </div>
       <p class="status" id="connection">Aguardando verificação…</p>
+      <div class="launcher-update">
+        <div class="launcher-update-row">
+          <span class="launcher-update-title">ATUALIZAÇÃO DO LAUNCHER</span>
+          <button class="secondary" id="launcher-update" type="button" disabled>ATUALIZAR LAUNCHER</button>
+        </div>
+        <p class="launcher-update-status" id="launcher-update-status" role="status" aria-live="polite">Verificando versão instalada…</p>
+      </div>
     </section>
   </main>
   <script type="module" src="./launcher.js"></script>
