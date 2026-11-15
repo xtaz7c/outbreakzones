@@ -109,8 +109,6 @@ async fn fetch_manifest() -> Result<ReleaseManifest, String> {
     response.json::<ReleaseManifest>().await.map_err(|e| format!("Manifesto inválido: {e}"))
 }
 
-#[tauri::command]
-
 fn launcher_package_kind() -> Result<&'static str, String> {
     if std::env::var_os("APPIMAGE").is_some() {
         Ok("AppImage")
@@ -251,6 +249,7 @@ async fn install_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
     app.restart();
 }
 
+#[tauri::command]
 fn list_installed_versions(app: tauri::AppHandle) -> Result<Vec<InstalledVersion>, String> {
     let root = versions_dir(&app)?;
     let mut installed = Vec::new();
