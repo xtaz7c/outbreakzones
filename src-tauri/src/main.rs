@@ -45,6 +45,32 @@ struct InstalledVersion {
     installed_at: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct LauncherReleaseAsset {
+    name: String,
+    browser_download_url: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct LauncherRelease {
+    tag_name: String,
+    body: Option<String>,
+    draft: bool,
+    prerelease: bool,
+    assets: Vec<LauncherReleaseAsset>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LauncherUpdate {
+    version: String,
+    package_kind: String,
+    download_url: String,
+    checksum_url: String,
+    release_url: String,
+    notes: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SaveEnvelope {
