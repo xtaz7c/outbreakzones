@@ -76,7 +76,8 @@
         status.textContent = 'Nova versão v' + state.launcherUpdate.version + ' disponível (' + state.launcherUpdate.packageKind + ').';
         button.disabled = false;
       } else {
-        $('settings-toggle').classList.remove('update-available');\n        status.textContent = 'Launcher atualizado · v' + current;
+        $('settings-toggle').classList.remove('update-available');
+        status.textContent = 'Launcher atualizado · v' + current;
       }
     } catch (error) {
       state.launcherUpdate = null;
