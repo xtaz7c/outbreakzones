@@ -1,6 +1,6 @@
 # Outbreak Zones para Linux
 
-Outbreak Zones pode ser executado como aplicativo desktop usando Tauri 2 e o WebKitGTK do sistema. A simulação continua em TypeScript/Phaser; o launcher fornece uma janela nativa, inicialização pelo menu de aplicativos e pacotes Linux.
+Outbreak Zones pode ser executado como aplicativo desktop usando Tauri 2 e o WebKitGTK do sistema. A simulação continua em TypeScript/Phaser; o launcher fornece uma janela nativa, gerenciamento de versões do jogo, inicialização pelo menu de aplicativos e pacotes Linux.
 
 ## Distribuições suportadas
 
@@ -57,9 +57,15 @@ cargo tauri build --bundles deb,appimage
 
 Os arquivos são gerados em `src-tauri/target/release/bundle/`.
 
+## Gerenciamento de versões
+
+Ao abrir, o launcher consulta o manifesto oficial de versões. A instalação de uma atualização exige confirmação e o pacote é validado por SHA-256 antes de ser extraído. Cada versão fica em um diretório separado; versões antigas não são substituídas nem removidas automaticamente. Selecione a versão desejada e use **Iniciar jogo**. A primeira instalação/atualização exige conexão com a internet; depois de baixada, a versão instalada roda localmente.
+
+A versão do launcher e a versão do jogo são independentes. Atualizações do jogo são distribuídas pelo manifesto e pelos ZIPs das GitHub Releases; atualizações do launcher chegam em novos pacotes `.deb`/`.AppImage`.
+
 ## Dados locais
 
-O jogo mantém o desbloqueio da campanha e preferências no armazenamento local do WebView. Eles ficam associados ao perfil local do aplicativo e não são sincronizados automaticamente com o navegador.
+O launcher armazena versões instaladas e a versão padrão no diretório de dados do aplicativo. O jogo mantém o desbloqueio da campanha e preferências no armazenamento local do WebView; esses dados não são sincronizados automaticamente com o navegador.
 
 ## Escopo desta porta
 
