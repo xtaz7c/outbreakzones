@@ -70,3 +70,8 @@ O launcher armazena versões instaladas e a versão padrão no diretório de dad
 ## Escopo desta porta
 
 Esta integração empacota o jogo web existente em uma aplicação desktop Linux. Não reescreve a engine Phaser nem altera as regras da simulação. O jogo permanece single-player e executa localmente, sem exigir conexão com o servidor do site após a instalação.
+
+
+## Salvamento de campanha
+
+O launcher mantém o salvamento em seu diretório de dados, separado das versões instaladas. O progresso da campanha é restaurado antes de abrir o menu de operações e sincronizado automaticamente. Atualizações do launcher e do jogo não devem apagar o arquivo de salvamento. Se uma versão antiga encontrar um capítulo mais novo que ainda não possui, ela solicita atualização em vez de reiniciar a campanha.
