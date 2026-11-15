@@ -12,7 +12,7 @@ export interface PhaseTint {
 export const PHASE_TINTS: Readonly<Record<DayPhase, PhaseTint>> = Object.freeze({
   dawn: {
     mulR: 1.05, mulG: 0.95, mulB: 0.9,
-    overlay: 0xffc8a080, overlayAlpha: 0.12, localLightMul: 0.35,
+    overlay: 0xc8a080, overlayAlpha: 0.12, localLightMul: 0.35,
   },
   day: {
     mulR: 1, mulG: 1, mulB: 1,
@@ -20,11 +20,11 @@ export const PHASE_TINTS: Readonly<Record<DayPhase, PhaseTint>> = Object.freeze(
   },
   dusk: {
     mulR: 1.08, mulG: 0.85, mulB: 0.75,
-    overlay: 0xff402010, overlayAlpha: 0.18, localLightMul: 0.55,
+    overlay: 0x402010, overlayAlpha: 0.18, localLightMul: 0.55,
   },
   night: {
     mulR: 0.55, mulG: 0.62, mulB: 0.85,
-    overlay: 0xff0a1020, overlayAlpha: 0.42, localLightMul: 1,
+    overlay: 0x0a1020, overlayAlpha: 0.42, localLightMul: 1,
   },
 });
 
