@@ -39,9 +39,9 @@ O ZIP deve conter `game.html` na raiz e todos os arquivos gerados pelo build Vit
 1. Atualize `package.json` e crie uma tag de release correspondente.
 2. O workflow Linux deve gerar o pacote web ZIP e anexá-lo à GitHub Release.
 3. Calcule SHA-256 do ZIP publicado.
-4. Atualize `releases/manifest.json` em `main` com a URL e o hash reais.
-5. Não altere nem remova entradas antigas: elas permitem reinstalar versões anteriores.
+4. O workflow publica o ZIP e o checksum na GitHub Release e atualiza automaticamente `releases/manifest.json` em `main`.
+5. O workflow preserva as entradas anteriores para permitir reinstalar versões antigas.
 
 ## Limitações atuais
 
-O manifesto começa vazio porque ainda não existe pacote de jogo publicado como asset de release. Até a primeira release com ZIP e hash, o launcher não exibirá versões para instalar. O launcher Tauri também continua sendo atualizado separadamente pelos pacotes desktop.
+O manifesto começa vazio porque ainda não existe pacote de jogo publicado como asset de release. Na próxima release criada por tag após o merge desta PR, o workflow publicará o ZIP, calculará o hash e atualizará o manifesto automaticamente. Até lá, o launcher não exibirá versões para instalar. O launcher Tauri também continua sendo atualizado separadamente pelos pacotes desktop.
