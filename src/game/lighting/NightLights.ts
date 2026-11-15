@@ -36,7 +36,6 @@ export class NightLights {
   private readonly scene: Phaser.Scene;
   private readonly lamps: ManagedLamp[] = [];
   private readonly opts: Required<NightLightsOptions>;
-  private phase: DayPhase = 'day';
   private enabled = true;
   private intensityMultiplier = 0;
 
@@ -82,7 +81,6 @@ export class NightLights {
   }
 
   syncPhase(phase: DayPhase): void {
-    this.phase = phase;
     this.syncIntensity(PHASE_TINTS[phase].localLightMul);
   }
 
