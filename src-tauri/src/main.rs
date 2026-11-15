@@ -8,6 +8,7 @@ use std::{
     io::{Cursor, Read},
     net::SocketAddr,
     path::{Component, PathBuf},
+    process::Command,
     thread,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -17,6 +18,8 @@ use zip::ZipArchive;
 
 const MAX_SAVE_BYTES: u64 = 1024 * 1024;
 const MANIFEST_URL: &str = "https://raw.githubusercontent.com/xtaz7c/outbreakzones/main/releases/manifest.json";
+const LAUNCHER_RELEASES_URL: &str = "https://api.github.com/repos/xtaz7c/outbreakzones/releases?per_page=100";
+const MAX_LAUNCHER_PACKAGE_BYTES: usize = 512 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct GameRelease {
@@ -107,6 +110,147 @@ async fn fetch_manifest() -> Result<ReleaseManifest, String> {
 }
 
 #[tauri::command]
+
+fn launcher_package_kind() -> Result<&'static str, String> {
+    if std::env::var_os("APPIMAGE").is_some() {
+        Ok("AppImage")
+    } else {
+        Ok("deb")
+    }
+}
+
+async fn latest_launcher_update() -> Result<Option<LauncherUpdate>, String> {
+    let current = semver::Version::parse(env!("CARGO_PKG_VERSION"))
+        .map_err(|e| format!("Versão atual do launcher inválida: {e}"))?;
+    let response = reqwest::Client::new()
+        .get(LAUNCHER_RELEASES_URL)
+        .header(reqwest::header::USER_AGENT, "Outbreak-Zones-Launcher")
+        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
+        .send().await.map_err(|e| format!("Falha ao consultar releases do launcher: {e}"))?
+        .error_for_status().map_err(|e| format!("GitHub recusou a consulta: {e}"))?;
+    let releases = response.json::<Vec<LauncherRelease>>().await
+        .map_err(|e| format!("Resposta de releases inválida: {e}"))?;
+
+    let kind = launcher_package_kind()?;
+    let mut candidates: Vec<(semver::Version, LauncherUpdate)> = Vec::new();
+    for release in releases.into_iter().filter(|item| !item.draft && !item.prerelease) {
+        let Some(version_text) = release.tag_name.strip_prefix("launcher-v") else { continue };
+        let Ok(version) = semver::Version::parse(version_text) else { continue };
+        if version <= current { continue; }
+        let extension = if kind == "AppImage" { ".AppImage" } else { ".deb" };
+        let Some(package) = release.assets.iter().find(|asset| asset.name.ends_with(extension)) else { continue };
+        let checksum_name = format!("{}.sha256", package.name);
+        let Some(checksum) = release.assets.iter().find(|asset| asset.name == checksum_name) else { continue };
+        let valid_url = |raw: &str| reqwest::Url::parse(raw)
+            .map(|url| url.scheme() == "https" && url.host_str() == Some("github.com"))
+            .unwrap_or(false);
+        if !valid_url(&package.browser_download_url) || !valid_url(&checksum.browser_download_url) {
+            continue;
+        }
+        candidates.push((version.clone(), LauncherUpdate {
+            version: version.to_string(),
+            package_kind: kind.to_string(),
+            download_url: package.browser_download_url.clone(),
+            checksum_url: checksum.browser_download_url.clone(),
+            release_url: format!("https://github.com/xtaz7c/outbreakzones/releases/tag/launcher-v{version}"),
+            notes: release.body.unwrap_or_default(),
+        }));
+    }
+    candidates.sort_by(|a, b| b.0.cmp(&a.0));
+    Ok(candidates.into_iter().next().map(|(_, update)| update))
+}
+
+#[tauri::command]
+fn get_launcher_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+#[tauri::command]
+async fn check_launcher_update() -> Result<Option<LauncherUpdate>, String> {
+    latest_launcher_update().await
+}
+
+#[tauri::command]
+async fn install_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
+    let update = latest_launcher_update().await?
+        .ok_or_else(|| "O launcher já está atualizado.".to_string())?;
+    let package_url = reqwest::Url::parse(&update.download_url)
+        .map_err(|_| "URL do pacote inválida.".to_string())?;
+    let checksum_url = reqwest::Url::parse(&update.checksum_url)
+        .map_err(|_| "URL do checksum inválida.".to_string())?;
+    for url in [&package_url, &checksum_url] {
+        if url.scheme() != "https" || url.host_str() != Some("github.com") {
+            return Err("A atualização precisa vir de uma URL HTTPS oficial do GitHub.".into());
+        }
+    }
+
+    let client = reqwest::Client::new();
+    let checksum_response = client.get(checksum_url)
+        .header(reqwest::header::USER_AGENT, "Outbreak-Zones-Launcher")
+        .send().await.map_err(|e| format!("Falha ao baixar SHA-256: {e}"))?
+        .error_for_status().map_err(|e| format!("Checksum indisponível: {e}"))?;
+    let checksum_text = checksum_response.text().await
+        .map_err(|e| format!("Checksum inválido: {e}"))?;
+    let expected_hash = checksum_text.split_whitespace().next()
+        .filter(|hash| hash.len() == 64 && hash.chars().all(|c| c.is_ascii_hexdigit()))
+        .ok_or_else(|| "O arquivo SHA-256 está ausente ou inválido.".to_string())?;
+
+    let package_response = client.get(package_url)
+        .header(reqwest::header::USER_AGENT, "Outbreak-Zones-Launcher")
+        .send().await.map_err(|e| format!("Falha ao baixar atualização: {e}"))?
+        .error_for_status().map_err(|e| format!("Pacote indisponível: {e}"))?;
+    if package_response.content_length().is_some_and(|size| size > MAX_LAUNCHER_PACKAGE_BYTES as u64) {
+        return Err("O pacote do launcher excede 512 MiB.".into());
+    }
+    let bytes = package_response.bytes().await
+        .map_err(|e| format!("Falha ao receber atualização: {e}"))?;
+    if bytes.len() > MAX_LAUNCHER_PACKAGE_BYTES {
+        return Err("O pacote do launcher excede 512 MiB.".into());
+    }
+    let actual_hash = format!("{:x}", Sha256::digest(&bytes));
+    if !actual_hash.eq_ignore_ascii_case(expected_hash) {
+        return Err("A verificação SHA-256 falhou. A atualização foi rejeitada.".into());
+    }
+
+    if update.package_kind == "AppImage" {
+        let appimage = std::env::var_os("APPIMAGE")
+            .map(PathBuf::from).ok_or_else(|| "Não foi possível localizar o AppImage em execução.".to_string())?;
+        let current = appimage.canonicalize()
+            .map_err(|e| format!("Não foi possível localizar o arquivo AppImage: {e}"))?;
+        let parent = current.parent().ok_or("Diretório do AppImage inválido")?;
+        let file_name = current.file_name().ok_or("Nome do AppImage inválido")?.to_string_lossy();
+        let temporary = parent.join(format!(".{file_name}.{}.update", std::process::id()));
+        let backup = parent.join(format!(".{file_name}.backup"));
+        fs::write(&temporary, &bytes).map_err(|e| format!("Não foi possível gravar a atualização ao lado do AppImage: {e}"))?;
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&temporary, fs::Permissions::from_mode(0o755))
+            .map_err(|e| { let _ = fs::remove_file(&temporary); format!("Não foi possível preparar o AppImage: {e}") })?;
+        if backup.exists() {
+            fs::remove_file(&backup).map_err(|e| { let _ = fs::remove_file(&temporary); format!("Não foi possível remover backup anterior: {e}") })?;
+        }
+        fs::rename(&current, &backup)
+            .map_err(|e| { let _ = fs::remove_file(&temporary); format!("Não foi possível substituir o AppImage. Verifique as permissões da pasta: {e}") })?;
+        if let Err(error) = fs::rename(&temporary, &current) {
+            let _ = fs::rename(&backup, &current);
+            let _ = fs::remove_file(&temporary);
+            return Err(format!("Falha ao instalar AppImage; a versão anterior foi restaurada: {error}"));
+        }
+    } else {
+        let temporary = std::env::temp_dir().join(format!("outbreak-zones-launcher-{}-{}.deb", update.version, std::process::id()));
+        fs::write(&temporary, &bytes).map_err(|e| format!("Não foi possível salvar o pacote .deb: {e}"))?;
+        let status = Command::new("pkexec")
+            .arg("dpkg").arg("-i").arg(&temporary)
+            .status()
+            .map_err(|e| { let _ = fs::remove_file(&temporary); format!("Não foi possível iniciar a instalação autorizada (pkexec): {e}") })?;
+        let _ = fs::remove_file(&temporary);
+        if !status.success() {
+            return Err("A instalação do .deb foi cancelada ou falhou. O launcher atual foi mantido.".into());
+        }
+    }
+
+    app.restart();
+}
+
 fn list_installed_versions(app: tauri::AppHandle) -> Result<Vec<InstalledVersion>, String> {
     let root = versions_dir(&app)?;
     let mut installed = Vec::new();
