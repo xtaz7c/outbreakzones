@@ -236,6 +236,7 @@ async fn install_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
         return Err("A verificação SHA-256 falhou. A atualização foi rejeitada.".into());
     }
 
+    let mut updated_appimage: Option<PathBuf> = None;
     if update.package_kind == "AppImage" {
         let appimage = std::env::var_os("APPIMAGE")
             .map(PathBuf::from).ok_or_else(|| "Não foi possível localizar o AppImage em execução.".to_string())?;
@@ -259,6 +260,7 @@ async fn install_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
             let _ = fs::remove_file(&temporary);
             return Err(format!("Falha ao instalar AppImage; a versão anterior foi restaurada: {error}"));
         }
+        updated_appimage = Some(current);
     } else {
         let temporary = std::env::temp_dir().join(format!("outbreak-zones-launcher-{}-{}.deb", update.version, std::process::id()));
         fs::write(&temporary, &bytes).map_err(|e| format!("Não foi possível salvar o pacote .deb: {e}"))?;
@@ -272,6 +274,19 @@ async fn install_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
         }
     }
 
+    if let Some(appimage) = updated_appimage {
+        if let Err(error) = Command::new(&appimage).spawn() {
+            let backup = appimage.parent()
+                .and_then(|parent| appimage.file_name().map(|name| parent.join(format!(".{}.backup", name.to_string_lossy()))));
+            if let Some(backup_path) = backup {
+                let _ = fs::rename(&appimage, appimage.with_extension("AppImage.failed"));
+                let _ = fs::rename(backup_path, &appimage);
+            }
+            return Err(format!("Não foi possível reabrir o AppImage atualizado: {error}"));
+        }
+        app.exit(0);
+        return Ok(());
+    }
     app.restart();
 }
 
@@ -531,6 +546,9 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             fetch_manifest,
+            get_launcher_version,
+            check_launcher_update,
+            install_launcher_update,
             list_installed_versions,
             get_preferred_version,
             set_preferred_version,
