@@ -68,10 +68,6 @@ function writeCampaignProgress(progress: ReturnType<typeof normalizeCampaignProg
   }
 }
 
-function isCampaignUnlocked(): boolean {
-  return readCampaignProgress().highestUnlockedChapter > 0;
-}
-
 function refreshCampaignAvailability(): void {
   const progress = readCampaignProgress();
   const unlocked = progress.highestUnlockedChapter > 0;
