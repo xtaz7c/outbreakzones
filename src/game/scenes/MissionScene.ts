@@ -3,6 +3,9 @@ import { AudioManager } from '../audio/AudioManager';
 import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
 import { canStartCampaign, getMissionDefinition, getMissionResultMessage, type MissionId } from '../MissionProgression';
 import { Simulation } from '../../simulation/Simulation';
+import { DayNightSystem } from '../../simulation/systems/DayNightSystem';
+import { tintFromMul, visualTintAtHour } from '../lighting/DayNightVisuals';
+import { NightLights } from '../lighting/NightLights';
 import type { CombatEvent } from '../../simulation/systems/CombatSystem';
 import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
@@ -65,6 +68,10 @@ const HUD_COLORS = {
 
 export class MissionScene extends Phaser.Scene {
   private simulation!: Simulation;
+  private dayNight!: DayNightSystem;
+  private dayNightOverlay!: Phaser.GameObjects.Rectangle;
+  private worldLayers: Phaser.Tilemaps.TilemapLayer[] = [];
+  private nightLights!: NightLights;
   private audio!: AudioManager;
   private readonly playedCombatEvents = new WeakSet<CombatEvent>();
   private cameraKeys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -161,6 +168,8 @@ export class MissionScene extends Phaser.Scene {
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
     this.simulation = new Simulation();
+    // Mantém o relógio de campanha existente: 08:00 e um minuto por segundo real.
+    this.dayNight = new DayNightSystem({ startHour: 8, startDay: 1 });
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
@@ -198,6 +207,9 @@ export class MissionScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     const dt = Math.min(delta / 1000, 0.05);
     this.simulation.update(dt);
+    const missionState = this.simulation.getState();
+    if (!this.isPaused && missionState.missionStatus === 'playing') this.dayNight.update(dt);
+    this.updateDayNightVisuals(this.dayNight.getState().hour);
     this.updateCombatFeedback();
     this.updateMissionResult();
     this.persistBuildingState();
@@ -224,12 +236,33 @@ export class MissionScene extends Phaser.Scene {
       throw new Error('Unable to attach the mission tileset to the Tiled map.');
     }
 
+    this.worldLayers = [];
     for (const layerName of ['Ground', 'Terrain', 'Structures']) {
       const layer = map.createLayer(layerName, tileset, 0, 0);
       if (!layer) {
         throw new Error(`Required Tiled layer "${layerName}" is missing.`);
       }
+      this.worldLayers.push(layer);
     }
+
+    // Overlay acima do mundo e abaixo do HUD; não depende de WebGL/PostFX.
+    this.dayNightOverlay = this.add.rectangle(
+      map.widthInPixels / 2,
+      map.heightInPixels / 2,
+      map.widthInPixels,
+      map.heightInPixels,
+      0x0a1020,
+      0,
+    ).setDepth(1400);
+    this.nightLights = new NightLights(this, { depth: 1401 });
+    const lampObjects = map.getObjectLayer('Lights')?.objects ?? [];
+    this.nightLights.addLamps(lampObjects.flatMap((object) => {
+      const x = object.x + (object.width ?? 0) / 2;
+      const y = object.y + (object.height ?? 0) / 2;
+      return Number.isFinite(x) && Number.isFinite(y) ? [{ x, y }] : [];
+    }));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.nightLights.destroy());
+    this.updateDayNightVisuals(this.dayNight.getState().hour);
 
     this.tileSize = map.tileWidth;
     this.worldGrid = buildGridFromTiledLayers(
@@ -325,6 +358,18 @@ export class MissionScene extends Phaser.Scene {
       .setZoom(1)
       // O foco inicial do Tutorial é a casa principal, não o centro geométrico do mapa.
       .centerOn(1024, 608);
+  }
+
+  private updateDayNightVisuals(hour: number): void {
+    const tint = visualTintAtHour(hour);
+    const worldColor = tintFromMul(tint.mulR, tint.mulG, tint.mulB);
+    if (tint.mulR === 1 && tint.mulG === 1 && tint.mulB === 1) {
+      for (const layer of this.worldLayers) layer.clearTint();
+    } else {
+      for (const layer of this.worldLayers) layer.setTint(worldColor);
+    }
+    this.dayNightOverlay.setFillStyle(tint.overlay & 0xffffff, tint.overlayAlpha);
+    this.nightLights.syncIntensity(tint.localLightMul);
   }
 
   private createPoliceSafeZone(x: number, y: number): void {
@@ -1013,13 +1058,8 @@ export class MissionScene extends Phaser.Scene {
       ...(this.buildStatus ? [this.buildStatus] : []),
     ].join('\n'));
 
-    const elapsedCampaignMinutes = 8 * 60 + Math.floor(state.elapsed);
-    const campaignDay = Math.floor(elapsedCampaignMinutes / (24 * 60)) + 1;
-    const minuteOfDay = elapsedCampaignMinutes % (24 * 60);
-    const campaignHour = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
-    const campaignMinute = String(minuteOfDay % 60).padStart(2, '0');
     this.dateTimeText.setVisible(this.missionId === 1);
-    if (this.missionId === 1) this.dateTimeText.setText(`DIA ${campaignDay}  ·  ${campaignHour}:${campaignMinute}`);
+    if (this.missionId === 1) this.dateTimeText.setText(this.dayNight.getState().hudLabel);
     this.waveText.setText(waveLabel);
 
     this.officerStatusIcons.forEach(({ graphics, label, id }) => {
