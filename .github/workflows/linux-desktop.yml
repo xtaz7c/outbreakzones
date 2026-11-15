@@ -1,0 +1,132 @@
+name: Linux Desktop
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build Linux (x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential curl wget file zip \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-bin patchelf libwebkit2gtk-4.1-dev
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Validate frontend
+        run: |
+          npm test
+          npm run lint
+          npm run build
+
+      - name: Validate release version
+        if: github.ref_type == 'tag'
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          test "$TAG_VERSION" = "$PACKAGE_VERSION" || {
+            echo "Tag $TAG_VERSION does not match package.json $PACKAGE_VERSION"
+            exit 1
+          }
+
+      - name: Package versioned game archive
+        if: github.ref_type == 'tag'
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd dist
+          zip -qr "../outbreak-zones-game-${VERSION}.zip" .
+          cd ..
+          sha256sum "outbreak-zones-game-${VERSION}.zip" > "outbreak-zones-game-${VERSION}.zip.sha256"
+
+      - name: Generate application icon
+        run: bash scripts/generate-linux-icon.sh
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --locked
+
+      - name: Build native Linux packages
+        run: cargo tauri build --bundles deb,appimage
+
+      - name: Upload Linux packages as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: outbreak-zones-linux-x86_64
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release assets
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            outbreak-zones-game-*.zip
+            outbreak-zones-game-*.zip.sha256
+
+      - name: Update version manifest on main
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          VERSION="${VERSION#v}"
+          git fetch origin main
+          git checkout -B manifest-main origin/main
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const manifestPath = 'releases/manifest.json';
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          const version = process.env.VERSION;
+          const checksumFile = `outbreak-zones-game-${version}.zip.sha256`;
+          const sha256 = fs.readFileSync(checksumFile, 'utf8').trim().split(/\s+/)[0];
+          if (!/^[a-f0-9]{64}$/i.test(sha256)) throw new Error('SHA-256 inválido');
+          const tag = `v${version}`;
+          const archiveUrl = `https://github.com/${process.env.REPOSITORY}/releases/download/${tag}/outbreak-zones-game-${version}.zip`;
+          const entry = {
+            version,
+            archive_url: archiveUrl,
+            sha256,
+            notes: '',
+            released_at: new Date().toISOString()
+          };
+          manifest.schema = 1;
+          manifest.versions = (manifest.versions || []).filter(item => item.version !== version);
+          manifest.versions.unshift(entry);
+          manifest.latest_version = version;
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add releases/manifest.json
+          git commit -m "chore(releases): publish game v${VERSION} manifest"
+          git push origin manifest-main:main

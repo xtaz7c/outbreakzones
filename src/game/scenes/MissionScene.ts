@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { AudioManager } from '../audio/AudioManager';
 import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
+import { CAMPAIGN_PROGRESS_KEY, completeChapter, normalizeCampaignProgress, unlockChapter } from '../CampaignSave';
+import { scheduleGamePersistence } from '../../persistence/GamePersistence';
 import { canStartCampaign, getMissionDefinition, getMissionResultMessage, type MissionId } from '../MissionProgression';
 import { Simulation } from '../../simulation/Simulation';
 import type { CombatEvent } from '../../simulation/systems/CombatSystem';
@@ -378,6 +380,7 @@ export class MissionScene extends Phaser.Scene {
   private writeStorage(key: string, value: string): void {
     try {
       if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+      scheduleGamePersistence();
     } catch {
       // Storage can be unavailable in private browsing or restricted contexts.
     }
@@ -386,6 +389,7 @@ export class MissionScene extends Phaser.Scene {
   private removeStorage(key: string): void {
     try {
       if (typeof window !== 'undefined') window.localStorage.removeItem(key);
+      scheduleGamePersistence();
     } catch {
       // Storage can be unavailable in private browsing or restricted contexts.
     }
@@ -1547,6 +1551,17 @@ export class MissionScene extends Phaser.Scene {
     else this.scale.startFullscreen();
   }
 
+
+  private readCampaignSave(): unknown {
+    const raw = this.readStorage(CAMPAIGN_PROGRESS_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as unknown;
+    } catch {
+      return null;
+    }
+  }
+
   private updateMissionResult(): void {
     const status = this.simulation.getState().missionStatus;
     if (status === 'playing') return;
@@ -1559,7 +1574,15 @@ export class MissionScene extends Phaser.Scene {
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
     const victory = status === 'victory';
-    if (victory && this.missionId === 0) this.writeStorage(CAMPAIGN_UNLOCK_STORAGE_KEY, '1');
+    if (victory && this.missionId === 0) {
+      this.writeStorage(CAMPAIGN_UNLOCK_STORAGE_KEY, '1');
+      const progress = normalizeCampaignProgress(this.readCampaignSave());
+      this.writeStorage(CAMPAIGN_PROGRESS_KEY, JSON.stringify(unlockChapter(progress, 1)));
+    }
+    if (victory && this.missionId === 1) {
+      const progress = normalizeCampaignProgress(this.readCampaignSave());
+      this.writeStorage(CAMPAIGN_PROGRESS_KEY, JSON.stringify(completeChapter(progress, 1, 1)));
+    }
     this.resultPanel.setVisible(true).setPosition(centerX, centerY);
     this.resultText
       .setText(getMissionResultMessage(this.missionId, status))

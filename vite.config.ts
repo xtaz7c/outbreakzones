@@ -9,6 +9,8 @@ const buildId = (
 ).slice(0, 7);
 
 export default defineConfig({
+  // Relative asset URLs are required by Tauri's local application protocol.
+  base: './',
   define: {
     'import.meta.env.VITE_BUILD_ID': JSON.stringify(buildId),
   },
@@ -27,6 +29,7 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         game: path.resolve(__dirname, 'game.html'),
+        launcher: path.resolve(__dirname, 'launcher.html'),
       },
     },
   },

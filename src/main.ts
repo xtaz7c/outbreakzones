@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import './home.css';
 import { gameConfig } from './game/config';
 import { BUILD_LABEL } from './buildInfo';
+import { CAMPAIGN_PROGRESS_KEY, normalizeCampaignProgress, selectChapter, unlockChapter } from './game/CampaignSave';
+import { initializeGamePersistence, scheduleGamePersistence } from './persistence/GamePersistence';
 
 const homeScreen = document.querySelector<HTMLElement>('#home-screen');
 const gameContainer = document.querySelector<HTMLElement>('#game-container');
@@ -39,22 +41,50 @@ if (
 
 buildVersion.textContent = BUILD_LABEL;
 
-function isCampaignUnlocked(): boolean {
+const SUPPORTED_CAMPAIGN_CHAPTERS = 1;
+
+function readCampaignProgress() {
   try {
-    return window.localStorage.getItem('outbreakzones:campaign-unlocked') === '1';
+    const raw = window.localStorage.getItem(CAMPAIGN_PROGRESS_KEY);
+    const progress = normalizeCampaignProgress(raw ? JSON.parse(raw) : null);
+    if (window.localStorage.getItem('outbreakzones:campaign-unlocked') === '1' && progress.highestUnlockedChapter < 1) {
+      const migrated = unlockChapter(progress, 1);
+      window.localStorage.setItem(CAMPAIGN_PROGRESS_KEY, JSON.stringify(migrated));
+      scheduleGamePersistence();
+      return migrated;
+    }
+    return progress;
   } catch {
-    return false;
+    return normalizeCampaignProgress(null);
+  }
+}
+
+function writeCampaignProgress(progress: ReturnType<typeof normalizeCampaignProgress>): void {
+  try {
+    window.localStorage.setItem(CAMPAIGN_PROGRESS_KEY, JSON.stringify(progress));
+    scheduleGamePersistence();
+  } catch (error) {
+    console.error('[CampaignSave] Não foi possível salvar o progresso.', error);
   }
 }
 
 function refreshCampaignAvailability(): void {
-  const unlocked = isCampaignUnlocked();
-  campaignButton!.disabled = !unlocked;
-  campaignButton!.setAttribute('aria-disabled', String(!unlocked));
-  campaignDescription!.textContent = unlocked
-    ? 'Continue a história e defenda o primeiro refúgio da equipe.'
-    : 'Conclua o tutorial para desbloquear a campanha e continuar a história.';
-  campaignAction!.textContent = unlocked ? 'CONTINUAR CAMPANHA ↗' : 'BLOQUEADO · CONCLUA O TUTORIAL';
+  const progress = readCampaignProgress();
+  const unlocked = progress.highestUnlockedChapter > 0;
+  const savedChapterAvailable = progress.currentChapter > 0 && progress.currentChapter <= SUPPORTED_CAMPAIGN_CHAPTERS;
+  const needsNewerVersion = unlocked && !savedChapterAvailable;
+  campaignButton!.disabled = !unlocked || needsNewerVersion;
+  campaignButton!.setAttribute('aria-disabled', String(campaignButton!.disabled));
+  campaignDescription!.textContent = !unlocked
+    ? 'Conclua o tutorial para desbloquear a campanha.'
+    : needsNewerVersion
+      ? `Seu progresso está no capítulo ${progress.currentChapter}. Atualize o jogo para continuar sem perder seu salvamento.`
+      : `Continue do capítulo ${progress.currentChapter}.`;
+  campaignAction!.textContent = !unlocked
+    ? 'BLOQUEADO · CONCLUA O TUTORIAL'
+    : needsNewerVersion
+      ? 'ATUALIZAÇÃO NECESSÁRIA'
+      : `CONTINUAR NO CAPÍTULO ${progress.currentChapter} ↗`;
 }
 
 function startOperation(missionId: 0 | 1): void {
@@ -75,17 +105,23 @@ function startOperation(missionId: 0 | 1): void {
   (window as unknown as { game: Phaser.Game }).game = game;
 }
 
-startButton.addEventListener('click', () => {
+startButton.addEventListener('click', async () => {
   if (game) return;
+  await persistenceReady;
   refreshCampaignAvailability();
   modeDialog!.showModal();
 });
 tutorialButton!.addEventListener('click', () => startOperation(0));
 campaignButton!.addEventListener('click', () => {
-  if (isCampaignUnlocked()) startOperation(1);
+  const progress = readCampaignProgress();
+  if (progress.currentChapter > 0 && progress.currentChapter <= SUPPORTED_CAMPAIGN_CHAPTERS) {
+    writeCampaignProgress(selectChapter(progress, progress.currentChapter));
+    startOperation(1);
+  }
 });
 closeModesButton!.addEventListener('click', () => modeDialog!.close());
-refreshCampaignAvailability();
+const persistenceReady = initializeGamePersistence();
+void persistenceReady.then(refreshCampaignAvailability);
 
 window.addEventListener('outbreakzones:return-home', () => {
   game?.destroy(true);
