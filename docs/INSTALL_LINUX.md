@@ -65,7 +65,7 @@ A versão do launcher e a versão do jogo são independentes. Atualizações do 
 
 ## Dados locais
 
-O launcher armazena versões instaladas e a versão padrão no diretório de dados do aplicativo. O jogo mantém o desbloqueio da campanha e preferências no armazenamento local do WebView; esses dados não são sincronizados automaticamente com o navegador.
+O launcher lista as versões publicadas no manifesto, permite instalar qualquer versão disponível (inclusive versões antigas), manter várias instalações lado a lado e escolher qual será iniciada. O launcher armazena versões instaladas e a versão padrão no diretório de dados do aplicativo. O jogo mantém o desbloqueio da campanha e preferências no armazenamento local do WebView; esses dados não são sincronizados automaticamente com o navegador.
 
 ## Escopo desta porta
 
