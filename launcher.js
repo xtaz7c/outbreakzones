@@ -1,13 +1,13 @@
 (() => {
   const invoke = window.__TAURI__?.core?.invoke;
   const $ = (id) => document.getElementById(id);
-  const state = { installed: [], releases: [], preferred: null, latest: null, latestDefault: true };
+  const state = { installed: [], releases: [], preferred: null, latest: null, latestDefault: true, launcherUpdate: null };
   const message = (text, error = false) => {
     $('message').textContent = text;
     $('message').classList.toggle('error', error);
   };
   const compareVersions = (a, b) => {
-    const parse = (value) => value.split(/[.+-]/).map(part => /^\\d+$/.test(part) ? Number(part) : part);
+    const parse = (value) => value.split(/[.+-]/).map(part => /^\d+$/.test(part) ? Number(part) : part);
     const aa = parse(a), bb = parse(b);
     for (let i = 0; i < Math.max(aa.length, bb.length); i++) {
       const x = aa[i] ?? 0, y = bb[i] ?? 0;
@@ -60,6 +60,33 @@
     select.value = sorted.some(item => item.version === previous) ? previous : (sorted.some(item => item.version === fallback) ? fallback : (sorted[0]?.version ?? ''));
     updateSelectionActions();
   };
+
+  const checkLauncherUpdate = async () => {
+    const status = $('launcher-update-status');
+    const button = $('launcher-update');
+    button.disabled = true;
+    status.classList.remove('available', 'error');
+    status.textContent = 'Verificando atualização do launcher…';
+    try {
+      const current = await invoke('get_launcher_version');
+      $('launcher-version').textContent = 'v' + current;
+      state.launcherUpdate = await invoke('check_launcher_update');
+      if (state.launcherUpdate) {
+        status.classList.add('available');
+        status.textContent = 'Nova versão v' + state.launcherUpdate.version + ' disponível (' + state.launcherUpdate.packageKind + ').';
+        $('settings-toggle').classList.add('update-available');
+        button.disabled = false;
+      } else {
+        $('settings-toggle').classList.remove('update-available');
+        status.textContent = 'Launcher atualizado · v' + current;
+      }
+    } catch (error) {
+      state.launcherUpdate = null;
+      $('settings-toggle').classList.remove('update-available');
+      status.classList.add('error');
+      status.textContent = 'Não foi possível verificar: ' + String(error);
+    }
+  };
   const refreshInstalled = async () => {
     state.installed = await invoke('list_installed_versions');
     state.preferred = await invoke('get_preferred_version');
@@ -80,14 +107,37 @@
         ? (installedSet.has(state.latest) ? 'Atualizado · v' + state.latest : 'Nova versão disponível · v' + state.latest)
         : 'Nenhuma versão publicada no manifesto';
       updateMain();
-      if (!state.latest) message('Nenhuma versão do jogo foi publicada ainda.');
-      else if (!installedSet.has(state.latest)) message('Há ' + state.releases.length + ' versão(ões) disponível(is). Selecione qualquer uma nas configurações para instalar.');
-      else message('Launcher atualizado. Jogo na versão mais recente.');
+      if (!state.launcherUpdate) {
+        if (!state.latest) message('Nenhuma versão do jogo foi publicada ainda.');
+        else if (!installedSet.has(state.latest)) message('Há ' + state.releases.length + ' versão(ões) disponível(is). Selecione qualquer uma nas configurações para instalar.');
+        else message('Jogo na versão mais recente.');
+      }
     } catch (error) {
       $('connection').textContent = 'Não foi possível verificar';
       message('Falha ao verificar atualizações: ' + String(error), true);
     } finally { $('refresh').disabled = false; }
   };
+
+  $('launcher-update').addEventListener('click', async () => {
+    const update = state.launcherUpdate;
+    if (!update) return;
+    const confirmed = window.confirm(
+      'Instalar o Launcher v' + update.version + ' agora? O aplicativo será reiniciado.\n\n' +
+      (update.packageKind === 'deb'
+        ? 'O sistema solicitará sua senha para instalar o pacote .deb.'
+        : 'O AppImage atual será substituído pelo arquivo verificado.')
+    );
+    if (!confirmed) return;
+    $('launcher-update').disabled = true;
+    $('launcher-update-status').textContent = 'Baixando, verificando SHA-256 e instalando…';
+    try {
+      await invoke('install_launcher_update');
+    } catch (error) {
+      $('launcher-update').disabled = false;
+      $('launcher-update-status').classList.add('error');
+      $('launcher-update-status').textContent = 'Falha na atualização: ' + String(error);
+    }
+  });
   $('settings-toggle').addEventListener('click', () => $('settings-panel').classList.toggle('open'));
   $('settings-close').addEventListener('click', () => $('settings-panel').classList.remove('open'));
   $('latest-default').addEventListener('change', () => {
@@ -111,7 +161,7 @@
     } catch (error) { message(String(error), true); }
   });
   $('refresh').addEventListener('click', async () => {
-    try { await refreshInstalled(); await refreshManifest(); }
+    try { await refreshInstalled(); await Promise.all([refreshManifest(), checkLauncherUpdate()]); }
     catch (error) { message(String(error), true); }
   });
   $('install').addEventListener('click', async () => {
@@ -147,7 +197,7 @@
     if (!invoke) { message('Abra este aplicativo pelo launcher instalado.', true); return; }
     state.latestDefault = localStorage.getItem('oz-latest-default') !== 'false';
     $('latest-default').checked = state.latestDefault;
-    try { await refreshInstalled(); await refreshManifest(); }
+    try { await refreshInstalled(); await refreshManifest(); await checkLauncherUpdate(); }
     catch (error) { message(String(error), true); }
   })();
 })();

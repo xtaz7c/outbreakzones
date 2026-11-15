@@ -12,7 +12,7 @@ A primeira entrega automatizada tem como alvo x86_64. Builds ARM64 e pacotes esp
 
 ## Instalação
 
-Baixe o pacote `.deb` ou `.AppImage` na seção **Artifacts** da execução Linux Desktop no GitHub Actions.
+Para instalar uma versão publicada, baixe o `.deb` ou `.AppImage` nos assets de uma release `launcher-vX.Y.Z` em [GitHub Releases](https://github.com/xtaz7c/outbreakzones/releases). Os **Artifacts** do GitHub Actions são destinados a builds de validação e expiram após 30 dias.
 
 ### Debian / Ubuntu
 
@@ -61,7 +61,16 @@ Os arquivos são gerados em `src-tauri/target/release/bundle/`.
 
 Ao abrir, o launcher consulta o manifesto oficial de versões. A instalação de uma atualização exige confirmação e o pacote é validado por SHA-256 antes de ser extraído. Cada versão fica em um diretório separado; versões antigas não são substituídas nem removidas automaticamente. Selecione a versão desejada e use **Iniciar jogo**. A primeira instalação/atualização exige conexão com a internet; depois de baixada, a versão instalada roda localmente.
 
-A versão do launcher e a versão do jogo são independentes. Atualizações do jogo são distribuídas pelo manifesto e pelos ZIPs das GitHub Releases; atualizações do launcher chegam em novos pacotes `.deb`/`.AppImage`.
+A versão do launcher e a versão do jogo são independentes. Atualizações do jogo são distribuídas pelo manifesto e pelos ZIPs das GitHub Releases. O launcher verifica releases com a tag `launcher-vX.Y.Z`, baixa o pacote correspondente ao formato instalado e valida o SHA-256 antes de instalar. O AppImage é substituído pelo próprio aplicativo; o pacote `.deb` é instalado por `pkexec dpkg -i`, solicitando autorização do sistema. O launcher é reiniciado após a atualização.
+
+### Publicação de versões
+
+Os canais de release são separados:
+
+- **Jogo:** publique a tag `vX.Y.Z`, com `package.json` na mesma versão. O workflow publica o ZIP do jogo e atualiza `releases/manifest.json`.
+- **Launcher:** atualize a versão em `src-tauri/Cargo.toml` e `src-tauri/tauri.conf.json` (mantenha as duas iguais), depois publique a tag `launcher-vX.Y.Z`. O workflow publica os pacotes Linux e seus arquivos SHA-256.
+
+Uma release do jogo não atualiza o launcher. Uma release `launcher-vX.Y.Z` não altera a versão do jogo. Como o launcher atual está na versão `0.1.0`, a primeira atualização automática deverá ser publicada como `launcher-v0.1.1` ou superior. Para atualizar um AppImage, o arquivo precisa estar em uma pasta com permissão de escrita para o usuário.
 
 ## Dados locais
 

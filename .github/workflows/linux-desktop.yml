@@ -5,6 +5,7 @@ on:
   push:
     tags:
       - "v*"
+      - "launcher-v*"
 
 permissions:
   contents: write
@@ -43,24 +44,39 @@ jobs:
           npm run lint
           npm run build
 
-      - name: Validate release version
-        if: github.ref_type == 'tag'
+      - name: Validate game release version
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-          test "$TAG_VERSION" = "$PACKAGE_VERSION" || {
-            echo "Tag $TAG_VERSION does not match package.json $PACKAGE_VERSION"
+          GAME_VERSION="$(node -p "require('./package.json').version")"
+          test "$TAG_VERSION" = "$GAME_VERSION" || {
+            echo "Game tag $TAG_VERSION does not match package.json $GAME_VERSION"
+            exit 1
+          }
+
+      - name: Validate launcher release version
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'launcher-v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#launcher-v}"
+          CARGO_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -n1)"
+          TAURI_VERSION="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          test "$TAG_VERSION" = "$CARGO_VERSION" || {
+            echo "Launcher tag $TAG_VERSION does not match Cargo.toml $CARGO_VERSION"
+            exit 1
+          }
+          test "$TAG_VERSION" = "$TAURI_VERSION" || {
+            echo "Launcher tag $TAG_VERSION does not match tauri.conf.json $TAURI_VERSION"
             exit 1
           }
 
       - name: Package versioned game archive
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           cd dist
           zip -qr "../outbreak-zones-game-${VERSION}.zip" .
           cd ..
-          sha256sum "outbreak-zones-game-${VERSION}.zip" > "outbreak-zones-game-${VERSION}.zip.sha256"
+          sha256sum "outbreak-zones-game-${VERSION}.zip" | cut -d ' ' -f1 > "outbreak-zones-game-${VERSION}.zip.sha256"
 
       - name: Generate application icon
         run: bash scripts/generate-linux-icon.sh
@@ -71,31 +87,49 @@ jobs:
       - name: Build native Linux packages
         run: cargo tauri build --bundles deb,appimage
 
+      - name: Generate launcher package checksums
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'launcher-v')
+        run: |
+          for file in src-tauri/target/release/bundle/deb/*.deb src-tauri/target/release/bundle/appimage/*.AppImage; do
+            test -f "$file" || { echo "Missing Linux package: $file"; exit 1; }
+            sha256sum "$file" | cut -d ' ' -f1 > "$file.sha256"
+          done
+
       - name: Upload Linux packages as workflow artifacts
         uses: actions/upload-artifact@v4
         with:
           name: outbreak-zones-linux-x86_64
           path: |
             src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/deb/*.sha256
             src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.sha256
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish GitHub Release assets
-        if: github.ref_type == 'tag'
+      - name: Publish game release assets
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            outbreak-zones-game-*.zip
+            outbreak-zones-game-*.zip.sha256
+
+      - name: Publish launcher release assets
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'launcher-v')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
             src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/deb/*.deb.sha256
             src-tauri/target/release/bundle/appimage/*.AppImage
-            outbreak-zones-game-*.zip
-            outbreak-zones-game-*.zip.sha256
+            src-tauri/target/release/bundle/appimage/*.AppImage.sha256
 
-      - name: Update version manifest on main
-        if: github.ref_type == 'tag'
+      - name: Update game version manifest on main
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         env:
-          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ github.ref_name }}
           REPOSITORY: ${{ github.repository }}
         run: |
@@ -108,7 +142,7 @@ jobs:
           const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
           const version = process.env.VERSION;
           const checksumFile = `outbreak-zones-game-${version}.zip.sha256`;
-          const sha256 = fs.readFileSync(checksumFile, 'utf8').trim().split(/\s+/)[0];
+          const sha256 = fs.readFileSync(checksumFile, 'utf8').trim();
           if (!/^[a-f0-9]{64}$/i.test(sha256)) throw new Error('SHA-256 inválido');
           const tag = `v${version}`;
           const archiveUrl = `https://github.com/${process.env.REPOSITORY}/releases/download/${tag}/outbreak-zones-game-${version}.zip`;
