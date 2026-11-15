@@ -34,9 +34,11 @@ export function normalizeCampaignProgress(value: unknown): CampaignProgress {
   const highest = isValidChapter(candidate.highestUnlockedChapter)
     ? Math.max(candidate.highestUnlockedChapter, completed.length ? Math.max(...completed) : 0)
     : completed.length ? Math.max(...completed) : 0;
-  const current = isValidChapter(candidate.currentChapter) && highest > 0
-    ? Math.min(candidate.currentChapter, highest)
-    : 0;
+  const current = highest === 0
+    ? 0
+    : isValidChapter(candidate.currentChapter)
+      ? Math.min(candidate.currentChapter, highest)
+      : highest;
 
   return {
     schemaVersion: 1,
