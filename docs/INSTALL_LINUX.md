@@ -12,7 +12,7 @@ A primeira entrega automatizada tem como alvo x86_64. Builds ARM64 e pacotes esp
 
 ## Instalação
 
-Baixe o pacote `.deb` ou `.AppImage` na seção **Artifacts** da execução Linux Desktop no GitHub Actions.
+Para instalar uma versão publicada, baixe o `.deb` ou `.AppImage` nos assets de uma release `launcher-vX.Y.Z` em [GitHub Releases](https://github.com/xtaz7c/outbreakzones/releases). Os **Artifacts** do GitHub Actions são destinados a builds de validação e expiram após 30 dias.
 
 ### Debian / Ubuntu
 
