@@ -1,6 +1,6 @@
 [package]
 name = "outbreak-zones"
-version = "0.1.0"
+version = "0.1.2"
 description = "Outbreak Zones — jogo tático de sobrevivência"
 authors = ["Outbreak Zones"]
 edition = "2021"
