@@ -46,6 +46,16 @@ describe('campaign save data', () => {
     expect(completed.highestUnlockedChapter).toBe(2);
   });
 
+  it('does not move a chapter ten save backwards when an older chapter completes', () => {
+    const progress = normalizeCampaignProgress({
+      schemaVersion: 1,
+      currentChapter: 10,
+      highestUnlockedChapter: 10,
+      completedChapters: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    });
+    expect(completeChapter(progress, 1, 10).currentChapter).toBe(10);
+  });
+
   it('does not lower progress when an older save is loaded', () => {
     const progress = normalizeCampaignProgress({
       schemaVersion: 1,
