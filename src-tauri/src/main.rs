@@ -11,7 +11,7 @@ use std::{
     thread,
     time::{SystemTime, UNIX_EPOCH},
 };
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tiny_http::{Header, Method, Response, Server};
 use zip::ZipArchive;
 
@@ -324,17 +324,32 @@ fn launch_game(app: tauri::AppHandle, version: String) -> Result<(), String> {
     let address = serve_version(root, save_path)?;
     let url = format!("http://{}:{}/game.html", address.ip(), address.port());
     let unique = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|e| e.to_string())?.as_millis();
-    WebviewWindowBuilder::new(&app, format!("game-{}-{unique}", version.replace('.', "-")), WebviewUrl::External(url.parse().map_err(|e| format!("URL inválida: {e}"))?))
+    let game_window = WebviewWindowBuilder::new(&app, format!("game-{}-{unique}", version.replace('.', "-")), WebviewUrl::External(url.parse().map_err(|e| format!("URL inválida: {e}"))?))
         .title(format!("Outbreak Zones — Jogo v{version}"))
         .inner_size(1440.0, 900.0)
         .min_inner_size(960.0, 640.0)
         .build().map_err(|e| format!("Não foi possível abrir o jogo: {e}"))?;
+
+    if let Some(launcher) = app.get_webview_window("main") {
+        if let Err(error) = launcher.hide() {
+            let _ = game_window.close();
+            return Err(format!("O jogo abriu, mas não foi possível ocultar o launcher: {error}"));
+        }
+    }
     Ok(())
 }
 
 fn main() {
     let launcher_version = env!("CARGO_PKG_VERSION");
     tauri::Builder::default()
+        .on_window_event(|window, event| {
+            if matches!(event, WindowEvent::Destroyed) && window.label().starts_with("game-") {
+                if let Some(launcher) = window.app_handle().get_webview_window("main") {
+                    let _ = launcher.show();
+                    let _ = launcher.set_focus();
+                }
+            }
+        })
         .setup(move |app| {
             let window = app.get_webview_window("main").expect("janela principal não encontrada");
             window.set_title(&format!("Outbreak Zones | Launcher v{launcher_version}")).expect("não foi possível definir o título");
