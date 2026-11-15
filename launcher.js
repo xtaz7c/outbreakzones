@@ -104,9 +104,11 @@
         ? (installedSet.has(state.latest) ? 'Atualizado · v' + state.latest : 'Nova versão disponível · v' + state.latest)
         : 'Nenhuma versão publicada no manifesto';
       updateMain();
-      if (!state.latest) message('Nenhuma versão do jogo foi publicada ainda.');
-      else if (!installedSet.has(state.latest)) message('Há ' + state.releases.length + ' versão(ões) disponível(is). Selecione qualquer uma nas configurações para instalar.');
-      else message('Jogo na versão mais recente.');
+      if (!state.launcherUpdate) {
+        if (!state.latest) message('Nenhuma versão do jogo foi publicada ainda.');
+        else if (!installedSet.has(state.latest)) message('Há ' + state.releases.length + ' versão(ões) disponível(is). Selecione qualquer uma nas configurações para instalar.');
+        else message('Jogo na versão mais recente.');
+      }
     } catch (error) {
       $('connection').textContent = 'Não foi possível verificar';
       message('Falha ao verificar atualizações: ' + String(error), true);
@@ -156,7 +158,7 @@
     } catch (error) { message(String(error), true); }
   });
   $('refresh').addEventListener('click', async () => {
-    try { await refreshInstalled(); await refreshManifest(); await checkLauncherUpdate(); }
+    try { await refreshInstalled(); await Promise.all([refreshManifest(), checkLauncherUpdate()]); }
     catch (error) { message(String(error), true); }
   });
   $('install').addEventListener('click', async () => {
