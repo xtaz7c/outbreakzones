@@ -45,3 +45,10 @@ O ZIP deve conter `game.html` na raiz e todos os arquivos gerados pelo build Vit
 ## Limitações atuais
 
 O manifesto começa vazio porque ainda não existe pacote de jogo publicado como asset de release. Na próxima release criada por tag após o merge desta PR, o workflow publicará o ZIP, calculará o hash e atualizará o manifesto automaticamente. Até lá, o launcher não exibirá versões para instalar. O launcher Tauri também continua sendo atualizado separadamente pelos pacotes desktop.
+
+
+## Persistência de progresso
+
+O jogo usa um salvamento compartilhado no diretório de dados do launcher, fora das pastas de cada versão instalada. Assim, atualizar ou alternar a versão do jogo não apaga o progresso. O arquivo guarda as chaves de dados do jogo com schema versionado; o launcher expõe uma rota local restrita a loopback para leitura e gravação.
+
+O progresso da campanha registra capítulo atual, maior capítulo desbloqueado e capítulos concluídos. A gravação ocorre ao atualizar o progresso e ao sair/ocultar a janela. No navegador, o jogo continua usando `localStorage`. Versões antigas que não reconhecem um capítulo salvo acima do próprio conteúdo bloqueiam a continuação e pedem atualização, em vez de iniciar do capítulo 1 e sobrescrever o salvamento.
