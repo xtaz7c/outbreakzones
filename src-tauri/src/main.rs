@@ -43,6 +43,7 @@ struct InstalledVersion {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct SaveEnvelope {
     schema_version: u32,
     entries: HashMap<String, String>,
