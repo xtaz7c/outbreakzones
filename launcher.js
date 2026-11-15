@@ -74,6 +74,7 @@
       if (state.launcherUpdate) {
         status.classList.add('available');
         status.textContent = 'Nova versão v' + state.launcherUpdate.version + ' disponível (' + state.launcherUpdate.packageKind + ').';
+        $('settings-toggle').classList.add('update-available');
         button.disabled = false;
       } else {
         $('settings-toggle').classList.remove('update-available');
@@ -81,6 +82,7 @@
       }
     } catch (error) {
       state.launcherUpdate = null;
+      $('settings-toggle').classList.remove('update-available');
       status.classList.add('error');
       status.textContent = 'Não foi possível verificar: ' + String(error);
     }
