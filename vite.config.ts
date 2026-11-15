@@ -23,5 +23,11 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        game: path.resolve(__dirname, 'game.html'),
+      },
+    },
   },
 });
