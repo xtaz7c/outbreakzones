@@ -75,6 +75,7 @@ export class MissionScene extends Phaser.Scene {
   private deployableGraphics!: Phaser.GameObjects.Graphics;
   private placementMode: DeployableKind | null = null;
   private selectedDeployableId: number | null = null;
+  private buildStatus = '';
   private readonly buildButtons: Phaser.GameObjects.Text[] = [];
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
