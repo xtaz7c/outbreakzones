@@ -190,7 +190,7 @@ async fn download_game_version(app: tauri::AppHandle, version: String) -> Result
             if expanded_size > 1024 * 1024 * 1024 {
                 return Err("O conteúdo descompactado excede o limite de 1 GiB.".into());
             }
-            let Some(relative) = file.enclosed_name().map(Path::to_path_buf) else {
+            let Some(relative) = file.enclosed_name() else {
                 return Err("O pacote contém um caminho inseguro.".into());
             };
             if relative.components().any(|part| matches!(part, Component::ParentDir | Component::RootDir | Component::Prefix(_))) {
