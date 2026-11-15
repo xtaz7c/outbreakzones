@@ -7,7 +7,7 @@
     $('message').classList.toggle('error', error);
   };
   const compareVersions = (a, b) => {
-    const parse = (value) => value.split(/[.+-]/).map(part => /^\\d+$/.test(part) ? Number(part) : part);
+    const parse = (value) => value.split(/[.+-]/).map(part => /^\d+$/.test(part) ? Number(part) : part);
     const aa = parse(a), bb = parse(b);
     for (let i = 0; i < Math.max(aa.length, bb.length); i++) {
       const x = aa[i] ?? 0, y = bb[i] ?? 0;
