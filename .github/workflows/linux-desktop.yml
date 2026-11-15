@@ -123,7 +123,7 @@ jobs:
           manifest.versions = (manifest.versions || []).filter(item => item.version !== version);
           manifest.versions.unshift(entry);
           manifest.latest_version = version;
-          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\\n');
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
           NODE
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
