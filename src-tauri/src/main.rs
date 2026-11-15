@@ -155,6 +155,7 @@ async fn download_game_version(app: tauri::AppHandle, version: String) -> Result
     if destination.join("game.html").is_file() {
         return Err("Essa versão já está instalada.".into());
     }
+    if destination.exists() { fs::remove_dir_all(&destination).map_err(|e| format!("Não foi possível limpar uma instalação incompleta: {e}"))?; }
     let staging = root.join(format!(".staging-{version}"));
     if staging.exists() { fs::remove_dir_all(&staging).map_err(|e| e.to_string())?; }
     fs::create_dir_all(&staging).map_err(|e| e.to_string())?;
