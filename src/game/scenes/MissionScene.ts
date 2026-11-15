@@ -257,6 +257,8 @@ export class MissionScene extends Phaser.Scene {
     this.nightLights = new NightLights(this, { depth: 1401 });
     const lampObjects = map.getObjectLayer('Lights')?.objects ?? [];
     this.nightLights.addLamps(lampObjects.flatMap((object) => {
+      if (typeof object.x !== 'number' || typeof object.y !== 'number' ||
+          !Number.isFinite(object.x) || !Number.isFinite(object.y)) return [];
       const x = object.x + (object.width ?? 0) / 2;
       const y = object.y + (object.height ?? 0) / 2;
       return Number.isFinite(x) && Number.isFinite(y) ? [{ x, y }] : [];
@@ -363,10 +365,8 @@ export class MissionScene extends Phaser.Scene {
   private updateDayNightVisuals(hour: number): void {
     const tint = visualTintAtHour(hour);
     const worldColor = tintFromMul(tint.mulR, tint.mulG, tint.mulB);
-    if (tint.mulR === 1 && tint.mulG === 1 && tint.mulB === 1) {
-      for (const layer of this.worldLayers) layer.clearTint();
-    } else {
-      for (const layer of this.worldLayers) layer.setTint(worldColor);
+    for (const layer of this.worldLayers) {
+      layer.setTint(tint.mulR === 1 && tint.mulG === 1 && tint.mulB === 1 ? 0xffffff : worldColor);
     }
     this.dayNightOverlay.setFillStyle(tint.overlay & 0xffffff, tint.overlayAlpha);
     this.nightLights.syncIntensity(tint.localLightMul);
