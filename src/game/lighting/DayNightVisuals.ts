@@ -3,25 +3,22 @@ import type { DayPhase } from '../../simulation/systems/DayNightSystem';
 /**
  * Como o ciclo dia/noite afeta texturas e camadas Phaser.
  *
- * Estratégia (MVP, sem atlases duplicados):
+ * Estratégia:
  * 1. Tint multiplicativo nas tile layers e sprites de mundo
- * 2. Overlay de ambient light (Graphics ou Camera fade)
- * 3. Pontos de luz (postes/lâmpadas) só visíveis / intensos à noite
+ * 2. Overlay de ambient (Graphics) e/ou PostFX NightAmbientPipeline
+ * 3. PointLights locais (NightLights) — intensidade ∝ localLightMul
  *
  * NÃO duplicamos SVGs por fase — a fonte de arte continua única.
- * Quando o pacote de texturas 64×64 estiver estável, o mesmo tint aplica.
  */
 
 export interface PhaseTint {
-  /** Multiplicador RGB 0–1 aplicado via setTint / setPipeline. */
   readonly mulR: number;
   readonly mulG: number;
   readonly mulB: number;
   /** Overlay ARGB (0xAARRGGBB) sobre o mundo. */
   readonly overlay: number;
-  /** Intensidade 0–1 do overlay. */
   readonly overlayAlpha: number;
-  /** Intensidade relativa de luzes locais (postes). */
+  /** Intensidade relativa de luzes locais (postes / PointLight). */
   readonly localLightMul: number;
 }
 
@@ -60,7 +57,6 @@ export const PHASE_TINTS: Readonly<Record<DayPhase, PhaseTint>> = Object.freeze(
   },
 });
 
-/** Converte multiplicadores 0–1 em tint Phaser (0xRRGGBB). */
 export function tintFromMul(r: number, g: number, b: number): number {
   const R = Math.max(0, Math.min(255, Math.round(r * 255)));
   const G = Math.max(0, Math.min(255, Math.round(g * 255)));
@@ -73,13 +69,12 @@ export function phaseTintColor(phase: DayPhase): number {
   return tintFromMul(t.mulR, t.mulG, t.mulB);
 }
 
-/**
- * Aplica tint a uma lista de GameObjects com setTint (TilemapLayer, Sprite, Image).
- * Camadas de HUD não devem ser passadas aqui.
- */
 export function applyWorldTint(
   phase: DayPhase,
-  targets: ReadonlyArray<{ setTint?: (topLeft?: number, topRight?: number, bottomLeft?: number, bottomRight?: number) => unknown; clearTint?: () => unknown }>,
+  targets: ReadonlyArray<{
+    setTint?: (topLeft?: number, topRight?: number, bottomLeft?: number, bottomRight?: number) => unknown;
+    clearTint?: () => unknown;
+  }>,
 ): void {
   const tint = phaseTintColor(phase);
   const isNeutral = phase === 'day';
@@ -92,10 +87,6 @@ export function applyWorldTint(
   }
 }
 
-/**
- * Interpola entre duas fases para transições suaves (amanhecer/entardecer).
- * t ∈ [0,1].
- */
 export function lerpTint(a: PhaseTint, b: PhaseTint, t: number): PhaseTint {
   const u = Math.max(0, Math.min(1, t));
   const mix = (x: number, y: number) => x + (y - x) * u;
@@ -107,4 +98,26 @@ export function lerpTint(a: PhaseTint, b: PhaseTint, t: number): PhaseTint {
     overlayAlpha: mix(a.overlayAlpha, b.overlayAlpha),
     localLightMul: mix(a.localLightMul, b.localLightMul),
   };
+}
+
+/**
+ * Aplica o pacote visual completo de uma fase:
+ * tint de mundo + callback opcional para lights/postfx/overlay.
+ */
+export function applyPhaseVisuals(
+  phase: DayPhase,
+  worldTargets: Parameters<typeof applyWorldTint>[1],
+  hooks?: {
+    onLights?: (localLightMul: number, phase: DayPhase) => void;
+    onOverlay?: (alpha: number, color: number, phase: DayPhase) => void;
+    onAmbientFx?: (strength: number, phase: DayPhase) => void;
+  },
+): void {
+  applyWorldTint(phase, worldTargets);
+  const tint = PHASE_TINTS[phase];
+  hooks?.onLights?.(tint.localLightMul, phase);
+  hooks?.onOverlay?.(tint.overlayAlpha, tint.overlay, phase);
+  const ambientStrength =
+    phase === 'night' ? 0.7 : phase === 'dusk' ? 0.35 : phase === 'dawn' ? 0.2 : 0;
+  hooks?.onAmbientFx?.(ambientStrength, phase);
 }

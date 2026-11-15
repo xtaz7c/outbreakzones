@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Dar ritmo tático às missões: o relógio avança, a fase do dia muda, e isso afeta **leitura visual das texturas** e, no futuro, modificadores de gameplay.
+Dar ritmo tático às missões: o relógio avança, a fase do dia muda, e isso afeta **leitura visual das texturas**, **luzes locais** e, no futuro, modificadores de gameplay.
 
 A UI de referência já mostra `DIA 1 · 14:30` — este módulo torna esse relógio autoritativo.
 
@@ -10,69 +10,94 @@ A UI de referência já mostra `DIA 1 · 14:30` — este módulo torna esse rel�
 
 **Não** geramos atlases separados por horário. A arte (SVG/PNG) permanece única.
 
-| Fase | Efeito nas texturas | Luzes locais (postes) |
-|------|---------------------|------------------------|
-| **day** | sem tint | apagadas |
-| **dawn** | leve warm (R↑ B↓) + overlay suave | fracas |
-| **dusk** | warm forte (laranja/vermelho) | médias |
-| **night** | cool dark (B↑, RGB↓) + overlay azul-noite | fortes (lamp glow) |
+| Fase | Tint / overlay | PointLights (postes) | PostFX ambient |
+|------|----------------|----------------------|----------------|
+| **day** | neutro | off | strength 0 |
+| **dawn** | warm leve | ~35% | ~0.2 |
+| **dusk** | warm forte | ~55% | ~0.35 |
+| **night** | cool dark | 100% | ~0.7 |
 
-Implementação em `src/game/lighting/DayNightVisuals.ts`:
-
-1. `setTint` nas **tile layers** e sprites de mundo (não no HUD)
-2. Overlay semitransparente acima do mapa
-3. Multiplicador `localLightMul` para sprites de poste/lâmpada do atlas de ambiente
-
-### Pipeline com o pacote de texturas
+### Pipeline
 
 ```
 SVG fonte (mission-tiles, environment-props, characters)
         │
         ▼
-  runtime PNG opcional (rasterize)
-        │
-        ▼
   Phaser load → tilemap / sprites
         │
-        ▼
-  DayNightVisuals.apply(phase)  ← tint + overlay + lights
+        ├─► applyWorldTint(phase)          // setTint nas layers de mundo
+        ├─► NightLights.syncPhase(phase)   // PointLight intensity
+        └─► NightAmbientPipeline (opc.)    // multiply fullscreen
 ```
 
-Quando `feat/textures-64x64` entrar, o mesmo tint aplica em 64×64 sem mudança de API.
+HUD **nunca** entra em tint, PointLight nem PostFX de mundo.
+
+## Shaders / iluminação (Phaser 3.87)
+
+### PointLight — `NightLights.ts` (Fase A, default)
+
+- Shader built-in, **sem** normal map
+- Brilho additivo (não escurece o chão sozinho)
+- Ideal para postes da referência UI
+- `syncPhase(phase)` usa `PHASE_TINTS[phase].localLightMul`
+
+```ts
+const nightLights = new NightLights(this);
+nightLights.addLamp({ x: 640, y: 360 });
+nightLights.syncPhase(dayNight.getState().phase);
+```
+
+### PostFX ambient — `NightAmbientPipeline.ts` (Fase B, opcional)
+
+- Fragment multiplica a cena por `uAmbient` com `uStrength`
+- Complementa PointLights (chão mais escuro entre postes)
+- Registrar uma vez no renderer WebGL; aplicar só na **câmera de mundo**
+
+```ts
+game.renderer.pipelines.addPostPipeline('NightAmbient', NightAmbientPipeline);
+camera.setPostPipeline(NightAmbientPipeline);
+```
+
+### O que evitar no MVP
+
+- `Light2D` sem normal maps (custo alto, resultado pobre)
+- Packs externos de lighting só para este ciclo
 
 ## Relógio
 
-- `DayNightSystem` em `src/simulation/systems/DayNightSystem.ts`
-- Default: começa **14:30 do dia 1** (como o mock da UI)
-- `minutesPerRealSecond: 1` → 1 minuto de jogo por segundo real (ajustável por missão)
+- `DayNightSystem` — default **14:30 do dia 1**
+- `minutesPerRealSecond: 1` (ajustável por missão)
 
 ## Gameplay (hooks)
 
-`gameplayModifiersFor(phase)` expõe multiplicadores:
+`gameplayModifiersFor(phase)`:
 
 - `infectedSpeedMul`
-- `officerVisionMul` (fog / visão — futuro)
+- `officerVisionMul`
 - `ambientThreatMul`
 
-Ainda **não** estão ligados ao `WaveSystem` / combate nesta PR — só a base e o visual.
+Ainda não ligados ao `WaveSystem`.
 
 ## Mapas novos
 
 | Arquivo | Tema |
 |---------|------|
-| `public/maps/mission-02.tmj` | Subúrbio residencial |
-| `public/maps/mission-03.tmj` | Zona industrial |
-| `public/maps/mission-04.tmj` | Parque ribeirinho |
+| mission-02 | Subúrbio |
+| mission-03 | Industrial |
+| mission-04 | Parque ribeirinho |
 
-Mesmo tileset `mission-tiles`, grade 80×45, layers Ground / Terrain / Structures + Collision / Entrances / Obstacles.
+```bash
+python3 scripts/generate-mission-maps.py
+```
 
-## Integração pendente em MissionScene
+## Integração MissionScene (checklist)
 
-1. Instanciar `DayNightSystem` no `create`
-2. `update` → `dayNight.update(dt)` e refrescar label HUD
-3. Em mudança de fase → `applyWorldTint(phase, [layers..., unit sprites])`
-4. Postes do atlas `environment-props` com alpha/glow ∝ `localLightMul`
+1. `DayNightSystem` no `create` + label HUD `state.hudLabel`
+2. `update` → `dayNight.update(dt)`; se `phase` mudou → `applyPhaseVisuals`
+3. `NightLights` com postes do mapa (ou `gridLampPositions` temporário)
+4. Opcional: registrar `NightAmbientPipeline` na câmera de mundo
+5. HUD / minimap fora de pipelines de luz
 
 ## Testes
 
-Ver `DayNightSystem.test.ts` (fase, wrap de dia, label HUD).
+`DayNightSystem.test.ts` e `NightLights.test.ts`.
