@@ -7,11 +7,11 @@ use std::{
     fs,
     io::{Cursor, Read},
     net::SocketAddr,
-    path::{Component, Path, PathBuf},
+    path::{Component, PathBuf},
     thread,
     time::{SystemTime, UNIX_EPOCH},
 };
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tiny_http::{Header, Method, Response, Server};
 use zip::ZipArchive;
 
@@ -81,6 +81,13 @@ fn read_settings(app: &tauri::AppHandle) -> Result<LauncherSettings, String> {
     serde_json::from_str(&raw).map_err(|e| e.to_string())
 }
 
+fn validate_version(version: &str) -> Result<(), String> {
+    if version.len() > 32 || semver::Version::parse(version).is_err() {
+        return Err("Versão inválida.".into());
+    }
+    Ok(())
+}
+
 fn write_settings(app: &tauri::AppHandle, settings: &LauncherSettings) -> Result<(), String> {
     let path = data_dir(app)?.join("settings.json");
     let raw = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
@@ -124,6 +131,7 @@ fn get_preferred_version(app: tauri::AppHandle) -> Result<Option<String>, String
 
 #[tauri::command]
 fn set_preferred_version(app: tauri::AppHandle, version: String) -> Result<(), String> {
+    validate_version(&version)?;
     let path = versions_dir(&app)?.join(&version);
     if !path.join("game.html").is_file() {
         return Err("Essa versão não está instalada.".into());
@@ -135,9 +143,7 @@ fn set_preferred_version(app: tauri::AppHandle, version: String) -> Result<(), S
 
 #[tauri::command]
 async fn download_game_version(app: tauri::AppHandle, version: String) -> Result<InstalledVersion, String> {
-    if version.len() > 32 || semver::Version::parse(&version).is_err() {
-        return Err("Versão inválida. Use o formato semântico, por exemplo 0.2.0.".into());
-    }
+    validate_version(&version).map_err(|_| "Versão inválida. Use o formato semântico, por exemplo 0.2.0.".to_string())?;
     let manifest = fetch_manifest().await?;
     let release = manifest.versions.iter().find(|item| item.version == version)
         .ok_or_else(|| "Versão não encontrada no manifesto oficial.".to_string())?;
@@ -228,6 +234,12 @@ fn serve_version(root: PathBuf, save_path: PathBuf) -> Result<SocketAddr, String
     thread::spawn(move || {
         for mut request in server.incoming_requests() {
             let requested = request.url().split('?').next().unwrap_or("/");
+            if requested == "/__loading" {
+                let page = r#"<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Carregando Outbreak Zones</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111;color:#f2f0e9;font:16px system-ui,sans-serif}.loading{text-align:center}.spinner{width:38px;height:38px;margin:0 auto 22px;border:3px solid #454545;border-top-color:#c83b32;border-radius:50%;animation:spin .8s linear infinite}.label{letter-spacing:.16em;font-size:12px;font-weight:700}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><main class=\"loading\"><div class=\"spinner\" aria-hidden=\"true\"></div><div class=\"label\">CARREGANDO OPERAÇÃO</div></main><script>window.setTimeout(()=>window.location.replace('/game.html'),250)</script></body></html>"#;
+                let header = Header::from_bytes("Content-Type", "text/html; charset=utf-8").expect("header válido");
+                let _ = request.respond(Response::from_string(page).with_header(header));
+                continue;
+            }
             if requested == "/__save" {
                 if request.method() == &Method::Get {
                     let envelope = if save_path.is_file() {
@@ -316,13 +328,14 @@ fn serve_version(root: PathBuf, save_path: PathBuf) -> Result<SocketAddr, String
 
 #[tauri::command]
 fn launch_game(app: tauri::AppHandle, version: String) -> Result<(), String> {
+    validate_version(&version)?;
     let root = versions_dir(&app)?.join(&version);
     if !root.join("game.html").is_file() {
         return Err("Instale essa versão antes de iniciar.".into());
     }
     let save_path = data_dir(&app)?.join("campaign-save.json");
     let address = serve_version(root, save_path)?;
-    let url = format!("http://{}:{}/game.html", address.ip(), address.port());
+    let url = format!("http://{}:{}/__loading", address.ip(), address.port());
     let unique = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|e| e.to_string())?.as_millis();
     let game_window = WebviewWindowBuilder::new(&app, format!("game-{}-{unique}", version.replace('.', "-")), WebviewUrl::External(url.parse().map_err(|e| format!("URL inválida: {e}"))?))
         .title(format!("Outbreak Zones — Jogo v{version}"))
@@ -331,9 +344,9 @@ fn launch_game(app: tauri::AppHandle, version: String) -> Result<(), String> {
         .build().map_err(|e| format!("Não foi possível abrir o jogo: {e}"))?;
 
     if let Some(launcher) = app.get_webview_window("main") {
-        if let Err(error) = launcher.hide() {
+        if let Err(error) = launcher.close() {
             let _ = game_window.close();
-            return Err(format!("O jogo abriu, mas não foi possível ocultar o launcher: {error}"));
+            return Err(format!("O jogo abriu, mas não foi possível fechar o launcher: {error}"));
         }
     }
     Ok(())
@@ -342,14 +355,6 @@ fn launch_game(app: tauri::AppHandle, version: String) -> Result<(), String> {
 fn main() {
     let launcher_version = env!("CARGO_PKG_VERSION");
     tauri::Builder::default()
-        .on_window_event(|window, event| {
-            if matches!(event, WindowEvent::Destroyed) && window.label().starts_with("game-") {
-                if let Some(launcher) = window.app_handle().get_webview_window("main") {
-                    let _ = launcher.show();
-                    let _ = launcher.set_focus();
-                }
-            }
-        })
         .setup(move |app| {
             let window = app.get_webview_window("main").expect("janela principal não encontrada");
             window.set_title(&format!("Outbreak Zones | Launcher v{launcher_version}")).expect("não foi possível definir o título");
