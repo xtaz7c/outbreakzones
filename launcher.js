@@ -54,12 +54,6 @@
       const installedSet = new Set(state.installed.map(item => item.version));
       const releaseSelect = $('version-select');
       const current = releaseSelect.value;
-      const available = state.releases.filter(item => !installedSet.has(item.version)).sort((a,b) => compareVersions(b.version,a.version));
-      for (const item of state.releases) {
-        if (!state.installed.some(installed => installed.version === item.version)) {
-          // A versão publicada permanece selecionável para instalação, sem aparecer como instalada.
-        }
-      }
       $('install').disabled = !state.latest || installedSet.has(state.latest);
       $('install').textContent = state.latest && installedSet.has(state.latest) ? 'ÚLTIMA VERSÃO INSTALADA' : 'INSTALAR ÚLTIMA VERSÃO';
       $('connection').textContent = state.latest
