@@ -284,7 +284,6 @@ async fn install_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
             }
             return Err(format!("Não foi possível reabrir o AppImage atualizado: {error}"));
         }
-        if let Some(backup_path) = backup { let _ = fs::remove_file(backup_path); }
         app.exit(0);
         return Ok(());
     }
@@ -541,6 +540,14 @@ fn main() {
     let launcher_version = env!("CARGO_PKG_VERSION");
     tauri::Builder::default()
         .setup(move |app| {
+            if let Some(appimage) = std::env::var_os("APPIMAGE") {
+                if let Ok(current) = PathBuf::from(appimage).canonicalize() {
+                    if let (Some(parent), Some(name)) = (current.parent(), current.file_name()) {
+                        let backup = parent.join(format!(".{}.backup", name.to_string_lossy()));
+                        if backup.is_file() { let _ = fs::remove_file(backup); }
+                    }
+                }
+            }
             let window = app.get_webview_window("main").expect("janela principal não encontrada");
             window.set_title(&format!("Outbreak Zones | Launcher v{launcher_version}")).expect("não foi possível definir o título");
             Ok(())
