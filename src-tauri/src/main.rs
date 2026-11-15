@@ -270,7 +270,7 @@ async fn install_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
             .map_err(|e| { let _ = fs::remove_file(&temporary); format!("Não foi possível iniciar a instalação autorizada (pkexec): {e}") })?;
         let _ = fs::remove_file(&temporary);
         if !status.success() {
-            return Err("A instalação do .deb foi cancelada ou falhou. O launcher atual foi mantido.".into());
+            return Err("A instalação do .deb foi cancelada ou falhou. Verifique o gerenciador de pacotes antes de tentar novamente.".into());
         }
     }
 
