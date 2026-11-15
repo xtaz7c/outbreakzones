@@ -1,0 +1,12 @@
+[package]
+name = "outbreak-zones"
+version = "0.1.0"
+description = "Outbreak Zones — jogo tático de sobrevivência"
+authors = ["Outbreak Zones"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
