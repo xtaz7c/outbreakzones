@@ -1010,6 +1010,7 @@ export class MissionScene extends Phaser.Scene {
       `RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
       `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`,
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
+      ...(this.buildStatus ? [this.buildStatus] : []),
     ].join('\n'));
 
     const elapsedCampaignMinutes = 8 * 60 + Math.floor(state.elapsed);
