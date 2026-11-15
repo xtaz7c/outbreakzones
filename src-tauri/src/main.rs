@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
+    collections::HashMap,
     fs,
     io::{Cursor, Read},
     net::SocketAddr,
@@ -11,9 +12,10 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
-use tiny_http::{Header, Response, Server};
+use tiny_http::{Header, Method, Response, Server};
 use zip::ZipArchive;
 
+const MAX_SAVE_BYTES: u64 = 1024 * 1024;
 const MANIFEST_URL: &str = "https://raw.githubusercontent.com/xtaz7c/outbreakzones/main/releases/manifest.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,6 +40,18 @@ struct ReleaseManifest {
 struct InstalledVersion {
     version: String,
     installed_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SaveEnvelope {
+    schema_version: u32,
+    entries: HashMap<String, String>,
+}
+
+impl Default for SaveEnvelope {
+    fn default() -> Self {
+        Self { schema_version: 1, entries: HashMap::new() }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -207,12 +221,73 @@ async fn download_game_version(app: tauri::AppHandle, version: String) -> Result
     Ok(InstalledVersion { version, installed_at: chrono::Utc::now().to_rfc3339() })
 }
 
-fn serve_version(root: PathBuf) -> Result<SocketAddr, String> {
+fn serve_version(root: PathBuf, save_path: PathBuf) -> Result<SocketAddr, String> {
     let server = Server::http("127.0.0.1:0").map_err(|e| e.to_string())?;
     let address = server.server_addr().to_ip().ok_or("Endereço local inválido")?;
     thread::spawn(move || {
-        for request in server.incoming_requests() {
+        for mut request in server.incoming_requests() {
             let requested = request.url().split('?').next().unwrap_or("/");
+            if requested == "/__save" {
+                if request.method() == &Method::Get {
+                    let envelope = if save_path.is_file() {
+                        fs::read(&save_path).ok()
+                            .and_then(|raw| serde_json::from_slice::<SaveEnvelope>(&raw).ok())
+                            .filter(|data| data.schema_version == 1)
+                            .unwrap_or_default()
+                    } else {
+                        SaveEnvelope::default()
+                    };
+                    let body = serde_json::to_string(&envelope).unwrap_or_else(|_| r#"{"schema_version":1,"entries":{}}"#.into());
+                    let header = Header::from_bytes("Content-Type", "application/json; charset=utf-8").expect("header válido");
+                    let _ = request.respond(Response::from_string(body).with_header(header));
+                    continue;
+                }
+                if request.method() == &Method::Post {
+                    let mut body = String::new();
+                    let read_result = request.as_reader().take(MAX_SAVE_BYTES + 1).read_to_string(&mut body);
+                    if read_result.is_err() || body.len() as u64 > MAX_SAVE_BYTES {
+                        let _ = request.respond(Response::from_string("Save payload too large or invalid").with_status_code(413));
+                        continue;
+                    }
+                    let parsed = serde_json::from_str::<SaveEnvelope>(&body);
+                    let Ok(envelope) = parsed else {
+                        let _ = request.respond(Response::from_string("Invalid save payload").with_status_code(400));
+                        continue;
+                    };
+                    let valid_entries = envelope.schema_version == 1
+                        && envelope.entries.len() <= 512
+                        && envelope.entries.iter().all(|(key, value)| {
+                            key.starts_with("outbreakzones:") && key.len() <= 160 && value.len() <= 256 * 1024
+                        });
+                    if !valid_entries {
+                        let _ = request.respond(Response::from_string("Save payload rejected").with_status_code(400));
+                        continue;
+                    }
+                    let serialized = match serde_json::to_vec(&envelope) {
+                        Ok(data) => data,
+                        Err(_) => {
+                            let _ = request.respond(Response::from_string("Save serialization failed").with_status_code(500));
+                            continue;
+                        }
+                    };
+                    let temporary = save_path.with_extension("json.tmp");
+                    let write_result = fs::write(&temporary, serialized)
+                        .and_then(|_| fs::rename(&temporary, &save_path));
+                    if write_result.is_err() {
+                        let _ = fs::remove_file(&temporary);
+                        let _ = request.respond(Response::from_string("Save write failed").with_status_code(500));
+                    } else {
+                        let _ = request.respond(Response::from_string("saved"));
+                    }
+                    continue;
+                }
+                let _ = request.respond(Response::from_string("Method not allowed").with_status_code(405));
+                continue;
+            }
+            if request.method() != &Method::Get {
+                let _ = request.respond(Response::from_string("Method not allowed").with_status_code(405));
+                continue;
+            }
             let relative = if requested == "/" { "game.html" } else { requested.trim_start_matches('/') };
             let candidate = root.join(relative);
             let resolved = match candidate.canonicalize() {
@@ -242,7 +317,8 @@ fn launch_game(app: tauri::AppHandle, version: String) -> Result<(), String> {
     if !root.join("game.html").is_file() {
         return Err("Instale essa versão antes de iniciar.".into());
     }
-    let address = serve_version(root)?;
+    let save_path = data_dir(&app)?.join("campaign-save.json");
+    let address = serve_version(root, save_path)?;
     let url = format!("http://{}:{}/game.html", address.ip(), address.port());
     let unique = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|e| e.to_string())?.as_millis();
     WebviewWindowBuilder::new(&app, format!("game-{}-{unique}", version.replace('.', "-")), WebviewUrl::External(url.parse().map_err(|e| format!("URL inválida: {e}"))?))
