@@ -202,6 +202,21 @@
       .platform.is-soon { opacity: 0.55; }
       .platform.is-soon .platform__icon { border-color: #454b49; color: #8a908b; }
 
+      .download-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .download-card {
+        display: flex; flex-direction: column; min-height: 230px; padding: 24px;
+        border: 1px solid var(--border-soft); background: rgba(27, 32, 33, 0.78);
+      }
+      .download-card--primary {
+        border-color: var(--border);
+        background: linear-gradient(145deg, rgba(167, 43, 46, 0.15), transparent 60%), rgba(27, 32, 33, 0.88);
+      }
+      .download-card__eyebrow { margin: 0 0 12px; color: var(--red-bright); font-size: 10px; font-weight: 800; letter-spacing: 1.8px; }
+      .download-card h3 { margin: 0 0 10px; font-family: "Barlow Condensed", sans-serif; font-size: 26px; font-weight: 800; }
+      .download-card p { flex: 1; margin: 0 0 18px; color: #a8aca4; font-size: 14px; line-height: 1.7; }
+      .download-meta { margin-top: 12px; color: var(--muted); font-size: 11px; }
+      .download-link { display: inline-flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border: 1px solid var(--border); color: var(--paper); font-size: 11px; font-weight: 800; letter-spacing: 1.2px; }
+      .download-link:hover { border-color: var(--red-bright); background: rgba(167, 43, 46, 0.14); }
       .textures { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
       .tex-block h3 {
         margin: 0 0 10px; font-family: "Barlow Condensed", sans-serif; font-size: 20px; font-weight: 800;
@@ -244,7 +259,7 @@
         .hero { grid-template-columns: 1fr; padding-top: 36px; }
         .hero__visual { order: -1; min-height: 200px; }
         .hero__emblem { width: min(55%, 240px); }
-        .story-grid, .textures, .platforms { grid-template-columns: 1fr; }
+        .story-grid, .textures, .platforms, .download-grid { grid-template-columns: 1fr; }
         .modes { grid-template-columns: 1fr; }
         .palette { grid-template-columns: repeat(2, 1fr); }
       }
@@ -272,6 +287,7 @@
             <a href="#timeline">LINHA DO TEMPO</a>
             <a href="#modos">MODOS</a>
             <a href="#plataformas">PLATAFORMAS</a>
+            <a href="#downloads">DOWNLOADS</a>
             <a href="#texturas">TEXTURAS</a>
             <a href="/game.html">JOGAR</a>
           </nav>
@@ -443,10 +459,10 @@
                 </div>
               </div>
               <div class="platform is-soon">
-                <div class="platform__icon">NAT</div>
+                <div class="platform__icon">LIN</div>
                 <div>
-                  <strong>Cliente nativo</strong>
-                  <span>Empacotamento futuro (Electron / similar) — não prioritário</span>
+                  <strong>Linux desktop</strong>
+                  <span>Launcher Tauri — em validação, pacotes ainda não publicados</span>
                 </div>
               </div>
             </div>
@@ -461,6 +477,33 @@
                 Áudio opcional (12 faixas WAV: disparos, suspense e vocalizações de infectados).
                 Preferências de HUD e progresso de campanha ficam salvos localmente no navegador.
               </p>
+            </article>
+          </div>
+        </section>
+
+        <section id="downloads" aria-labelledby="downloads-title">
+          <div class="section-head">
+            <h2 id="downloads-title">DOWNLOADS <span>/</span> INSTALAÇÃO</h2>
+            <span class="section-tag">VERSÕES E PLATAFORMAS</span>
+          </div>
+          <div class="download-grid">
+            <article class="download-card download-card--primary">
+              <p class="download-card__eyebrow">JOGUE AGORA · SEM INSTALAÇÃO</p>
+              <h3>Versão para navegador</h3>
+              <p>Acesse a versão web do Outbreak Zones diretamente. Recomendamos navegador atualizado e computador com mouse.</p>
+              <a class="download-link" href="/game.html">
+                <span>JOGAR NO NAVEGADOR</span><span aria-hidden="true">↗</span>
+              </a>
+              <span class="download-meta">Versão do jogo: 0.1.0</span>
+            </article>
+            <article class="download-card">
+              <p class="download-card__eyebrow">CLIENTE DESKTOP · LINUX</p>
+              <h3>Launcher para Linux</h3>
+              <p>Instalador nativo em preparação. Os pacotes serão publicados nesta página quando a compilação e a validação estiverem concluídas.</p>
+              <a class="download-link" href="https://github.com/xtaz7c/outbreakzones/releases" target="_blank" rel="noopener noreferrer">
+                <span>ACOMPANHAR RELEASES</span><span aria-hidden="true">↗</span>
+              </a>
+              <span class="download-meta">Formatos planejados: .deb e .AppImage · x86_64</span>
             </article>
           </div>
         </section>
