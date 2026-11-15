@@ -70,7 +70,7 @@ Os canais de release são separados:
 - **Jogo:** publique a tag `vX.Y.Z`, com `package.json` na mesma versão. O workflow publica o ZIP do jogo e atualiza `releases/manifest.json`.
 - **Launcher:** atualize a versão em `src-tauri/Cargo.toml` e `src-tauri/tauri.conf.json` (mantenha as duas iguais), depois publique a tag `launcher-vX.Y.Z`. O workflow publica os pacotes Linux e seus arquivos SHA-256.
 
-Uma release do jogo não atualiza o launcher. Uma release `launcher-vX.Y.Z` não altera a versão do jogo. Para atualizar um AppImage, o arquivo precisa estar em uma pasta com permissão de escrita para o usuário.
+Uma release do jogo não atualiza o launcher. Uma release `launcher-vX.Y.Z` não altera a versão do jogo. Como o launcher atual está na versão `0.1.0`, a primeira atualização automática deverá ser publicada como `launcher-v0.1.1` ou superior. Para atualizar um AppImage, o arquivo precisa estar em uma pasta com permissão de escrita para o usuário.
 
 ## Dados locais
 
