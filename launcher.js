@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const state = { installed: [], releases: [], preferred: null };
   const message = (text, error = false) => { $('message').textContent = text; $('message').style.color = error ? '#e58b83' : '#a8aca4'; };
-  const setBusy = (busy) => { $('refresh').disabled = busy; $('install').disabled = busy || !$('release-select').value; };
+  const setBusy = (busy) => { $('refresh').disabled = busy; $('install').disabled = busy || !$('release-select').value; $('play').disabled = busy || !$('version-select').value; };
   const refreshInstalled = async () => {
     state.installed = await invoke('list_installed_versions');
     state.preferred = await invoke('get_preferred_version');
@@ -56,8 +56,17 @@
     catch (error) { message(String(error), true); }
   });
   $('play').addEventListener('click', async () => {
-    try { const version = $('version-select').value; await invoke('set_preferred_version', { version }); await invoke('launch_game', { version }); message('Jogo iniciado na versão ' + version + '.'); }
-    catch (error) { message(String(error), true); }
+    const version = $('version-select').value;
+    if (!version) return;
+    $('play').disabled = true;
+    message('Iniciando o jogo…');
+    try {
+      await invoke('set_preferred_version', { version });
+      await invoke('launch_game', { version });
+    } catch (error) {
+      $('play').disabled = false;
+      message(String(error), true);
+    }
   });
   $('install').addEventListener('click', async () => {
     const version = $('release-select').value;
