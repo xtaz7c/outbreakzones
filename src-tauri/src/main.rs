@@ -271,7 +271,9 @@ fn serve_version(root: PathBuf, save_path: PathBuf) -> Result<SocketAddr, String
                             continue;
                         }
                     };
-                    let temporary = save_path.with_extension("json.tmp");
+                    let nonce = SystemTime::now().duration_since(UNIX_EPOCH)
+                        .map(|duration| duration.as_nanos()).unwrap_or_default();
+                    let temporary = save_path.with_file_name(format!("campaign-save-{}-{nonce}.tmp", std::process::id()));
                     let write_result = fs::write(&temporary, serialized)
                         .and_then(|_| fs::rename(&temporary, &save_path));
                     if write_result.is_err() {
