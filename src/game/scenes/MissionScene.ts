@@ -15,7 +15,6 @@ import { DeployableStructureSystem, type DeployableKind, type DeployableState } 
 
 const CAMERA_SPEED = 600;
 const MIN_CAMERA_ZOOM = 0.5;
-const MAX_CAMERA_ZOOM = 2.5;
 const SELECTION_DRAG_THRESHOLD = 8;
 const MISSION_SEED_STORAGE_KEY = 'outbreakzones:mission-seed';
 const CAMPAIGN_UNLOCK_STORAGE_KEY = 'outbreakzones:campaign-unlocked';
@@ -76,7 +75,6 @@ export class MissionScene extends Phaser.Scene {
   private deployableGraphics!: Phaser.GameObjects.Graphics;
   private placementMode: DeployableKind | null = null;
   private selectedDeployableId: number | null = null;
-  private buildStatus = '';
   private readonly buildButtons: Phaser.GameObjects.Text[] = [];
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
@@ -971,14 +969,6 @@ export class MissionScene extends Phaser.Scene {
       return;
     }
     this.openPauseMenu();
-  }
-
-  private selectAllOfficers(): void {
-    this.selectedOfficerIds.clear();
-    for (const officer of this.simulation.getOfficers()) {
-      if (!officer.isIncapacitated) this.selectedOfficerIds.add(officer.id);
-    }
-    this.refreshSelectionVisuals();
   }
 
   private isHudPoint(x: number, y: number): boolean {
