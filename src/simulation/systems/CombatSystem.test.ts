@@ -46,6 +46,16 @@ describe('CombatSystem', () => {
     expect(officer.state).toBe('attacking');
   });
 
+  it('detects targets beyond weapon range without firing until they approach', () => {
+    const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, attackRange: 80, visionRange: 300 });
+    const distant = new Infected({ id: 1, x: 200, y: 16, entryTile: { column: 6, row: 0 } });
+    const combat = new CombatSystem({ random: () => 0 });
+    expect(combat.update(0.5, [officer], [distant], map, 32)).toHaveLength(0);
+    expect(officer.facingAngle).toBeCloseTo(0);
+    expect(officer.state).toBe('idle');
+    distant.takeDamage(60);
+  });
+
   it('does not fire through a blocked intermediate cell', () => {
     const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, attackRange: 180, fireInterval: 0.1 });
     const infected = new Infected({ id: 1, x: 112, y: 16, entryTile: { column: 3, row: 0 } });
