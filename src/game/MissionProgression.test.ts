@@ -4,14 +4,14 @@ import { canStartCampaign, getMissionDefinition, getMissionResultMessage } from 
 describe('Mission progression', () => {
   it('keeps the tutorial focused on civilian extraction', () => {
     const tutorial = getMissionDefinition(0);
-    expect(tutorial.title).toBe('O Resgate');
+    expect(tutorial.title).toBe('Setor 07 — O Resgate');
     expect(tutorial.requiresCivilianExtraction).toBe(true);
     expect(tutorial.waves).toHaveLength(3);
   });
 
-  it('defines Refuge as a separate four-wave campaign mission', () => {
+  it('defines Sector 04 as a separate four-wave campaign mission', () => {
     const refuge = getMissionDefinition(1);
-    expect(refuge.title).toBe('Refúgio');
+    expect(refuge.title).toBe('Setor 04 — Investigação');
     expect(refuge.requiresCivilianExtraction).toBe(false);
     expect(refuge.waves).toHaveLength(4);
     expect(refuge.preparationDuration).toBeGreaterThan(getMissionDefinition(0).preparationDuration);
@@ -29,24 +29,24 @@ describe('Mission progression', () => {
 describe('Mission result messages', () => {
   it('formats tutorial victory as separate lines', () => {
     expect(getMissionResultMessage(0, 'victory').split('\n')).toEqual([
-      'O RESGATE CONCLUÍDO',
-      'Sobreviventes extraídos',
-      'Todas as ondas eliminadas',
+      'SETOR 07 CONCLUÍDO',
+      'Todos os civis resgatados',
+      'Equipe de resgate sobreviveu',
     ]);
   });
 
   it('formats campaign victory as separate lines', () => {
     expect(getMissionResultMessage(1, 'victory').split('\n')).toEqual([
-      'REFÚGIO DEFENDIDO',
-      'Todas as ondas eliminadas',
-      'Setor estabilizado',
+      'SETOR 04 CONCLUÍDO',
+      'Investigação encerrada',
+      'Área sob controle',
     ]);
   });
 
   it('formats defeat as separate lines', () => {
     expect(getMissionResultMessage(0, 'defeat').split('\n')).toEqual([
-      'MISSÃO FALHOU',
-      'Todos os policiais foram incapacitados',
+      'GAME OVER',
+      'Equipe de resgate incapacitada',
     ]);
   });
 });

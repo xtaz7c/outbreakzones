@@ -59,10 +59,10 @@ const DEFAULTS = Object.freeze({
   moveSpeed: 55,
   damage: 8,
   attackRange: 40,
-  detectionRange: 220,
+  detectionRange: 280,
   attackInterval: 1.2,
   patrolRadiusTiles: 8,
-  hearingRange: 360,
+  hearingRange: 600,
   memoryDuration: 8,
 });
 

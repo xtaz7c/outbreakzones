@@ -1,6 +1,7 @@
 import type { TilePosition } from '../world/WorldConfig';
 import { GridMap } from '../world/GridMap';
 import { findPath } from '../systems/navigation/Pathfinder';
+import { hasLineOfSight } from '../systems/CombatSystem';
 
 export type PoliceOfficerState = 'idle' | 'moving' | 'attacking' | 'incapacitated';
 export type TacticalPosture = 'engage' | 'hold_fire';
@@ -12,6 +13,7 @@ export interface PoliceOfficerConfig {
   readonly maxHealth?: number;
   readonly moveSpeed?: number;
   readonly attackRange?: number;
+  readonly visionRange?: number;
   readonly accuracy?: number;
   /** Tempo entre disparos, em segundos. O sistema de combate será implementado na Fase 6. */
   readonly fireInterval?: number;
@@ -31,6 +33,7 @@ export class PoliceOfficer {
   readonly maxHealth: number;
   readonly moveSpeed: number;
   readonly attackRange: number;
+  readonly visionRange: number;
   readonly accuracy: number;
   readonly fireInterval: number;
 
@@ -55,12 +58,14 @@ export class PoliceOfficer {
     this.maxHealth = config.maxHealth ?? 100;
     this.moveSpeed = config.moveSpeed ?? 105;
     this.attackRange = config.attackRange ?? 180;
+    this.visionRange = config.visionRange ?? 420;
     this.accuracy = config.accuracy ?? 0.75;
     this.fireInterval = config.fireInterval ?? 0.8;
 
     this.assertPositiveFinite(this.maxHealth, 'maxHealth');
     this.assertPositiveFinite(this.moveSpeed, 'moveSpeed');
     this.assertPositiveFinite(this.attackRange, 'attackRange');
+    this.assertPositiveFinite(this.visionRange, 'visionRange');
     this.assertPositiveFinite(this.fireInterval, 'fireInterval');
     if (!Number.isFinite(this.accuracy) || this.accuracy < 0 || this.accuracy > 1) {
       throw new RangeError('accuracy must be between 0 and 1.');
@@ -119,6 +124,13 @@ export class PoliceOfficer {
 
   setFacingAngle(angle: number): void {
     if (Number.isFinite(angle)) this.currentFacingAngle = angle;
+  }
+
+  /** Detecta alvos dentro do alcance visual, respeitando paredes e obstáculos. */
+  canSee(target: OfficerPosition, map: GridMap, tileSize: number): boolean {
+    if (this.isIncapacitated || !Number.isFinite(target.x) || !Number.isFinite(target.y)) return false;
+    return Math.hypot(target.x - this.currentPosition.x, target.y - this.currentPosition.y) <= this.visionRange &&
+      hasLineOfSight(map, this.currentPosition, target, tileSize);
   }
 
   /** Calcula e aceita uma nova ordem somente se existir uma rota válida. */

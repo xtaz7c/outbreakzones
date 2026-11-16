@@ -14,7 +14,7 @@ export interface MissionDefinition {
 export const MISSION_DEFINITIONS: Readonly<Record<MissionId, MissionDefinition>> = {
   0: {
     id: 0,
-    title: 'O Resgate',
+    title: 'Setor 07 — O Resgate',
     preparationDuration: 8,
     requiresCivilianExtraction: true,
     waves: [
@@ -25,11 +25,11 @@ export const MISSION_DEFINITIONS: Readonly<Record<MissionId, MissionDefinition>>
   },
   1: {
     id: 1,
-    title: 'Refúgio',
+    title: 'Setor 04 — Investigação',
     preparationDuration: 10,
     requiresCivilianExtraction: false,
     waves: [
-      { infectedCount: 4, spawnInterval: 1.25 },
+      { infectedCount: 1, spawnInterval: 1.25 },
       { infectedCount: 5, spawnInterval: 1.05 },
       { infectedCount: 6, spawnInterval: 0.85 },
       { infectedCount: 7, spawnInterval: 0.7 },
@@ -51,12 +51,12 @@ export function canStartCampaign(
 
 export function getMissionResultMessage(missionId: MissionId, status: MissionStatus): string {
   if (status === 'defeat') {
-    return ['MISSÃO FALHOU', 'Todos os policiais foram incapacitados'].join('\n');
+    return ['GAME OVER', 'Equipe de resgate incapacitada'].join('\n');
   }
 
   if (missionId === 0) {
-    return ['O RESGATE CONCLUÍDO', 'Sobreviventes extraídos', 'Todas as ondas eliminadas'].join('\n');
+    return ['SETOR 07 CONCLUÍDO', 'Todos os civis resgatados', 'Equipe de resgate sobreviveu'].join('\n');
   }
 
-  return ['REFÚGIO DEFENDIDO', 'Todas as ondas eliminadas', 'Setor estabilizado'].join('\n');
+  return ['SETOR 04 CONCLUÍDO', 'Investigação encerrada', 'Área sob controle'].join('\n');
 }

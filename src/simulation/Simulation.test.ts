@@ -27,6 +27,20 @@ describe('Simulation', () => {
     expect(sim.getMaintenanceState()?.jobs).toHaveLength(0);
   });
 
+  it('keeps sector 04 active until its investigation objective is completed', () => {
+    const sector = new Simulation('sector-04');
+    sector.setMissionObjectiveComplete(false);
+    sector.configureWaves([{ id: 'test', x: 0, y: 0, entryTile: { column: 0, row: 0 } }], [{ infectedCount: 1, spawnInterval: 1 }], 0, false);
+    sector.update(FIXED_DT);
+    expect(sector.getState().infectedCount).toBe(1);
+    sector.damageInfected(1, 100);
+    sector.update(FIXED_DT);
+    expect(sector.getState().missionStatus).toBe('playing');
+    sector.setMissionObjectiveComplete(true);
+    sector.update(FIXED_DT);
+    expect(sector.getState().missionStatus).toBe('victory');
+  });
+
   it('starts with three officers and zero infected', () => {
     const state = sim.getState();
     expect(state.officerCount).toBe(3);
@@ -35,6 +49,21 @@ describe('Simulation', () => {
     expect(state.rescuedCivilianCount).toBe(0);
     expect(state.elapsed).toBe(0);
     expect(state.paused).toBe(false);
+  });
+
+  it('deploys a larger civilian population in sector 04 without changing the tutorial roster', () => {
+    const sector = new Simulation('sector-04');
+    expect(sector.getOfficers()).toHaveLength(3);
+    expect(sector.getCivilians()).toHaveLength(12);
+    expect(new Set(sector.getCivilians().map((civilian) => civilian.id)).size).toBe(12);
+    expect(sector.getState().civilianCount).toBe(12);
+    expect(sim.getCivilians()).toHaveLength(2);
+  });
+
+  it('marks three of the sector 04 civilians as armed', () => {
+    const sector = new Simulation('sector-04');
+    expect(sector.getCivilians().filter((civilian) => civilian.isArmed)).toHaveLength(3);
+    expect(sim.getCivilians().every((civilian) => !civilian.isArmed)).toBe(true);
   });
 
   it('advances elapsed time when not paused (fixed timestep)', () => {
@@ -280,6 +309,22 @@ describe('Simulation', () => {
     sim.setTargetPriority(officer.id, 99999);
     for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
     expect(infected.health).toBe(60);
+  });
+
+  it('does not declare defeat when all civilians are incapacitated but the rescue team survives', () => {
+    for (const civilian of sim.getCivilians()) civilian.takeDamage(1000);
+    expect(sim.isMissionDefeated()).toBe(false);
+    expect(sim.getState().missionStatus).toBe('playing');
+  });
+
+  it('converts each incapacitated civilian into one infected exactly once', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const civilian = sim.getCivilians()[0]!;
+    civilian.takeDamage(1000);
+    sim.update(FIXED_DT);
+    expect(sim.getState().infectedCount).toBe(1);
+    sim.update(FIXED_DT);
+    expect(sim.getState().infectedCount).toBe(1);
   });
 
   it('stops simulation updates and rejects movement after all officers are incapacitated', () => {

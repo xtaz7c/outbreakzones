@@ -155,7 +155,7 @@ export class CombatSystem {
       const priority = priorityId === undefined
         ? undefined
         : livingTargets.find((target) => target.id === priorityId);
-      const validPriority = priority && this.isValidTarget(officer, priority, origin, map, tileSize)
+      const validPriority = priority && this.isValidTarget(officer, priority, map, tileSize)
         ? priority
         : undefined;
       if (officer.tacticalPosture === 'hold_fire' && !validPriority) {
@@ -174,6 +174,10 @@ export class CombatSystem {
       const dx = destination.x - origin.x;
       const dy = destination.y - origin.y;
       officer.setFacingAngle(Math.atan2(dy, dx));
+      if (Math.hypot(dx, dy) > officer.attackRange) {
+        officer.setAttacking(false);
+        continue;
+      }
       officer.setAttacking(true);
 
       const cooldown = (this.cooldowns.get(officer.id) ?? 0) + dt;
@@ -212,9 +216,9 @@ export class CombatSystem {
     tileSize: number,
   ): Infected | undefined {
     let selected: Infected | undefined;
-    let selectedDistance = officer.attackRange;
+    let selectedDistance = officer.visionRange;
     for (const target of targets) {
-      if (!this.isValidTarget(officer, target, origin, map, tileSize)) continue;
+      if (!this.isValidTarget(officer, target, map, tileSize)) continue;
       const position = target.position;
       const distance = Math.hypot(position.x - origin.x, position.y - origin.y);
       if (distance < selectedDistance) {
@@ -228,15 +232,11 @@ export class CombatSystem {
   private isValidTarget(
     officer: PoliceOfficer,
     target: Infected,
-    origin: { readonly x: number; readonly y: number },
     map: GridMap,
     tileSize: number,
   ): boolean {
     if (target.isDead) return false;
     const destination = target.position;
-    return (
-      Math.hypot(destination.x - origin.x, destination.y - origin.y) <= officer.attackRange &&
-      hasLineOfSight(map, origin, destination, tileSize)
-    );
+    return officer.canSee(destination, map, tileSize);
   }
 }

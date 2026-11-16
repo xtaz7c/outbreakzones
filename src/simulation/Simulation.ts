@@ -50,17 +50,11 @@ export class Simulation {
   private elapsed = 0;
   private paused = false;
   private accumulator = 0;
-  private readonly officers: PoliceOfficer[] = [
-    new PoliceOfficer({ id: 1, x: 29 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
-    new PoliceOfficer({ id: 2, x: 32 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
-    new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
-  ];
+  private readonly officers: PoliceOfficer[] = [];
   private readonly infected: Infected[] = [];
+  private readonly convertedCivilianIds = new Set<number>();
   private additionalHumanTargets: HumanTarget[] = [];
-  private readonly civilians: Civilian[] = [
-    new Civilian({ id: 1, x: 800, y: 480 }),
-    new Civilian({ id: 2, x: 1200, y: 480 }),
-  ];
+  private readonly civilians: Civilian[] = [];
   private readonly combat: CombatSystem;
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
@@ -75,10 +69,38 @@ export class Simulation {
   private waveSystem: WaveSystem | null = null;
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
   private requireCivilianExtraction = true;
+  private missionObjectiveComplete = true;
   private extractionZone = { x: 1024, y: 1120, radius: 72 };
 
-  constructor(combatOptions: CombatSystemOptions = {}) {
-    this.combat = new CombatSystem(combatOptions);
+  constructor(scenarioOrCombatOptions: 'tutorial' | 'sector-04' | CombatSystemOptions = {}, combatOptions: CombatSystemOptions = {}) {
+    const scenario = typeof scenarioOrCombatOptions === 'string' ? scenarioOrCombatOptions : 'tutorial';
+    this.combat = new CombatSystem(typeof scenarioOrCombatOptions === 'string' ? combatOptions : scenarioOrCombatOptions);
+    const officerPositions = scenario === 'sector-04'
+      ? [39, 41, 43].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 35 * WORLD_TILE_SIZE + 16 }))
+      : [29, 32, 35].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }));
+    officerPositions.forEach((position, index) => this.officers.push(new PoliceOfficer({ id: index + 1, ...position })));
+    const civilianPositions = scenario === 'sector-04'
+      ? [
+          [8 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [13 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [17 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [29 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [34 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [50 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [54 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [68 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [73 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [87 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [91 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [95 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+        ]
+      : [[800, 480], [1200, 480]];
+    civilianPositions.forEach(([x, y], index) => this.civilians.push(new Civilian({
+      id: index + 1,
+      x: x!,
+      y: y!,
+      armed: scenario === 'sector-04' && [1, 5, 9].includes(index + 1),
+    })));
   }
 
   setPaused(paused: boolean): void {
@@ -153,6 +175,10 @@ export class Simulation {
 
   startBuildingMaintenance(accessId: string, action: MaintenanceAction): boolean {
     return this.maintenanceSystem?.start(accessId, action) ?? false;
+  }
+
+  setMissionObjectiveComplete(complete: boolean): void {
+    this.missionObjectiveComplete = complete;
   }
 
   configureWaves(
@@ -282,8 +308,7 @@ export class Simulation {
   }
 
   isMissionDefeated(): boolean {
-    return this.officers.every((officer) => officer.isIncapacitated) ||
-      (this.requireCivilianExtraction && this.civilians.every((civilian) => civilian.isIncapacitated));
+    return this.officers.every((officer) => officer.isIncapacitated);
   }
 
   isMissionVictory(): boolean {
@@ -421,7 +446,25 @@ export class Simulation {
         );
         infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli, this.civilians, this.additionalHumanTargets);
       }
+      for (const civilian of this.civilians) {
+        if (!civilian.isIncapacitated || this.convertedCivilianIds.has(civilian.id)) continue;
+        this.convertedCivilianIds.add(civilian.id);
+        const position = civilian.position;
+        this.spawnInfected({
+          x: position.x,
+          y: position.y,
+          entryTile: {
+            column: Math.floor(position.x / this.tileSize),
+            row: Math.floor(position.y / this.tileSize),
+          },
+        });
+      }
       this.updateCivilianAwareness(dt, this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid);
+      for (const civilian of this.civilians) {
+        if (civilian.updateCombat(dt, this.infected, this.worldGrid, this.tileSize)) {
+          this.emitStimulus(civilian.position, 420, 0.65, 2);
+        }
+      }
       this.deployableSystem?.update(dt, this.infected);
 
       const accessChanged = this.buildingSystem?.getSnapshots().some(
@@ -451,7 +494,8 @@ export class Simulation {
       });
     });
     if (this.waveSystem?.getState().phase === 'completed' && this.infected.length === 0 &&
-        (!this.requireCivilianExtraction || this.civilians.every((civilian) => civilian.isRescued))) {
+        (!this.requireCivilianExtraction || this.civilians.every((civilian) => civilian.isRescued)) &&
+        this.missionObjectiveComplete) {
       this.missionStatus = 'victory';
     }
   }

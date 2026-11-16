@@ -10,14 +10,25 @@ describe('PoliceOfficer', () => {
     expect(officer.position).toEqual({ x: 10, y: 20 });
     expect(officer.moveSpeed).toBeGreaterThan(0);
     expect(officer.attackRange).toBeGreaterThan(0);
+    expect(officer.visionRange).toBeGreaterThan(officer.attackRange);
     expect(officer.accuracy).toBeGreaterThanOrEqual(0);
     expect(officer.fireInterval).toBeGreaterThan(0);
+  });
+
+  it('detects targets within visual range but not through obstacles', () => {
+    const officer = new PoliceOfficer({ id: 1, x: 16, y: 16, visionRange: 160 });
+    const map = new GridMap(8, 4);
+    expect(officer.canSee({ x: 144, y: 16 }, map, 32)).toBe(true);
+    expect(officer.canSee({ x: 208, y: 16 }, map, 32)).toBe(false);
+    map.setBlocked({ column: 2, row: 0 });
+    expect(officer.canSee({ x: 112, y: 16 }, map, 32)).toBe(false);
   });
 
   it('validates identifiers and combat attributes', () => {
     expect(() => new PoliceOfficer({ id: 0, x: 1, y: 1 })).toThrow(RangeError);
     expect(() => new PoliceOfficer({ id: 1, x: 1, y: 1, accuracy: 1.1 })).toThrow(RangeError);
     expect(() => new PoliceOfficer({ id: 1, x: 1, y: 1, moveSpeed: 0 })).toThrow(RangeError);
+    expect(() => new PoliceOfficer({ id: 1, x: 1, y: 1, visionRange: 0 })).toThrow(RangeError);
   });
 
   it('moves along a path and returns to idle at its destination', () => {

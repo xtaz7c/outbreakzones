@@ -28,6 +28,7 @@ interface TacticalOfficer {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
   readonly selectionRing: Phaser.GameObjects.Arc;
+  readonly visionRange: Phaser.GameObjects.Arc;
   readonly sprite: Phaser.GameObjects.Sprite;
 }
 
@@ -97,6 +98,17 @@ export class MissionScene extends Phaser.Scene {
   private resultCampaignButton!: Phaser.GameObjects.Text;
   private resultRestartButton!: Phaser.GameObjects.Text;
   private missionId: MissionId = 0;
+  private readonly investigationSitePositions = [
+    { id: 'incident-west', x: 512, y: 640 },
+    { id: 'incident-center', x: 1600, y: 640 },
+    { id: 'incident-east', x: 2656, y: 1312 },
+  ];
+  private readonly investigatedSiteIds = new Set<string>();
+  private investigationMarkers: Array<{ id: string; marker: Phaser.GameObjects.Arc; label: Phaser.GameObjects.Text }> = [];
+  private suspectMarker: Phaser.GameObjects.Arc | null = null;
+  private suspectSprite: Phaser.GameObjects.Sprite | null = null;
+  private suspectLabel: Phaser.GameObjects.Text | null = null;
+  private suspectArrested = false;
   private resultShown = false;
   private lastPersistedBuildingState = '';
   private lastPersistedMaintenanceState = '';
@@ -156,18 +168,25 @@ export class MissionScene extends Phaser.Scene {
     this.isPaused = false;
     this.resultShown = false;
     this.selectedOfficerIds.clear();
+    this.investigatedSiteIds.clear();
+    this.investigationMarkers = [];
+    this.suspectMarker = null;
+    this.suspectSprite = null;
+    this.suspectLabel = null;
+    this.suspectArrested = false;
     this.debugInfectedSpawnIndex = 0;
     this.placementMode = null;
     this.selectedDeployableId = null;
     this.buildStatus = '';
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
-    this.simulation = new Simulation();
+    this.simulation = new Simulation(this.missionId === 1 ? 'sector-04' : 'tutorial');
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
     this.createCharacterAnimations();
     this.createWorld();
+    if (this.missionId === 1) this.createInvestigationObjectives();
     this.createOfficers();
     this.createCivilians();
     this.createHud();
@@ -176,6 +195,8 @@ export class MissionScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-I', () => this.spawnDebugInfected());
     this.input.keyboard?.on('keydown-N', () => this.emitNoiseAtHouse());
     this.input.keyboard?.on('keydown-E', () => this.interactWithNearestAccess());
+    this.input.keyboard?.on('keydown-F', () => this.investigateNearestIncident());
+    this.input.keyboard?.on('keydown-J', () => this.arrestSuspect());
     this.input.keyboard?.on('keydown-B', () => this.breachNearestAccess());
     this.input.keyboard?.on('keydown-Y', () => this.startMaintenance('repair'));
     this.input.keyboard?.on('keydown-U', () => this.startMaintenance('reinforce'));
@@ -218,7 +239,8 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private createWorld(): void {
-    const map = this.make.tilemap({ key: 'mission-01' });
+    const isSector04 = this.missionId === 1;
+    const map = this.make.tilemap({ key: isSector04 ? 'sector-04' : 'mission-01' });
     this.worldMap = map;
     const tileset = map.addTilesetImage('mission-tiles', 'mission-tiles');
 
@@ -229,7 +251,33 @@ export class MissionScene extends Phaser.Scene {
     for (const layerName of ['Ground', 'Terrain', 'Structures']) {
       const layer = map.createLayer(layerName, tileset, 0, 0);
       if (!layer) {
-        throw new Error(`Required Tiled layer "${layerName}" is missing.`);
+        throw new Error('Required Tiled layer "' + layerName + '" is missing.');
+      }
+    }
+
+    if (isSector04) {
+      const buildings = map.getObjectLayer('Buildings');
+      const buildingGraphics = this.add.graphics().setDepth(35);
+      for (const building of buildings?.objects ?? []) {
+        const { x, y, width, height } = building;
+        if (![x, y, width, height].every((value) => typeof value === 'number' && Number.isFinite(value)) ||
+            width! <= 0 || height! <= 0) continue;
+        buildingGraphics.fillStyle(0x151a1b, 0.45);
+        buildingGraphics.fillRoundedRect(x! + 8, y! + 8, width!, height!, 4);
+        buildingGraphics.fillStyle(0x343c3d, 1);
+        buildingGraphics.fillRoundedRect(x!, y!, width!, height!, 4);
+        buildingGraphics.lineStyle(3, 0x171d1e, 1);
+        buildingGraphics.strokeRoundedRect(x!, y!, width!, height!, 4);
+        buildingGraphics.fillStyle(0x4c5554, 1);
+        buildingGraphics.fillRoundedRect(x! + 8, y! + 8, width! - 16, height! - 16, 2);
+        buildingGraphics.lineStyle(1, 0x7d8279, 0.6);
+        buildingGraphics.lineBetween(x! + 12, y! + 18, x! + width! - 12, y! + 18);
+        buildingGraphics.lineBetween(x! + 12, y! + height! - 18, x! + width! - 12, y! + height! - 18);
+        buildingGraphics.fillStyle(0x20292b, 1);
+        for (let windowX = x! + 22; windowX < x! + width! - 16; windowX += 48) {
+          buildingGraphics.fillRect(windowX, y! + 24, 12, 8);
+          buildingGraphics.fillRect(windowX, y! + height! - 32, 12, 8);
+        }
       }
     }
 
@@ -304,10 +352,16 @@ export class MissionScene extends Phaser.Scene {
     }
     this.lastPersistedDeployableState = this.serializeDeployableState();
     this.deployableGraphics = this.add.graphics().setDepth(95);
-    // A rua horizontal ocupa as linhas 36–39 do mapa (y=1152–1280); posiciona no centro.
-    this.simulation.setExtractionZone({ x: 1280, y: 1216, radius: 72 });
-    this.createPoliceSafeZone(1280, 1216);
-    const spawnPoints: WaveSpawnPoint[] = [
+    if (isSector04) this.simulation.setMissionObjectiveComplete(false);
+    const extraction = isSector04 ? { x: 1600, y: 2080, radius: 72 } : { x: 1280, y: 1216, radius: 72 };
+    this.simulation.setExtractionZone(extraction);
+    if (!isSector04) this.createPoliceSafeZone(extraction.x, extraction.y);
+    const spawnPoints: WaveSpawnPoint[] = isSector04 ? [
+      { id: 'west', x: -48, y: 1120, entryTile: { column: 1, row: 35 } },
+      { id: 'east', x: 3248, y: 1120, entryTile: { column: 98, row: 35 } },
+      { id: 'north', x: 1600, y: -48, entryTile: { column: 50, row: 1 } },
+      { id: 'south', x: 1600, y: 2288, entryTile: { column: 50, row: 68 } },
+    ] : [
       { id: 'west', x: -48, y: 640, entryTile: { column: 21, row: 18 } },
       { id: 'east', x: 2608, y: 720, entryTile: { column: 77, row: 22 } },
       { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 9 } },
@@ -325,8 +379,62 @@ export class MissionScene extends Phaser.Scene {
     this.cameras.main
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
       .setZoom(1)
-      // O foco inicial do Tutorial é a casa principal, não o centro geométrico do mapa.
-      .centerOn(1024, 608);
+      // Setor 04 começa no centro da malha urbana; o tutorial foca a casa principal.
+      .centerOn(isSector04 ? 1600 : 1024, isSector04 ? 1120 : 608);
+  }
+
+  private createInvestigationObjectives(): void {
+    this.investigationMarkers = this.investigationSitePositions.map((site, index) => {
+      const marker = this.add.circle(site.x, site.y, 25, 0xd5a64b, 0.16)
+        .setStrokeStyle(2, 0xd5a64b, 0.95).setDepth(91);
+      const label = this.add.text(site.x, site.y - 38, `OCORRÊNCIA ${index + 1}  [F]`, {
+        fontFamily: 'monospace', fontSize: '9px', color: '#f0d18a',
+        backgroundColor: '#211f19', padding: { x: 4, y: 3 },
+      }).setOrigin(0.5).setDepth(92);
+      return { id: site.id, marker, label };
+    });
+    this.suspectMarker = this.add.circle(1600, 1280, 24, 0xc33a36, 0.16)
+      .setStrokeStyle(2, 0xc33a36, 1).setDepth(93).setVisible(false);
+    this.suspectSprite = this.add.sprite(1600, 1280, 'character-sprites', 6)
+      .setTint(0xd7a84a).setScale(1.2).setDepth(95).setVisible(false);
+    this.suspectLabel = this.add.text(1600, 1240, 'SUSPEITO  [J]', {
+      fontFamily: 'monospace', fontSize: '9px', color: '#f0b2a8',
+      backgroundColor: '#241716', padding: { x: 4, y: 3 },
+    }).setOrigin(0.5).setDepth(94).setVisible(false);
+  }
+
+  private getNearestOfficerDistance(x: number, y: number): number {
+    return Math.min(...this.simulation.getOfficers()
+      .filter((officer) => !officer.isIncapacitated)
+      .map((officer) => Math.hypot(officer.position.x - x, officer.position.y - y)), Number.POSITIVE_INFINITY);
+  }
+
+  private investigateNearestIncident(): void {
+    if (this.missionId !== 1 || this.simulation.getState().missionStatus !== 'playing') return;
+    const available = this.investigationSitePositions
+      .filter((site) => !this.investigatedSiteIds.has(site.id))
+      .map((site) => ({ site, distance: this.getNearestOfficerDistance(site.x, site.y) }))
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (!available || available.distance > 112) return;
+    this.investigatedSiteIds.add(available.site.id);
+    const visual = this.investigationMarkers.find((entry) => entry.id === available.site.id);
+    visual?.marker.setFillStyle(0x55c878, 0.24).setStrokeStyle(2, 0x55c878, 1);
+    visual?.label.setText('OCORRÊNCIA ANALISADA').setColor('#8ee0a5');
+    if (this.investigatedSiteIds.size === this.investigationSitePositions.length) {
+      this.suspectMarker?.setVisible(true);
+      this.suspectSprite?.setVisible(true);
+      this.suspectLabel?.setVisible(true);
+    }
+  }
+
+  private arrestSuspect(): void {
+    if (this.missionId !== 1 || this.suspectArrested || this.investigatedSiteIds.size !== this.investigationSitePositions.length) return;
+    if (this.getNearestOfficerDistance(1600, 1280) > 104) return;
+    this.suspectArrested = true;
+    this.suspectMarker?.setFillStyle(0x55c878, 0.3).setStrokeStyle(3, 0x55c878, 1);
+    this.suspectSprite?.setTint(0x55c878);
+    this.suspectLabel?.setText('SUSPEITO DETIDO').setColor('#8ee0a5');
+    this.simulation.setMissionObjectiveComplete(true);
   }
 
   private createPoliceSafeZone(x: number, y: number): void {
@@ -490,6 +598,9 @@ export class MissionScene extends Phaser.Scene {
   private createOfficers(): void {
     this.officers = this.simulation.getOfficers().map((officer) => {
       const position = officer.position;
+      const visionRange = this.add.circle(0, 0, officer.visionRange, 0x5c9be6, 0.035)
+        .setStrokeStyle(1, 0x5c9be6, 0.2)
+        .setVisible(false);
       const ring = this.add.circle(0, 0, 15).setStrokeStyle(3, 0xffdf70).setVisible(false);
       const sprite = this.add.sprite(0, 0, 'character-sprites', 0)
         .setOrigin(0.5)
@@ -501,8 +612,8 @@ export class MissionScene extends Phaser.Scene {
         backgroundColor: '#172033',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(position.x, position.y, [ring, sprite, label]).setDepth(100);
-      return { id: officer.id, container, selectionRing: ring, sprite };
+      const container = this.add.container(position.x, position.y, [visionRange, ring, sprite, label]).setDepth(100);
+      return { id: officer.id, container, selectionRing: ring, visionRange, sprite };
     });
   }
 
@@ -519,7 +630,10 @@ export class MissionScene extends Phaser.Scene {
         backgroundColor: '#493b1c',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(position.x, position.y, [sprite, label])
+      const armedMarker = civilian.isArmed
+        ? this.add.text(0, -18, 'ARMADO', { fontFamily: 'monospace', fontSize: '7px', color: '#f0c36a', backgroundColor: '#332b1b', padding: { x: 2, y: 1 } }).setOrigin(0.5)
+        : null;
+      const container = this.add.container(position.x, position.y, [sprite, label, ...(armedMarker ? [armedMarker] : [])])
         .setDepth(105);
       this.civilianVisuals.set(civilian.id, {
         id: civilian.id, container, sprite, lastX: position.x, lastY: position.y,
@@ -1007,15 +1121,16 @@ export class MissionScene extends Phaser.Scene {
       ? 'MISSÃO CONCLUÍDA'
       : state.missionStatus === 'defeat'
         ? 'EQUIPE INCAPACITADA'
-        : 'RESGATAR SOBREVIVENTES';
+        : this.missionId === 1 ? 'INVESTIGAR E DETER O SUSPEITO' : 'RESGATAR SOBREVIVENTES';
     this.missionText.setText([
       `MISSÃO ${this.missionId}  /  ${getMissionDefinition(this.missionId).title.toUpperCase()}`,
       objective,
-      `RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
-      `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`,
+      ...(this.missionId === 1
+        ? [`OCORRÊNCIAS  ${this.investigatedSiteIds.size}/${this.investigationSitePositions.length} · SUSPEITO ${this.suspectArrested ? 'DETIDO' : this.suspectMarker?.visible ? 'LOCALIZADO' : 'NÃO IDENTIFICADO'}`, 'F INVESTIGAR  ·  J DETER']
+        : [`RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`, `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`]),
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
       ...(this.buildStatus ? [this.buildStatus] : []),
-    ].join('\n'));
+    ].join('\\n'));
 
     const elapsedCampaignMinutes = 8 * 60 + Math.floor(state.elapsed);
     const campaignDay = Math.floor(elapsedCampaignMinutes / (24 * 60)) + 1;
@@ -1263,10 +1378,10 @@ export class MissionScene extends Phaser.Scene {
 
   private refreshSelectionVisuals(): void {
     for (const officer of this.officers) {
-      officer.selectionRing.setVisible(
-        this.selectedOfficerIds.has(officer.id) &&
-        !this.simulation.getOfficers().find((candidate) => candidate.id === officer.id)?.isIncapacitated,
-      );
+      const selected = this.selectedOfficerIds.has(officer.id) &&
+        !this.simulation.getOfficers().find((candidate) => candidate.id === officer.id)?.isIncapacitated;
+      officer.selectionRing.setVisible(selected);
+      officer.visionRange.setVisible(selected);
     }
   }
 
