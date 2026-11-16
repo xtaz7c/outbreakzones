@@ -119,7 +119,7 @@ export class Civilian {
 
     const threat = threats
       .filter((candidate) =>
-        Math.hypot(candidate.x - this.currentPosition.x, candidate.y - this.currentPosition.y) <= 176 &&
+        Math.hypot(candidate.x - this.currentPosition.x, candidate.y - this.currentPosition.y) <= 260 &&
         hasLineOfSight(map, this.currentPosition, candidate, tileSize))
       .sort((a, b) =>
         Math.hypot(a.x - this.currentPosition.x, a.y - this.currentPosition.y) -
@@ -173,7 +173,7 @@ export class Civilian {
 
     const visibleOfficers = officers
       .filter((officer) => !officer.isIncapacitated &&
-        Math.hypot(officer.position.x - this.currentPosition.x, officer.position.y - this.currentPosition.y) <= 180 &&
+        Math.hypot(officer.position.x - this.currentPosition.x, officer.position.y - this.currentPosition.y) <= 260 &&
         hasLineOfSight(map, this.currentPosition, officer.position, tileSize))
       .sort((a, b) =>
         Math.hypot(a.position.x - this.currentPosition.x, a.position.y - this.currentPosition.y) -
@@ -200,7 +200,7 @@ export class Civilian {
         { column: Math.floor(escort.position.x / tileSize), row: Math.floor(escort.position.y / tileSize) },
         { allowDiagonal: true },
       );
-      if (distance > 256 || route === null) {
+      if (distance > 340 || route === null) {
         this.escortOfficerId = null;
         this.currentMood = 'panicked';
         this.panicRemaining = 1.5;
