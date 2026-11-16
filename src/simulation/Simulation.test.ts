@@ -37,6 +37,15 @@ describe('Simulation', () => {
     expect(state.paused).toBe(false);
   });
 
+  it('deploys a larger civilian population in sector 04 without changing the tutorial roster', () => {
+    const sector = new Simulation('sector-04');
+    expect(sector.getOfficers()).toHaveLength(3);
+    expect(sector.getCivilians()).toHaveLength(12);
+    expect(new Set(sector.getCivilians().map((civilian) => civilian.id)).size).toBe(12);
+    expect(sector.getState().civilianCount).toBe(12);
+    expect(sim.getCivilians()).toHaveLength(2);
+  });
+
   it('advances elapsed time when not paused (fixed timestep)', () => {
     sim.update(FIXED_DT);
     sim.update(FIXED_DT);
