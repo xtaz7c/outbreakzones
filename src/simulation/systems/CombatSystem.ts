@@ -174,6 +174,10 @@ export class CombatSystem {
       const dx = destination.x - origin.x;
       const dy = destination.y - origin.y;
       officer.setFacingAngle(Math.atan2(dy, dx));
+      if (Math.hypot(dx, dy) > officer.attackRange) {
+        officer.setAttacking(false);
+        continue;
+      }
       officer.setAttacking(true);
 
       const cooldown = (this.cooldowns.get(officer.id) ?? 0) + dt;
@@ -212,7 +216,7 @@ export class CombatSystem {
     tileSize: number,
   ): Infected | undefined {
     let selected: Infected | undefined;
-    let selectedDistance = officer.attackRange;
+    let selectedDistance = officer.visionRange;
     for (const target of targets) {
       if (!this.isValidTarget(officer, target, origin, map, tileSize)) continue;
       const position = target.position;
@@ -234,9 +238,6 @@ export class CombatSystem {
   ): boolean {
     if (target.isDead) return false;
     const destination = target.position;
-    return (
-      Math.hypot(destination.x - origin.x, destination.y - origin.y) <= officer.attackRange &&
-      hasLineOfSight(map, origin, destination, tileSize)
-    );
+    return officer.canSee(destination, map, tileSize);
   }
 }
