@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Civilian } from './Civilian';
 import { PoliceOfficer } from './PoliceOfficer';
 import { GridMap } from '../world/GridMap';
+import { Infected } from './Infected';
 
 describe('Civilian navigation', () => {
   it('follows a target through a walkable door cell', () => {
@@ -85,6 +86,17 @@ describe('Civilian awareness and survival', () => {
     civilian.updateAwareness(1 / 60, 32, grid, [officer], []);
     expect(civilian.escortId).toBeNull();
     expect(civilian.mood).toBe('panicked');
+  });
+
+  it('armed civilians fire at the nearest visible infected and respect their fire cooldown', () => {
+    const grid = new GridMap(10, 10);
+    const civilian = new Civilian({ id: 1, x: 80, y: 80, armed: true });
+    const infected = new Infected({ id: 1, x: 112, y: 80, entryTile: { column: 3, row: 2 } });
+
+    expect(civilian.isArmed).toBe(true);
+    expect(civilian.updateCombat(1 / 60, [infected], grid, 32)).toBe(true);
+    expect(infected.health).toBe(infected.maxHealth - 12);
+    expect(civilian.updateCombat(1 / 60, [infected], grid, 32)).toBe(false);
   });
 
   it('takes damage, panics, and becomes incapacitated at zero health', () => {
