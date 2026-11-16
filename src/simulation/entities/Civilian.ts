@@ -1,4 +1,5 @@
 import type { PoliceOfficer } from './PoliceOfficer';
+import type { Infected } from './Infected';
 import { hasLineOfSight } from '../systems/CombatSystem';
 import type { TilePosition } from '../world/WorldConfig';
 import { GridMap } from '../world/GridMap';
@@ -13,6 +14,7 @@ export interface CivilianConfig {
   readonly y: number;
   readonly moveSpeed?: number;
   readonly maxHealth?: number;
+  readonly armed?: boolean;
 }
 
 export interface CivilianPosition {
@@ -24,6 +26,8 @@ export class Civilian {
   readonly id: number;
   readonly moveSpeed: number;
   readonly maxHealth: number;
+  readonly isArmed: boolean;
+  private fireCooldown = 0;
   private currentHealth: number;
   private currentPosition: { x: number; y: number };
   private currentState: CivilianState = 'sheltered';
@@ -50,6 +54,7 @@ export class Civilian {
       throw new RangeError('Civilian maxHealth must be positive.');
     }
     this.id = config.id;
+    this.isArmed = config.armed ?? false;
     this.currentHealth = this.maxHealth;
     this.currentPosition = { x: config.x, y: config.y };
   }
@@ -83,6 +88,22 @@ export class Civilian {
     if (this.currentState !== 'following') return false;
     if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) return false;
     this.currentPosition = { ...position };
+    return true;
+  }
+
+  /** Armed civilians defend themselves against nearby visible infected. */
+  updateCombat(dt: number, infected: readonly Infected[], map: GridMap, tileSize: number): boolean {
+    if (!this.isArmed || this.isIncapacitated || this.isRescued || !Number.isFinite(dt) || dt <= 0) return false;
+    this.fireCooldown = Math.max(0, this.fireCooldown - dt);
+    if (this.fireCooldown > 0) return false;
+    const target = infected
+      .filter((candidate) => !candidate.isDead)
+      .map((candidate) => ({ candidate, distance: Math.hypot(candidate.position.x - this.currentPosition.x, candidate.position.y - this.currentPosition.y) }))
+      .filter(({ candidate, distance }) => distance <= 300 && hasLineOfSight(map, this.currentPosition, candidate.position, tileSize))
+      .sort((a, b) => a.distance - b.distance)[0]?.candidate;
+    if (!target) return false;
+    target.takeDamage(12);
+    this.fireCooldown = 1.8;
     return true;
   }
 
