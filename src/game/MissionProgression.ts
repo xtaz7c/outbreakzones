@@ -29,7 +29,7 @@ export const MISSION_DEFINITIONS: Readonly<Record<MissionId, MissionDefinition>>
     preparationDuration: 10,
     requiresCivilianExtraction: false,
     waves: [
-      { infectedCount: 4, spawnInterval: 1.25 },
+      { infectedCount: 1, spawnInterval: 1.25 },
       { infectedCount: 5, spawnInterval: 1.05 },
       { infectedCount: 6, spawnInterval: 0.85 },
       { infectedCount: 7, spawnInterval: 0.7 },
