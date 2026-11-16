@@ -61,6 +61,13 @@ describe('Civilian awareness and survival', () => {
     expect(civilian.mood).toBe('calm');
   });
 
+  it('detects infected threats at the expanded civilian vision range', () => {
+    const grid = new GridMap(12, 12);
+    const civilian = new Civilian({ id: 88, x: 80, y: 80 });
+    civilian.updateAwareness(1 / 60, 32, grid, [], [{ x: 288, y: 80 }]);
+    expect(civilian.mood).toBe('panicked');
+  });
+
   it('panics and flees along a reachable route from a visible infected', () => {
     const grid = new GridMap(12, 12);
     const civilian = new Civilian({ id: 1, x: 160, y: 160 });
