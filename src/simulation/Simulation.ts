@@ -69,6 +69,7 @@ export class Simulation {
   private waveSystem: WaveSystem | null = null;
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
   private requireCivilianExtraction = true;
+  private missionObjectiveComplete = true;
   private extractionZone = { x: 1024, y: 1120, radius: 72 };
 
   constructor(scenarioOrCombatOptions: 'tutorial' | 'sector-04' | CombatSystemOptions = {}, combatOptions: CombatSystemOptions = {}) {
@@ -174,6 +175,10 @@ export class Simulation {
 
   startBuildingMaintenance(accessId: string, action: MaintenanceAction): boolean {
     return this.maintenanceSystem?.start(accessId, action) ?? false;
+  }
+
+  setMissionObjectiveComplete(complete: boolean): void {
+    this.missionObjectiveComplete = complete;
   }
 
   configureWaves(
@@ -489,7 +494,8 @@ export class Simulation {
       });
     });
     if (this.waveSystem?.getState().phase === 'completed' && this.infected.length === 0 &&
-        (!this.requireCivilianExtraction || this.civilians.every((civilian) => civilian.isRescued))) {
+        (!this.requireCivilianExtraction || this.civilians.every((civilian) => civilian.isRescued)) &&
+        this.missionObjectiveComplete) {
       this.missionStatus = 'victory';
     }
   }
