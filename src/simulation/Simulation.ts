@@ -80,14 +80,24 @@ export class Simulation {
     officerPositions.forEach((position, index) => this.officers.push(new PoliceOfficer({ id: index + 1, ...position })));
     const civilianPositions = scenario === 'sector-04'
       ? [
-          [8, 41], [13, 41], [17, 35], [29, 41], [34, 41], [50, 35],
-          [54, 41], [68, 41], [73, 35], [87, 41], [91, 35], [50, 50],
+          [8 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [13 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [17 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [29 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [34 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [50 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [54 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [68 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [73 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [87 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [91 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
+          [95 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
         ]
-      : [[25, 15], [37, 15]];
-    civilianPositions.forEach(([column, row], index) => this.civilians.push(new Civilian({
+      : [[800, 480], [1200, 480]];
+    civilianPositions.forEach(([x, y], index) => this.civilians.push(new Civilian({
       id: index + 1,
-      x: column! * WORLD_TILE_SIZE + 16,
-      y: row! * WORLD_TILE_SIZE + 16,
+      x: x!,
+      y: y!,
       armed: scenario === 'sector-04' && [1, 5, 9].includes(index + 1),
     })));
   }
