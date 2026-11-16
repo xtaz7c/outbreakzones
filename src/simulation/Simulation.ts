@@ -88,6 +88,7 @@ export class Simulation {
       id: index + 1,
       x: column! * WORLD_TILE_SIZE + 16,
       y: row! * WORLD_TILE_SIZE + 16,
+      armed: scenario === 'sector-04' && [1, 5, 9].includes(index + 1),
     })));
   }
 
@@ -444,6 +445,11 @@ export class Simulation {
         });
       }
       this.updateCivilianAwareness(dt, this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid);
+      for (const civilian of this.civilians) {
+        if (civilian.updateCombat(dt, this.infected, this.worldGrid, this.tileSize)) {
+          this.emitStimulus(civilian.position, 420, 0.65, 2);
+        }
+      }
       this.deployableSystem?.update(dt, this.infected);
 
       const accessChanged = this.buildingSystem?.getSnapshots().some(
