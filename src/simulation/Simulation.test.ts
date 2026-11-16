@@ -30,7 +30,10 @@ describe('Simulation', () => {
   it('keeps sector 04 active until its investigation objective is completed', () => {
     const sector = new Simulation('sector-04');
     sector.setMissionObjectiveComplete(false);
-    sector.configureWaves([{ id: 'test', x: 0, y: 0, entryTile: { column: 0, row: 0 } }], [{ infectedCount: 0, spawnInterval: 1 }], 0, false);
+    sector.configureWaves([{ id: 'test', x: 0, y: 0, entryTile: { column: 0, row: 0 } }], [{ infectedCount: 1, spawnInterval: 1 }], 0, false);
+    sector.update(FIXED_DT);
+    expect(sector.getState().infectedCount).toBe(1);
+    sector.damageInfected(1, 100);
     sector.update(FIXED_DT);
     expect(sector.getState().missionStatus).toBe('playing');
     sector.setMissionObjectiveComplete(true);
