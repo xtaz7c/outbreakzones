@@ -106,6 +106,7 @@ export class MissionScene extends Phaser.Scene {
   private readonly investigatedSiteIds = new Set<string>();
   private investigationMarkers: Array<{ id: string; marker: Phaser.GameObjects.Arc; label: Phaser.GameObjects.Text }> = [];
   private suspectMarker: Phaser.GameObjects.Arc | null = null;
+  private suspectSprite: Phaser.GameObjects.Sprite | null = null;
   private suspectLabel: Phaser.GameObjects.Text | null = null;
   private suspectArrested = false;
   private resultShown = false;
@@ -170,6 +171,7 @@ export class MissionScene extends Phaser.Scene {
     this.investigatedSiteIds.clear();
     this.investigationMarkers = [];
     this.suspectMarker = null;
+    this.suspectSprite = null;
     this.suspectLabel = null;
     this.suspectArrested = false;
     this.debugInfectedSpawnIndex = 0;
@@ -391,8 +393,10 @@ export class MissionScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(92);
       return { id: site.id, marker, label };
     });
-    this.suspectMarker = this.add.circle(1600, 1280, 20, 0xc33a36, 0.2)
+    this.suspectMarker = this.add.circle(1600, 1280, 24, 0xc33a36, 0.16)
       .setStrokeStyle(2, 0xc33a36, 1).setDepth(93).setVisible(false);
+    this.suspectSprite = this.add.sprite(1600, 1280, 'character-sprites', 6)
+      .setTint(0xd7a84a).setScale(1.2).setDepth(95).setVisible(false);
     this.suspectLabel = this.add.text(1600, 1240, 'SUSPEITO  [J]', {
       fontFamily: 'monospace', fontSize: '9px', color: '#f0b2a8',
       backgroundColor: '#241716', padding: { x: 4, y: 3 },
@@ -418,6 +422,7 @@ export class MissionScene extends Phaser.Scene {
     visual?.label.setText('OCORRÊNCIA ANALISADA').setColor('#8ee0a5');
     if (this.investigatedSiteIds.size === this.investigationSitePositions.length) {
       this.suspectMarker?.setVisible(true);
+      this.suspectSprite?.setVisible(true);
       this.suspectLabel?.setVisible(true);
     }
   }
@@ -427,6 +432,7 @@ export class MissionScene extends Phaser.Scene {
     if (this.getNearestOfficerDistance(1600, 1280) > 104) return;
     this.suspectArrested = true;
     this.suspectMarker?.setFillStyle(0x55c878, 0.3).setStrokeStyle(3, 0x55c878, 1);
+    this.suspectSprite?.setTint(0x55c878);
     this.suspectLabel?.setText('SUSPEITO DETIDO').setColor('#8ee0a5');
     this.simulation.setMissionObjectiveComplete(true);
   }
