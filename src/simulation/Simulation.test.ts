@@ -282,6 +282,22 @@ describe('Simulation', () => {
     expect(infected.health).toBe(60);
   });
 
+  it('does not declare defeat when all civilians are incapacitated but the rescue team survives', () => {
+    for (const civilian of sim.getCivilians()) civilian.takeDamage(1000);
+    expect(sim.isMissionDefeated()).toBe(false);
+    expect(sim.getState().missionStatus).toBe('playing');
+  });
+
+  it('converts each incapacitated civilian into one infected exactly once', () => {
+    sim.setWorldGrid(new GridMap(64, 40), 32);
+    const civilian = sim.getCivilians()[0]!;
+    civilian.takeDamage(1000);
+    sim.update(FIXED_DT);
+    expect(sim.getState().infectedCount).toBe(1);
+    sim.update(FIXED_DT);
+    expect(sim.getState().infectedCount).toBe(1);
+  });
+
   it('stops simulation updates and rejects movement after all officers are incapacitated', () => {
     for (const officer of sim.getOfficers()) sim.damageOfficer(officer.id, 100);
     expect(sim.isMissionDefeated()).toBe(true);
