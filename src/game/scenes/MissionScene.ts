@@ -249,7 +249,33 @@ export class MissionScene extends Phaser.Scene {
     for (const layerName of ['Ground', 'Terrain', 'Structures']) {
       const layer = map.createLayer(layerName, tileset, 0, 0);
       if (!layer) {
-        throw new Error(`Required Tiled layer "${layerName}" is missing.`);
+        throw new Error('Required Tiled layer "' + layerName + '" is missing.');
+      }
+    }
+
+    if (isSector04) {
+      const buildings = map.getObjectLayer('Buildings');
+      const buildingGraphics = this.add.graphics().setDepth(35);
+      for (const building of buildings?.objects ?? []) {
+        const { x, y, width, height } = building;
+        if (![x, y, width, height].every((value) => typeof value === 'number' && Number.isFinite(value)) ||
+            width! <= 0 || height! <= 0) continue;
+        buildingGraphics.fillStyle(0x151a1b, 0.45);
+        buildingGraphics.fillRoundedRect(x! + 8, y! + 8, width!, height!, 4);
+        buildingGraphics.fillStyle(0x343c3d, 1);
+        buildingGraphics.fillRoundedRect(x!, y!, width!, height!, 4);
+        buildingGraphics.lineStyle(3, 0x171d1e, 1);
+        buildingGraphics.strokeRoundedRect(x!, y!, width!, height!, 4);
+        buildingGraphics.fillStyle(0x4c5554, 1);
+        buildingGraphics.fillRoundedRect(x! + 8, y! + 8, width! - 16, height! - 16, 2);
+        buildingGraphics.lineStyle(1, 0x7d8279, 0.6);
+        buildingGraphics.lineBetween(x! + 12, y! + 18, x! + width! - 12, y! + 18);
+        buildingGraphics.lineBetween(x! + 12, y! + height! - 18, x! + width! - 12, y! + height! - 18);
+        buildingGraphics.fillStyle(0x20292b, 1);
+        for (let windowX = x! + 22; windowX < x! + width! - 16; windowX += 48) {
+          buildingGraphics.fillRect(windowX, y! + 24, 12, 8);
+          buildingGraphics.fillRect(windowX, y! + height! - 32, 12, 8);
+        }
       }
     }
 
