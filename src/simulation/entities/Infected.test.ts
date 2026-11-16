@@ -14,6 +14,17 @@ describe('Infected', () => {
     expect(infected.isDead).toBe(false);
   });
 
+  it('hears weapon-like noise at the expanded default hearing range', () => {
+    const infected = new Infected({
+      id: 99, x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      detectionRange: 1, moveSpeed: 32,
+    });
+    infected.update(0.5, 32, map, [], undefined, [{
+      id: 'distant-gunshot', position: { x: 416, y: 16 }, radius: 480, strength: 0.65,
+    }]);
+    expect(infected.position.x).toBeGreaterThan(16);
+  });
+
   it('patrols to a deterministic random walkable tile when no target is perceived', () => {
     const infected = new Infected({
       id: 1, x: 16, y: 16, entryTile: { column: 1, row: 1 }, moveSpeed: 32,
