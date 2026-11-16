@@ -22076,10 +22076,170 @@
       "objects": [],
       "opacity": 1,
       "visible": true
+    },
+    {
+      "id": 7,
+      "name": "Buildings",
+      "type": "objectgroup",
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 91,
+          "name": "city-building-1",
+          "type": "building",
+          "x": 192,
+          "y": 192,
+          "width": 384,
+          "height": 384,
+          "visible": true
+        },
+        {
+          "id": 92,
+          "name": "city-building-2",
+          "type": "building",
+          "x": 192,
+          "y": 800,
+          "width": 384,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 93,
+          "name": "city-building-3",
+          "type": "building",
+          "x": 192,
+          "y": 1440,
+          "width": 384,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 94,
+          "name": "city-building-4",
+          "type": "building",
+          "x": 800,
+          "y": 192,
+          "width": 416,
+          "height": 384,
+          "visible": true
+        },
+        {
+          "id": 95,
+          "name": "city-building-5",
+          "type": "building",
+          "x": 800,
+          "y": 800,
+          "width": 416,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 96,
+          "name": "city-building-6",
+          "type": "building",
+          "x": 800,
+          "y": 1440,
+          "width": 416,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 97,
+          "name": "city-building-7",
+          "type": "building",
+          "x": 1440,
+          "y": 192,
+          "width": 416,
+          "height": 384,
+          "visible": true
+        },
+        {
+          "id": 98,
+          "name": "city-building-8",
+          "type": "building",
+          "x": 1440,
+          "y": 800,
+          "width": 416,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 99,
+          "name": "city-building-9",
+          "type": "building",
+          "x": 1440,
+          "y": 1440,
+          "width": 416,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 100,
+          "name": "city-building-10",
+          "type": "building",
+          "x": 2080,
+          "y": 192,
+          "width": 416,
+          "height": 384,
+          "visible": true
+        },
+        {
+          "id": 101,
+          "name": "city-building-11",
+          "type": "building",
+          "x": 2080,
+          "y": 800,
+          "width": 416,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 102,
+          "name": "city-building-12",
+          "type": "building",
+          "x": 2080,
+          "y": 1440,
+          "width": 416,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 103,
+          "name": "city-building-13",
+          "type": "building",
+          "x": 2720,
+          "y": 192,
+          "width": 320,
+          "height": 384,
+          "visible": true
+        },
+        {
+          "id": 104,
+          "name": "city-building-14",
+          "type": "building",
+          "x": 2720,
+          "y": 800,
+          "width": 320,
+          "height": 416,
+          "visible": true
+        },
+        {
+          "id": 105,
+          "name": "city-building-15",
+          "type": "building",
+          "x": 2720,
+          "y": 1440,
+          "width": 320,
+          "height": 416,
+          "visible": true
+        }
+      ],
+      "opacity": 1,
+      "visible": true
     }
   ],
-  "nextlayerid": 7,
-  "nextobjectid": 91,
+  "nextlayerid": 8,
+  "nextobjectid": 106,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.10.2",
