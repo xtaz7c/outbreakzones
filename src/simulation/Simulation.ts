@@ -56,6 +56,7 @@ export class Simulation {
     new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
   ];
   private readonly infected: Infected[] = [];
+  private readonly convertedCivilianIds = new Set<number>();
   private additionalHumanTargets: HumanTarget[] = [];
   private readonly civilians: Civilian[] = [
     new Civilian({ id: 1, x: 800, y: 480 }),
@@ -282,8 +283,7 @@ export class Simulation {
   }
 
   isMissionDefeated(): boolean {
-    return this.officers.every((officer) => officer.isIncapacitated) ||
-      (this.requireCivilianExtraction && this.civilians.every((civilian) => civilian.isIncapacitated));
+    return this.officers.every((officer) => officer.isIncapacitated);
   }
 
   isMissionVictory(): boolean {
@@ -420,6 +420,19 @@ export class Simulation {
           Math.hypot(infected.position.x - stimulus.position.x, infected.position.y - stimulus.position.y) <= stimulus.radius,
         );
         infected.update(dt, this.tileSize, infectedGrid, this.officers, undefined, heardStimuli, this.civilians, this.additionalHumanTargets);
+      }
+      for (const civilian of this.civilians) {
+        if (!civilian.isIncapacitated || this.convertedCivilianIds.has(civilian.id)) continue;
+        this.convertedCivilianIds.add(civilian.id);
+        const position = civilian.position;
+        this.spawnInfected({
+          x: position.x,
+          y: position.y,
+          entryTile: {
+            column: Math.floor(position.x / this.tileSize),
+            row: Math.floor(position.y / this.tileSize),
+          },
+        });
       }
       this.updateCivilianAwareness(dt, this.buildingSystem?.getNavigationGrid('civil') ?? this.worldGrid);
       this.deployableSystem?.update(dt, this.infected);
