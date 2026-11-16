@@ -98,6 +98,16 @@ export class MissionScene extends Phaser.Scene {
   private resultCampaignButton!: Phaser.GameObjects.Text;
   private resultRestartButton!: Phaser.GameObjects.Text;
   private missionId: MissionId = 0;
+  private readonly investigationSitePositions = [
+    { id: 'incident-west', x: 512, y: 640 },
+    { id: 'incident-center', x: 1600, y: 640 },
+    { id: 'incident-east', x: 2656, y: 1312 },
+  ];
+  private readonly investigatedSiteIds = new Set<string>();
+  private investigationMarkers: Array<{ id: string; marker: Phaser.GameObjects.Arc; label: Phaser.GameObjects.Text }> = [];
+  private suspectMarker: Phaser.GameObjects.Arc | null = null;
+  private suspectLabel: Phaser.GameObjects.Text | null = null;
+  private suspectArrested = false;
   private resultShown = false;
   private lastPersistedBuildingState = '';
   private lastPersistedMaintenanceState = '';
@@ -157,6 +167,11 @@ export class MissionScene extends Phaser.Scene {
     this.isPaused = false;
     this.resultShown = false;
     this.selectedOfficerIds.clear();
+    this.investigatedSiteIds.clear();
+    this.investigationMarkers = [];
+    this.suspectMarker = null;
+    this.suspectLabel = null;
+    this.suspectArrested = false;
     this.debugInfectedSpawnIndex = 0;
     this.placementMode = null;
     this.selectedDeployableId = null;
@@ -169,6 +184,7 @@ export class MissionScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
     this.createCharacterAnimations();
     this.createWorld();
+    if (this.missionId === 1) this.createInvestigationObjectives();
     this.createOfficers();
     this.createCivilians();
     this.createHud();
@@ -177,6 +193,8 @@ export class MissionScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-I', () => this.spawnDebugInfected());
     this.input.keyboard?.on('keydown-N', () => this.emitNoiseAtHouse());
     this.input.keyboard?.on('keydown-E', () => this.interactWithNearestAccess());
+    this.input.keyboard?.on('keydown-F', () => this.investigateNearestIncident());
+    this.input.keyboard?.on('keydown-J', () => this.arrestSuspect());
     this.input.keyboard?.on('keydown-B', () => this.breachNearestAccess());
     this.input.keyboard?.on('keydown-Y', () => this.startMaintenance('repair'));
     this.input.keyboard?.on('keydown-U', () => this.startMaintenance('reinforce'));
@@ -306,6 +324,7 @@ export class MissionScene extends Phaser.Scene {
     }
     this.lastPersistedDeployableState = this.serializeDeployableState();
     this.deployableGraphics = this.add.graphics().setDepth(95);
+    if (isSector04) this.simulation.setMissionObjectiveComplete(false);
     const extraction = isSector04 ? { x: 1600, y: 2080, radius: 72 } : { x: 1280, y: 1216, radius: 72 };
     this.simulation.setExtractionZone(extraction);
     if (!isSector04) this.createPoliceSafeZone(extraction.x, extraction.y);
@@ -334,6 +353,56 @@ export class MissionScene extends Phaser.Scene {
       .setZoom(1)
       // Setor 04 começa no centro da malha urbana; o tutorial foca a casa principal.
       .centerOn(isSector04 ? 1600 : 1024, isSector04 ? 1120 : 608);
+  }
+
+  private createInvestigationObjectives(): void {
+    this.investigationMarkers = this.investigationSitePositions.map((site, index) => {
+      const marker = this.add.circle(site.x, site.y, 25, 0xd5a64b, 0.16)
+        .setStrokeStyle(2, 0xd5a64b, 0.95).setDepth(91);
+      const label = this.add.text(site.x, site.y - 38, `OCORRÊNCIA ${index + 1}  [F]`, {
+        fontFamily: 'monospace', fontSize: '9px', color: '#f0d18a',
+        backgroundColor: '#211f19', padding: { x: 4, y: 3 },
+      }).setOrigin(0.5).setDepth(92);
+      return { id: site.id, marker, label };
+    });
+    this.suspectMarker = this.add.circle(1600, 1280, 20, 0xc33a36, 0.2)
+      .setStrokeStyle(2, 0xc33a36, 1).setDepth(93).setVisible(false);
+    this.suspectLabel = this.add.text(1600, 1240, 'SUSPEITO  [J]', {
+      fontFamily: 'monospace', fontSize: '9px', color: '#f0b2a8',
+      backgroundColor: '#241716', padding: { x: 4, y: 3 },
+    }).setOrigin(0.5).setDepth(94).setVisible(false);
+  }
+
+  private getNearestOfficerDistance(x: number, y: number): number {
+    return Math.min(...this.simulation.getOfficers()
+      .filter((officer) => !officer.isIncapacitated)
+      .map((officer) => Math.hypot(officer.position.x - x, officer.position.y - y)), Number.POSITIVE_INFINITY);
+  }
+
+  private investigateNearestIncident(): void {
+    if (this.missionId !== 1 || this.simulation.getState().missionStatus !== 'playing') return;
+    const available = this.investigationSitePositions
+      .filter((site) => !this.investigatedSiteIds.has(site.id))
+      .map((site) => ({ site, distance: this.getNearestOfficerDistance(site.x, site.y) }))
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (!available || available.distance > 112) return;
+    this.investigatedSiteIds.add(available.site.id);
+    const visual = this.investigationMarkers.find((entry) => entry.id === available.site.id);
+    visual?.marker.setFillStyle(0x55c878, 0.24).setStrokeStyle(2, 0x55c878, 1);
+    visual?.label.setText('OCORRÊNCIA ANALISADA').setColor('#8ee0a5');
+    if (this.investigatedSiteIds.size === this.investigationSitePositions.length) {
+      this.suspectMarker?.setVisible(true);
+      this.suspectLabel?.setVisible(true);
+    }
+  }
+
+  private arrestSuspect(): void {
+    if (this.missionId !== 1 || this.suspectArrested || this.investigatedSiteIds.size !== this.investigationSitePositions.length) return;
+    if (this.getNearestOfficerDistance(1600, 1280) > 104) return;
+    this.suspectArrested = true;
+    this.suspectMarker?.setFillStyle(0x55c878, 0.3).setStrokeStyle(3, 0x55c878, 1);
+    this.suspectLabel?.setText('SUSPEITO DETIDO').setColor('#8ee0a5');
+    this.simulation.setMissionObjectiveComplete(true);
   }
 
   private createPoliceSafeZone(x: number, y: number): void {
@@ -1020,15 +1089,16 @@ export class MissionScene extends Phaser.Scene {
       ? 'MISSÃO CONCLUÍDA'
       : state.missionStatus === 'defeat'
         ? 'EQUIPE INCAPACITADA'
-        : 'RESGATAR SOBREVIVENTES';
+        : this.missionId === 1 ? 'INVESTIGAR E DETER O SUSPEITO' : 'RESGATAR SOBREVIVENTES';
     this.missionText.setText([
       `MISSÃO ${this.missionId}  /  ${getMissionDefinition(this.missionId).title.toUpperCase()}`,
       objective,
-      `RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`,
-      `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`,
+      ...(this.missionId === 1
+        ? [`OCORRÊNCIAS  ${this.investigatedSiteIds.size}/${this.investigationSitePositions.length} · SUSPEITO ${this.suspectArrested ? 'DETIDO' : this.suspectMarker?.visible ? 'LOCALIZADO' : 'NÃO IDENTIFICADO'}`, 'F INVESTIGAR  ·  J DETER']
+        : [`RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`, `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`]),
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
       ...(this.buildStatus ? [this.buildStatus] : []),
-    ].join('\n'));
+    ].join('\\n'));
 
     const elapsedCampaignMinutes = 8 * 60 + Math.floor(state.elapsed);
     const campaignDay = Math.floor(elapsedCampaignMinutes / (24 * 60)) + 1;
