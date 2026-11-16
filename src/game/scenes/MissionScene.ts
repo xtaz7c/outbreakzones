@@ -529,7 +529,10 @@ export class MissionScene extends Phaser.Scene {
         backgroundColor: '#493b1c',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(position.x, position.y, [sprite, label])
+      const armedMarker = civilian.isArmed
+        ? this.add.text(0, -18, 'ARMADO', { fontFamily: 'monospace', fontSize: '7px', color: '#f0c36a', backgroundColor: '#332b1b', padding: { x: 2, y: 1 } }).setOrigin(0.5)
+        : null;
+      const container = this.add.container(position.x, position.y, [sprite, label, ...(armedMarker ? [armedMarker] : [])])
         .setDepth(105);
       this.civilianVisuals.set(civilian.id, {
         id: civilian.id, container, sprite, lastX: position.x, lastY: position.y,
