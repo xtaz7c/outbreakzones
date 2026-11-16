@@ -46,6 +46,12 @@ describe('Simulation', () => {
     expect(sim.getCivilians()).toHaveLength(2);
   });
 
+  it('marks three of the sector 04 civilians as armed', () => {
+    const sector = new Simulation('sector-04');
+    expect(sector.getCivilians().filter((civilian) => civilian.isArmed)).toHaveLength(3);
+    expect(sim.getCivilians().every((civilian) => !civilian.isArmed)).toBe(true);
+  });
+
   it('advances elapsed time when not paused (fixed timestep)', () => {
     sim.update(FIXED_DT);
     sim.update(FIXED_DT);
