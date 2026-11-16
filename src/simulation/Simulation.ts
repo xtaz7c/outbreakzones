@@ -71,8 +71,9 @@ export class Simulation {
   private requireCivilianExtraction = true;
   private extractionZone = { x: 1024, y: 1120, radius: 72 };
 
-  constructor(scenario: 'tutorial' | 'sector-04' = 'tutorial', combatOptions: CombatSystemOptions = {}) {
-    this.combat = new CombatSystem(combatOptions);
+  constructor(scenarioOrCombatOptions: 'tutorial' | 'sector-04' | CombatSystemOptions = {}, combatOptions: CombatSystemOptions = {}) {
+    const scenario = typeof scenarioOrCombatOptions === 'string' ? scenarioOrCombatOptions : 'tutorial';
+    this.combat = new CombatSystem(typeof scenarioOrCombatOptions === 'string' ? combatOptions : scenarioOrCombatOptions);
     const officerPositions = scenario === 'sector-04'
       ? [39, 41, 43].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 35 * WORLD_TILE_SIZE + 16 }))
       : [29, 32, 35].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }));
