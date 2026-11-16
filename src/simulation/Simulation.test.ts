@@ -27,6 +27,17 @@ describe('Simulation', () => {
     expect(sim.getMaintenanceState()?.jobs).toHaveLength(0);
   });
 
+  it('keeps sector 04 active until its investigation objective is completed', () => {
+    const sector = new Simulation('sector-04');
+    sector.setMissionObjectiveComplete(false);
+    sector.configureWaves([{ infectedCount: 0, spawnInterval: 1 }], [], 0, false);
+    sector.update(FIXED_DT);
+    expect(sector.getState().missionStatus).toBe('playing');
+    sector.setMissionObjectiveComplete(true);
+    sector.update(FIXED_DT);
+    expect(sector.getState().missionStatus).toBe('victory');
+  });
+
   it('starts with three officers and zero infected', () => {
     const state = sim.getState();
     expect(state.officerCount).toBe(3);
