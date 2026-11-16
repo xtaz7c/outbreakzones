@@ -50,18 +50,11 @@ export class Simulation {
   private elapsed = 0;
   private paused = false;
   private accumulator = 0;
-  private readonly officers: PoliceOfficer[] = [
-    new PoliceOfficer({ id: 1, x: 29 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
-    new PoliceOfficer({ id: 2, x: 32 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
-    new PoliceOfficer({ id: 3, x: 35 * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }),
-  ];
+  private readonly officers: PoliceOfficer[] = [];
   private readonly infected: Infected[] = [];
   private readonly convertedCivilianIds = new Set<number>();
   private additionalHumanTargets: HumanTarget[] = [];
-  private readonly civilians: Civilian[] = [
-    new Civilian({ id: 1, x: 800, y: 480 }),
-    new Civilian({ id: 2, x: 1200, y: 480 }),
-  ];
+  private readonly civilians: Civilian[] = [];
   private readonly combat: CombatSystem;
   private combatEvents: CombatEvent[] = [];
   private nextInfectedId = 1;
@@ -78,8 +71,23 @@ export class Simulation {
   private requireCivilianExtraction = true;
   private extractionZone = { x: 1024, y: 1120, radius: 72 };
 
-  constructor(combatOptions: CombatSystemOptions = {}) {
+  constructor(scenario: 'tutorial' | 'sector-04' = 'tutorial', combatOptions: CombatSystemOptions = {}) {
     this.combat = new CombatSystem(combatOptions);
+    const officerPositions = scenario === 'sector-04'
+      ? [39, 41, 43].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 35 * WORLD_TILE_SIZE + 16 }))
+      : [29, 32, 35].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }));
+    officerPositions.forEach((position, index) => this.officers.push(new PoliceOfficer({ id: index + 1, ...position })));
+    const civilianPositions = scenario === 'sector-04'
+      ? [
+          [8, 41], [13, 41], [17, 35], [29, 41], [34, 41], [50, 35],
+          [54, 41], [68, 41], [73, 35], [87, 41], [91, 35], [50, 50],
+        ]
+      : [[25, 15], [37, 15]];
+    civilianPositions.forEach(([column, row], index) => this.civilians.push(new Civilian({
+      id: index + 1,
+      x: column! * WORLD_TILE_SIZE + 16,
+      y: row! * WORLD_TILE_SIZE + 16,
+    })));
   }
 
   setPaused(paused: boolean): void {
