@@ -28,6 +28,7 @@ interface TacticalOfficer {
   readonly id: number;
   readonly container: Phaser.GameObjects.Container;
   readonly selectionRing: Phaser.GameObjects.Arc;
+  readonly visionRange: Phaser.GameObjects.Arc;
   readonly sprite: Phaser.GameObjects.Sprite;
 }
 
@@ -490,6 +491,9 @@ export class MissionScene extends Phaser.Scene {
   private createOfficers(): void {
     this.officers = this.simulation.getOfficers().map((officer) => {
       const position = officer.position;
+      const visionRange = this.add.circle(0, 0, officer.visionRange, 0x5c9be6, 0.035)
+        .setStrokeStyle(1, 0x5c9be6, 0.2)
+        .setVisible(false);
       const ring = this.add.circle(0, 0, 15).setStrokeStyle(3, 0xffdf70).setVisible(false);
       const sprite = this.add.sprite(0, 0, 'character-sprites', 0)
         .setOrigin(0.5)
@@ -501,8 +505,8 @@ export class MissionScene extends Phaser.Scene {
         backgroundColor: '#172033',
         padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0);
-      const container = this.add.container(position.x, position.y, [ring, sprite, label]).setDepth(100);
-      return { id: officer.id, container, selectionRing: ring, sprite };
+      const container = this.add.container(position.x, position.y, [visionRange, ring, sprite, label]).setDepth(100);
+      return { id: officer.id, container, selectionRing: ring, visionRange, sprite };
     });
   }
 
@@ -1263,10 +1267,10 @@ export class MissionScene extends Phaser.Scene {
 
   private refreshSelectionVisuals(): void {
     for (const officer of this.officers) {
-      officer.selectionRing.setVisible(
-        this.selectedOfficerIds.has(officer.id) &&
-        !this.simulation.getOfficers().find((candidate) => candidate.id === officer.id)?.isIncapacitated,
-      );
+      const selected = this.selectedOfficerIds.has(officer.id) &&
+        !this.simulation.getOfficers().find((candidate) => candidate.id === officer.id)?.isIncapacitated;
+      officer.selectionRing.setVisible(selected);
+      officer.visionRange.setVisible(selected);
     }
   }
 
