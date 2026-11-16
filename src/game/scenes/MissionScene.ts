@@ -163,7 +163,7 @@ export class MissionScene extends Phaser.Scene {
     this.buildStatus = '';
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
-    this.simulation = new Simulation();
+    this.simulation = new Simulation(this.missionId === 1 ? 'sector-04' : 'tutorial');
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
@@ -219,7 +219,8 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private createWorld(): void {
-    const map = this.make.tilemap({ key: 'mission-01' });
+    const isSector04 = this.missionId === 1;
+    const map = this.make.tilemap({ key: isSector04 ? 'sector-04' : 'mission-01' });
     this.worldMap = map;
     const tileset = map.addTilesetImage('mission-tiles', 'mission-tiles');
 
@@ -305,10 +306,15 @@ export class MissionScene extends Phaser.Scene {
     }
     this.lastPersistedDeployableState = this.serializeDeployableState();
     this.deployableGraphics = this.add.graphics().setDepth(95);
-    // A rua horizontal ocupa as linhas 36–39 do mapa (y=1152–1280); posiciona no centro.
-    this.simulation.setExtractionZone({ x: 1280, y: 1216, radius: 72 });
-    this.createPoliceSafeZone(1280, 1216);
-    const spawnPoints: WaveSpawnPoint[] = [
+    const extraction = isSector04 ? { x: 1600, y: 2080, radius: 72 } : { x: 1280, y: 1216, radius: 72 };
+    this.simulation.setExtractionZone(extraction);
+    if (!isSector04) this.createPoliceSafeZone(extraction.x, extraction.y);
+    const spawnPoints: WaveSpawnPoint[] = isSector04 ? [
+      { id: 'west', x: -48, y: 1120, entryTile: { column: 1, row: 35 } },
+      { id: 'east', x: 3248, y: 1120, entryTile: { column: 98, row: 35 } },
+      { id: 'north', x: 1600, y: -48, entryTile: { column: 50, row: 1 } },
+      { id: 'south', x: 1600, y: 2288, entryTile: { column: 50, row: 68 } },
+    ] : [
       { id: 'west', x: -48, y: 640, entryTile: { column: 21, row: 18 } },
       { id: 'east', x: 2608, y: 720, entryTile: { column: 77, row: 22 } },
       { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 9 } },
@@ -326,8 +332,8 @@ export class MissionScene extends Phaser.Scene {
     this.cameras.main
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
       .setZoom(1)
-      // O foco inicial do Tutorial é a casa principal, não o centro geométrico do mapa.
-      .centerOn(1024, 608);
+      // Setor 04 começa no centro da malha urbana; o tutorial foca a casa principal.
+      .centerOn(isSector04 ? 1600 : 1024, isSector04 ? 1120 : 608);
   }
 
   private createPoliceSafeZone(x: number, y: number): void {
