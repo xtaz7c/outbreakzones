@@ -136,6 +136,7 @@ export class BootScene extends Phaser.Scene {
     });
 
     this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
+    this.load.tilemapTiledJSON('sector-04', '/maps/sector-04.tmj');
     this.load.spritesheet('character-sprites', '/assets/sprites/characters.svg', {
       frameWidth: 32,
       frameHeight: 32,
