@@ -155,7 +155,7 @@ export class CombatSystem {
       const priority = priorityId === undefined
         ? undefined
         : livingTargets.find((target) => target.id === priorityId);
-      const validPriority = priority && this.isValidTarget(officer, priority, origin, map, tileSize)
+      const validPriority = priority && this.isValidTarget(officer, priority, map, tileSize)
         ? priority
         : undefined;
       if (officer.tacticalPosture === 'hold_fire' && !validPriority) {
@@ -218,7 +218,7 @@ export class CombatSystem {
     let selected: Infected | undefined;
     let selectedDistance = officer.visionRange;
     for (const target of targets) {
-      if (!this.isValidTarget(officer, target, origin, map, tileSize)) continue;
+      if (!this.isValidTarget(officer, target, map, tileSize)) continue;
       const position = target.position;
       const distance = Math.hypot(position.x - origin.x, position.y - origin.y);
       if (distance < selectedDistance) {
@@ -232,7 +232,6 @@ export class CombatSystem {
   private isValidTarget(
     officer: PoliceOfficer,
     target: Infected,
-    origin: { readonly x: number; readonly y: number },
     map: GridMap,
     tileSize: number,
   ): boolean {
