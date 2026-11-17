@@ -115,7 +115,7 @@ describe('Simulation', () => {
   });
 
   it('routes movement through the world grid and advances it on fixed steps', () => {
-    const map = new GridMap(64, 40);
+    const map = new GridMap(120, 90);
     sim.setWorldGrid(map, 32);
     const officer = sim.getOfficers()[0]!;
 
@@ -127,7 +127,7 @@ describe('Simulation', () => {
   });
 
   it('does not move officers while paused but accepts queued orders', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const officer = sim.getOfficers()[0]!;
     expect(sim.issueMoveOrder(officer.id, { column: 30, row: 33 })).toBe(true);
     sim.setPaused(true);
@@ -142,7 +142,7 @@ describe('Simulation', () => {
   });
 
   it('spawns infected entities and advances their AI on fixed steps', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const infected = sim.spawnInfected({
       x: 16, y: 16, entryTile: { column: 4, row: 1 }, moveSpeed: 32,
     });
@@ -190,9 +190,9 @@ describe('Simulation', () => {
 
   it('runs automatic officer combat inside the fixed-step simulation', () => {
     sim = new Simulation({ random: () => 0 });
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const infected = sim.spawnInfected({
-      x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
+      x: 1900, y: 1808, entryTile: { column: 59, row: 56 },
       moveSpeed: 1, detectionRange: 1,
     });
     let observedShot = false;
@@ -205,9 +205,9 @@ describe('Simulation', () => {
   });
 
   it('does not emit combat events while paused', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     sim.spawnInfected({
-      x: 1000, y: 1072, entryTile: { column: 29, row: 33 },
+      x: 1900, y: 1808, entryTile: { column: 59, row: 56 },
       moveSpeed: 1, detectionRange: 1,
     });
     sim.setPaused(true);
@@ -217,10 +217,10 @@ describe('Simulation', () => {
 
 
   it('does not cancel a movement order when a target priority is assigned', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const officer = sim.getOfficers()[0]!;
     const infected = sim.spawnInfected({
-      x: 900, y: 1072, entryTile: { column: 28, row: 33 }, detectionRange: 1,
+      x: 1900, y: 1808, entryTile: { column: 59, row: 56 }, detectionRange: 1,
     });
     expect(sim.issueMoveOrder(officer.id, { column: 31, row: 33 })).toBe(true);
     sim.setTargetPriority(officer.id, infected.id);
@@ -236,7 +236,7 @@ describe('Simulation', () => {
   });
 
   it('holds selected officer position by cancelling its current path', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const officer = sim.getOfficers()[0]!;
     expect(sim.issueMoveOrder(officer.id, { column: 32, row: 33 })).toBe(true);
     expect(sim.holdOfficerPosition(officer.id)).toBe(true);
@@ -248,7 +248,7 @@ describe('Simulation', () => {
 
   it('holds automatic fire but still honors a manual target priority', () => {
     sim = new Simulation({ random: () => 0 });
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const officer = sim.getOfficers()[0]!;
     for (const member of sim.getOfficers()) {
       sim.setOfficerTacticalPosture(member.id, 'hold_fire');
@@ -267,7 +267,7 @@ describe('Simulation', () => {
 
   it('does not resume automatic fire for an invalid manual priority in hold-fire mode', () => {
     sim = new Simulation({ random: () => 0 });
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const officer = sim.getOfficers()[0]!;
     for (const member of sim.getOfficers()) {
       sim.setOfficerTacticalPosture(member.id, 'hold_fire');
@@ -288,12 +288,12 @@ describe('Simulation', () => {
     const before = sim.getState().elapsed;
     sim.update(FIXED_DT * 10);
     expect(sim.getState().elapsed).toBe(before);
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     expect(sim.issueMoveOrder(1, { column: 30, row: 33 })).toBe(false);
   });
 
   it('attracts nearby infected to a noisy access and remembers it after the noise fades', () => {
-    const grid = new GridMap(64, 40);
+    const grid = new GridMap(120, 90);
     const buildings = new BuildingSystem([
       { id: 'front', kind: 'door', x: 960, y: 864, width: 128, height: 32,
         maxHealth: 50, weights: { open: 0, closed: 1 } },
@@ -319,7 +319,7 @@ describe('Simulation', () => {
 
 
   it('requires all civilians to be extracted before declaring wave victory', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     sim.configureWaves([
       { id: 'west', x: 64, y: 640, entryTile: { column: 21, row: 18 } },
     ], [{ infectedCount: 1, spawnInterval: 1 }], 0);
@@ -339,7 +339,7 @@ describe('Simulation', () => {
   });
 
   it('allows the Refuge campaign mission to win after its waves without tutorial extraction', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     sim.configureWaves([
       { id: 'west', x: -48, y: 640, entryTile: { column: 21, row: 18 } },
     ], [{ infectedCount: 1, spawnInterval: 1 }], 0, false);
@@ -352,16 +352,16 @@ describe('Simulation', () => {
   });
 
   it('lets infected attack civilians and makes them flee from visible threats', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const civilian = sim.getCivilians()[0]!;
     sim.spawnInfected({
-      x: 816, y: 480, entryTile: { column: 25, row: 15 },
+      x: 1840, y: 1456, entryTile: { column: 57, row: 45 },
       detectionRange: 200, attackRange: 40, attackInterval: 0.25, damage: 10,
     });
     for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
     expect(civilian.health).toBeLessThan(civilian.maxHealth);
     expect(civilian.mood).toBe('panicked');
-    expect(civilian.position.x).not.toBe(800);
+    expect(civilian.position.x).not.toBe(1856);
   });
 
   it('exposes paid deployable placement and dismantling through the simulation', () => {
@@ -382,7 +382,7 @@ describe('Simulation', () => {
   });
 
   it('does not advance waves while paused', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     sim.configureWaves([
       { id: 'west', x: 64, y: 640, entryTile: { column: 21, row: 18 } },
     ], [{ infectedCount: 1, spawnInterval: 1 }], 0);
@@ -403,7 +403,7 @@ describe('Simulation', () => {
   });
 
   it('rescues a nearby civilian, escorts them through the civil grid, and extracts them', () => {
-    sim.setWorldGrid(new GridMap(64, 40), 32);
+    sim.setWorldGrid(new GridMap(120, 90), 32);
     const officer = sim.getOfficers()[0]!;
     const civilian = sim.getCivilians()[0]!;
 
