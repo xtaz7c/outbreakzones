@@ -415,9 +415,12 @@ describe('Simulation', () => {
     expect(civilian.state).toBe('following');
     expect(civilian.escortId).toBe(officer.id);
 
-    sim.setExtractionZone({ x: 1808, y: 1456, radius: 32 });
-    expect(sim.issueMoveOrder(officer.id, { column: 56, row: 45 })).toBe(true);
-    for (let index = 0; index < 1000; index += 1) sim.update(FIXED_DT);
+    expect(sim.issueMoveOrder(officer.id, { column: 57, row: 45 })).toBe(true);
+    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
+    officer.setFacingAngle(0);
+    const extractionTarget = { x: officer.position.x - 28, y: officer.position.y };
+    sim.setExtractionZone({ ...extractionTarget, radius: 32 });
+    for (let index = 0; index < 120; index += 1) sim.update(FIXED_DT);
 
     expect(civilian.state).toBe('extracted');
     expect(sim.getState().rescuedCivilianCount).toBe(1);
