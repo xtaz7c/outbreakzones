@@ -22244,7 +22244,7 @@
       "draworder": "topdown",
       "objects": [
         {
-          "id": 1,
+          "id": 106,
           "name": "street-lamp-01",
           "type": "lamp",
           "x": 640,
@@ -22255,7 +22255,7 @@
           "visible": true
         },
         {
-          "id": 2,
+          "id": 107,
           "name": "street-lamp-02",
           "type": "lamp",
           "x": 640,
@@ -22266,7 +22266,7 @@
           "visible": true
         },
         {
-          "id": 3,
+          "id": 108,
           "name": "street-lamp-03",
           "type": "lamp",
           "x": 1280,
@@ -22277,7 +22277,7 @@
           "visible": true
         },
         {
-          "id": 4,
+          "id": 109,
           "name": "street-lamp-04",
           "type": "lamp",
           "x": 1920,
@@ -22288,7 +22288,7 @@
           "visible": true
         },
         {
-          "id": 5,
+          "id": 110,
           "name": "street-lamp-05",
           "type": "lamp",
           "x": 1920,
@@ -22299,7 +22299,7 @@
           "visible": true
         },
         {
-          "id": 6,
+          "id": 111,
           "name": "street-lamp-06",
           "type": "lamp",
           "x": 2560,
@@ -22321,7 +22321,7 @@
     }
   ],
   "nextlayerid": 9,
-  "nextobjectid": 106,
+  "nextobjectid": 112,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.10.2",
