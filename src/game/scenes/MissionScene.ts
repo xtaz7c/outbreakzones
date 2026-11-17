@@ -987,14 +987,6 @@ export class MissionScene extends Phaser.Scene {
     this.openPauseMenu();
   }
 
-  private selectAllOfficers(): void {
-    this.selectedOfficerIds.clear();
-    for (const officer of this.simulation.getOfficers()) {
-      if (!officer.isIncapacitated) this.selectedOfficerIds.add(officer.id);
-    }
-    this.refreshSelectionVisuals();
-  }
-
   private isHudPoint(x: number, y: number): boolean {
     const localX = x / this.hudScale;
     const localY = y / this.hudScale;
@@ -1556,6 +1548,7 @@ export class MissionScene extends Phaser.Scene {
       camera.height / this.cameraWorldHeight,
     );
     if (camera.zoom < minimumZoom) camera.setZoom(minimumZoom);
+    if (camera.zoom > MAX_CAMERA_ZOOM) camera.setZoom(MAX_CAMERA_ZOOM);
     const maxScrollX = Math.max(0, this.cameraWorldWidth - camera.width / camera.zoom);
     const maxScrollY = Math.max(0, this.cameraWorldHeight - camera.height / camera.zoom);
     camera.setScroll(
