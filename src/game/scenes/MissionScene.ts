@@ -260,12 +260,15 @@ export class MissionScene extends Phaser.Scene {
       throw new Error('Unable to attach the mission tileset to the Tiled map.');
     }
 
+    this.lights.enable();
+    this.lights.setAmbientColor(0xffffff);
     this.worldLayers = [];
     for (const layerName of ['Ground', 'Terrain', 'Structures']) {
       const layer = map.createLayer(layerName, tileset, 0, 0);
       if (!layer) {
         throw new Error('Required Tiled layer "' + layerName + '" is missing.');
       }
+      layer.setPipeline('Light2D');
       this.worldLayers.push(layer);
     }
 
@@ -273,7 +276,7 @@ export class MissionScene extends Phaser.Scene {
     this.dayNightOverlay = this.add.rectangle(
       map.widthInPixels / 2, map.heightInPixels / 2,
       map.widthInPixels, map.heightInPixels, 0x0a1020, 0,
-    ).setDepth(1400);
+    ).setDepth(1400).setPipeline('Light2D');
     this.nightLights = new NightLights(this, { depth: 1401 });
     const lampObjects = map.getObjectLayer('Lights')?.objects ?? [];
     this.nightLights.addLamps(lampObjects.flatMap((object) => {
