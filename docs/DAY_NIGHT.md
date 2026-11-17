@@ -17,14 +17,12 @@
 | 18:00–19:59 | Entardecer |
 | 20:00–23:59 | Noite |
 
-As cores do cenário, o overlay ambiente e a intensidade das luzes são interpolados continuamente durante amanhecer e entardecer. O overlay é um objeto de mundo abaixo do HUD e não depende de PostFX/WebGL.
+As cores do cenário e o overlay ambiente são interpolados continuamente durante amanhecer e entardecer. As camadas do mapa usam o pipeline Light2D do Phaser; o overlay também usa esse pipeline para permitir que as luzes locais iluminem a área ao redor.
 
 ## Luzes locais nos mapas
 
-A cena reconhece uma object layer Tiled chamada `Lights`. Cada objeto nessa camada cria uma luz local; as coordenadas do objeto são usadas como centro (incluindo metade de largura/altura, quando houver).
-
-**Limitação do mapa atual:** `mission-01.tmj` ainda não possui a camada `Lights`. Portanto, o ciclo visual e o relógio funcionam, mas nenhum PointLight de poste é instanciado até que o mapa forneça esses marcadores.
+A cena reconhece uma object layer Tiled chamada `Lights`. Cada objeto nessa camada cria uma luz local; as coordenadas do objeto são usadas como centro (incluindo metade de largura/altura, quando houver). Os mapas `mission-01.tmj` e `sector-04.tmj` já incluem marcadores iniciais de postes. Novos pontos podem ser adicionados diretamente no Tiled.
 
 ## Escopo de gameplay
 
-Os multiplicadores por fase estão definidos como dados de domínio, mas ainda não alteram velocidade dos infectados, alcance de visão ou spawn. Essa integração fica separada da primeira entrega visual para evitar mudanças não validadas no balanceamento.
+Os multiplicadores por fase estão definidos como dados de domínio, mas ainda não alteram velocidade dos infectados, alcance de visão ou spawn. Nesta entrega, o ciclo afeta o relógio, a tonalidade do cenário e a iluminação local; o balanceamento de gameplay permanece inalterado.
