@@ -415,13 +415,19 @@ describe('Simulation', () => {
     expect(civilian.state).toBe('following');
     expect(civilian.escortId).toBe(officer.id);
 
+    const escortedCivilians = sim.getCivilians().filter((candidate) =>
+      candidate.state === 'following' && candidate.escortId === officer.id,
+    );
+    expect(escortedCivilians).toContain(civilian);
+
     officer.setFacingAngle(0);
     const extractionTarget = { x: officer.position.x - 28, y: officer.position.y };
     sim.setExtractionZone({ ...extractionTarget, radius: 72 });
     for (let index = 0; index < 10; index += 1) sim.update(FIXED_DT);
 
     expect(civilian.state).toBe('extracted');
-    expect(sim.getState().rescuedCivilianCount).toBe(1);
+    expect(escortedCivilians.every((candidate) => candidate.state === 'extracted')).toBe(true);
+    expect(sim.getState().rescuedCivilianCount).toBe(escortedCivilians.length);
   });
 
   it('tracks the rescue state of civilians independently', () => {
