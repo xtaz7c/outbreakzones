@@ -76,7 +76,6 @@ export class MissionScene extends Phaser.Scene {
   private deployableGraphics!: Phaser.GameObjects.Graphics;
   private placementMode: DeployableKind | null = null;
   private selectedDeployableId: number | null = null;
-  private buildStatus = '';
   private readonly buildButtons: Phaser.GameObjects.Text[] = [];
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
@@ -158,7 +157,6 @@ export class MissionScene extends Phaser.Scene {
     this.debugInfectedSpawnIndex = 0;
     this.placementMode = null;
     this.selectedDeployableId = null;
-    this.buildStatus = '';
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
     this.simulation = new Simulation();
@@ -739,7 +737,6 @@ export class MissionScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     button.on('pointerdown', () => {
       this.placementMode = this.placementMode === kind ? null : kind;
-      this.buildStatus = this.placementMode ? 'CLIQUE NO MAPA PARA POSICIONAR' : '';
       this.refreshBuildButtons();
       this.updateHud();
     });
@@ -762,13 +759,11 @@ export class MissionScene extends Phaser.Scene {
     };
     const placed = this.simulation.placeDeployable(this.placementMode, tile);
     if (!placed) {
-      this.buildStatus = 'SEM RECURSOS OU POSIÇÃO INVÁLIDA';
       this.updateHud();
       return;
     }
     this.selectedDeployableId = placed.id;
     this.placementMode = null;
-    this.buildStatus = 'ESTRUTURA POSICIONADA';
     this.refreshBuildButtons();
     this.persistDeployableState();
     this.updateDeployableVisuals();
@@ -780,7 +775,6 @@ export class MissionScene extends Phaser.Scene {
     const dismantled = this.simulation.dismantleDeployable(this.selectedDeployableId);
     if (dismantled) {
       this.selectedDeployableId = null;
-      this.buildStatus = 'ESTRUTURA DESMONTADA · 50% DOS MATERIAIS RECUPERADOS';
       this.persistDeployableState();
       this.updateDeployableVisuals();
       this.updateHud();
@@ -1182,7 +1176,6 @@ export class MissionScene extends Phaser.Scene {
         if (this.placementMode) {
           this.placementMode = null;
           this.refreshBuildButtons();
-          this.buildStatus = 'POSICIONAMENTO CANCELADO';
           this.updateHud();
           return;
         }
