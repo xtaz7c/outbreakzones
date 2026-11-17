@@ -75,7 +75,6 @@ export class MissionScene extends Phaser.Scene {
   private deployableGraphics!: Phaser.GameObjects.Graphics;
   private placementMode: DeployableKind | null = null;
   private selectedDeployableId: number | null = null;
-  private buildStatus = '';
   private readonly buildButtons: Phaser.GameObjects.Text[] = [];
   private officers: TacticalOfficer[] = [];
   private readonly infectedVisuals = new Map<number, TacticalInfected>();
@@ -157,7 +156,6 @@ export class MissionScene extends Phaser.Scene {
     this.debugInfectedSpawnIndex = 0;
     this.placementMode = null;
     this.selectedDeployableId = null;
-    this.buildStatus = '';
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
     this.simulation = new Simulation();
@@ -232,6 +230,7 @@ export class MissionScene extends Phaser.Scene {
     }
 
     this.tileSize = map.tileWidth;
+    this.createRuralUtilityLines();
     this.worldGrid = buildGridFromTiledLayers(
       map.width,
       map.height,
@@ -302,14 +301,14 @@ export class MissionScene extends Phaser.Scene {
     }
     this.lastPersistedDeployableState = this.serializeDeployableState();
     this.deployableGraphics = this.add.graphics().setDepth(95);
-    // A rua horizontal ocupa as linhas 36–39 do mapa (y=1152–1280); posiciona no centro.
-    this.simulation.setExtractionZone({ x: 1280, y: 1216, radius: 72 });
-    this.createPoliceSafeZone(1280, 1216);
+    // A van fica no início da rua rural sem saída, abaixo da propriedade.
+    this.simulation.setExtractionZone({ x: 1936, y: 2032, radius: 72 });
+    this.createPoliceSafeZone(1936, 2032);
     const spawnPoints: WaveSpawnPoint[] = [
-      { id: 'west', x: -48, y: 640, entryTile: { column: 21, row: 18 } },
-      { id: 'east', x: 2608, y: 720, entryTile: { column: 77, row: 22 } },
-      { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 9 } },
-      { id: 'south', x: 1280, y: 1488, entryTile: { column: 40, row: 43 } },
+      { id: 'west', x: -48, y: 1504, entryTile: { column: 8, row: 47 } },
+      { id: 'east', x: 3888, y: 1504, entryTile: { column: 111, row: 47 } },
+      { id: 'north', x: 1936, y: -48, entryTile: { column: 60, row: 8 } },
+      { id: 'south', x: 1936, y: 2928, entryTile: { column: 60, row: 82 } },
     ];
     const mission = getMissionDefinition(this.missionId);
     this.simulation.configureWaves(
@@ -365,6 +364,19 @@ export class MissionScene extends Phaser.Scene {
       backgroundColor: '#101516',
       padding: { x: 6, y: 4 },
     }).setOrigin(0.5).setDepth(73);
+  }
+
+  private createRuralUtilityLines(): void {
+    const graphics = this.add.graphics().setDepth(88);
+    const poleY = 56 * 32 + 16;
+    const westPoleX = 52 * 32 + 16;
+    const eastPoleX = 68 * 32 + 16;
+    graphics.lineStyle(2, 0x292b27, 0.95);
+    graphics.lineBetween(westPoleX, poleY - 52, eastPoleX, poleY - 52);
+    graphics.lineStyle(4, 0x5a4935, 1);
+    [westPoleX, eastPoleX].forEach((x) => graphics.lineBetween(x, poleY - 34, x, poleY + 30));
+    graphics.lineStyle(2, 0x92734a, 1);
+    [westPoleX, eastPoleX].forEach((x) => graphics.lineBetween(x - 8, poleY - 34, x + 8, poleY - 34));
   }
 
   private readStorage(key: string): string | null {
@@ -724,7 +736,6 @@ export class MissionScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     button.on('pointerdown', () => {
       this.placementMode = this.placementMode === kind ? null : kind;
-      this.buildStatus = this.placementMode ? 'CLIQUE NO MAPA PARA POSICIONAR' : '';
       this.refreshBuildButtons();
       this.updateHud();
     });
@@ -747,13 +758,11 @@ export class MissionScene extends Phaser.Scene {
     };
     const placed = this.simulation.placeDeployable(this.placementMode, tile);
     if (!placed) {
-      this.buildStatus = 'SEM RECURSOS OU POSIÇÃO INVÁLIDA';
       this.updateHud();
       return;
     }
     this.selectedDeployableId = placed.id;
     this.placementMode = null;
-    this.buildStatus = 'ESTRUTURA POSICIONADA';
     this.refreshBuildButtons();
     this.persistDeployableState();
     this.updateDeployableVisuals();
@@ -765,7 +774,6 @@ export class MissionScene extends Phaser.Scene {
     const dismantled = this.simulation.dismantleDeployable(this.selectedDeployableId);
     if (dismantled) {
       this.selectedDeployableId = null;
-      this.buildStatus = 'ESTRUTURA DESMONTADA · 50% DOS MATERIAIS RECUPERADOS';
       this.persistDeployableState();
       this.updateDeployableVisuals();
       this.updateHud();
@@ -1012,7 +1020,7 @@ export class MissionScene extends Phaser.Scene {
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
     ].join('\n'));
 
-    const elapsedCampaignMinutes = 8 * 60 + Math.floor(state.elapsed);
+    const elapsedCampaignMinutes = 17 * 60 + Math.floor(state.elapsed);
     const campaignDay = Math.floor(elapsedCampaignMinutes / (24 * 60)) + 1;
     const minuteOfDay = elapsedCampaignMinutes % (24 * 60);
     const campaignHour = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
@@ -1167,7 +1175,6 @@ export class MissionScene extends Phaser.Scene {
         if (this.placementMode) {
           this.placementMode = null;
           this.refreshBuildButtons();
-          this.buildStatus = 'POSICIONAMENTO CANCELADO';
           this.updateHud();
           return;
         }
@@ -1533,6 +1540,7 @@ export class MissionScene extends Phaser.Scene {
       camera.height / this.cameraWorldHeight,
     );
     if (camera.zoom < minimumZoom) camera.setZoom(minimumZoom);
+    if (camera.zoom > MAX_CAMERA_ZOOM) camera.setZoom(MAX_CAMERA_ZOOM);
     const maxScrollX = Math.max(0, this.cameraWorldWidth - camera.width / camera.zoom);
     const maxScrollY = Math.max(0, this.cameraWorldHeight - camera.height / camera.zoom);
     camera.setScroll(
