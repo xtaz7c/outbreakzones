@@ -11296,9 +11296,91 @@
       ],
       "opacity": 1,
       "visible": true
+    },
+    {
+      "id": 7,
+      "name": "Lights",
+      "type": "objectgroup",
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 1,
+          "name": "street-lamp-01",
+          "type": "lamp",
+          "x": 512,
+          "y": 360,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "visible": true
+        },
+        {
+          "id": 2,
+          "name": "street-lamp-02",
+          "type": "lamp",
+          "x": 512,
+          "y": 1080,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "visible": true
+        },
+        {
+          "id": 3,
+          "name": "street-lamp-03",
+          "type": "lamp",
+          "x": 1024,
+          "y": 720,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "visible": true
+        },
+        {
+          "id": 4,
+          "name": "street-lamp-04",
+          "type": "lamp",
+          "x": 1536,
+          "y": 360,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "visible": true
+        },
+        {
+          "id": 5,
+          "name": "street-lamp-05",
+          "type": "lamp",
+          "x": 1536,
+          "y": 1080,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "visible": true
+        },
+        {
+          "id": 6,
+          "name": "street-lamp-06",
+          "type": "lamp",
+          "x": 2048,
+          "y": 720,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "visible": true
+        }
+      ],
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "offsetx": 0,
+      "offsety": 0,
+      "parallaxx": 1,
+      "parallaxy": 1
     }
   ],
-  "nextlayerid": 7,
+  "nextlayerid": 8,
   "nextobjectid": 25,
   "orientation": "orthogonal",
   "renderorder": "right-down",
