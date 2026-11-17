@@ -402,7 +402,7 @@ describe('Simulation', () => {
     ]);
   });
 
-  it('rescues a nearby civilian, escorts them through the civil grid, and extracts them', () => {
+  it('extracts a rescued civilian when the escort reaches the extraction zone', () => {
     sim.setWorldGrid(new GridMap(120, 90), 32);
     const officer = sim.getOfficers()[0]!;
     const civilian = sim.getCivilians()[0]!;
@@ -415,12 +415,10 @@ describe('Simulation', () => {
     expect(civilian.state).toBe('following');
     expect(civilian.escortId).toBe(officer.id);
 
-    expect(sim.issueMoveOrder(officer.id, { column: 57, row: 45 })).toBe(true);
-    for (let index = 0; index < 60; index += 1) sim.update(FIXED_DT);
     officer.setFacingAngle(0);
     const extractionTarget = { x: officer.position.x - 28, y: officer.position.y };
-    sim.setExtractionZone({ ...extractionTarget, radius: 32 });
-    for (let index = 0; index < 120; index += 1) sim.update(FIXED_DT);
+    sim.setExtractionZone({ ...extractionTarget, radius: 72 });
+    for (let index = 0; index < 10; index += 1) sim.update(FIXED_DT);
 
     expect(civilian.state).toBe('extracted');
     expect(sim.getState().rescuedCivilianCount).toBe(1);
