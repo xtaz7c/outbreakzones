@@ -415,8 +415,8 @@ describe('Simulation', () => {
     expect(civilian.state).toBe('following');
     expect(civilian.escortId).toBe(officer.id);
 
-    sim.setExtractionZone({ x: 1040, y: 1136, radius: 96 });
-    expect(sim.issueMoveOrder(officer.id, { column: 32, row: 35 })).toBe(true);
+    sim.setExtractionZone({ x: 1808, y: 1456, radius: 32 });
+    expect(sim.issueMoveOrder(officer.id, { column: 56, row: 45 })).toBe(true);
     for (let index = 0; index < 1000; index += 1) sim.update(FIXED_DT);
 
     expect(civilian.state).toBe('extracted');
