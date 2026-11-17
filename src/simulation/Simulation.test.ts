@@ -254,7 +254,7 @@ describe('Simulation', () => {
       sim.setOfficerTacticalPosture(member.id, 'hold_fire');
     }
     const infected = sim.spawnInfected({
-      x: 1000, y: 1072, entryTile: { column: 31, row: 33 },
+      x: 1900, y: 1808, entryTile: { column: 59, row: 56 },
       moveSpeed: 1, detectionRange: 1,
     });
     expect(sim.setOfficerTacticalPosture(officer.id, 'hold_fire')).toBe(true);
@@ -397,8 +397,8 @@ describe('Simulation', () => {
     expect(civilians.map((civilian) => civilian.id)).toEqual([1, 2]);
     expect(civilians.map((civilian) => civilian.state)).toEqual(['sheltered', 'sheltered']);
     expect(civilians.map((civilian) => civilian.position)).toEqual([
-      { x: 800, y: 480 },
-      { x: 1200, y: 480 },
+      { x: 1856, y: 1456 },
+      { x: 2016, y: 1456 },
     ]);
   });
 
@@ -408,7 +408,7 @@ describe('Simulation', () => {
     const civilian = sim.getCivilians()[0]!;
 
     expect(sim.rescueCivilian(civilian.id, officer.id)).toBe(false);
-    expect(sim.issueMoveOrder(officer.id, { column: 25, row: 15 })).toBe(true);
+    expect(sim.issueMoveOrder(officer.id, { column: 58, row: 45 })).toBe(true);
     for (let index = 0; index < 500; index += 1) sim.update(FIXED_DT);
 
     expect(sim.rescueCivilian(civilian.id, officer.id)).toBe(true);
