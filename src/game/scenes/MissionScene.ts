@@ -105,6 +105,8 @@ export class MissionScene extends Phaser.Scene {
   private hudScaleUpButton!: Phaser.GameObjects.Text;
   private hudPanels!: Phaser.GameObjects.Graphics;
   private minimapGraphics!: Phaser.GameObjects.Graphics;
+  private minimapStaticGraphics!: Phaser.GameObjects.Graphics;
+  private teamText!: Phaser.GameObjects.Text;
   private missionText!: Phaser.GameObjects.Text;
   private missionToggle!: Phaser.GameObjects.Text;
   private missionPanel!: Phaser.GameObjects.Graphics;
@@ -571,7 +573,8 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.build.y = buildY;
 
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
-    this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
+    this.minimapStaticGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
+    this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1503);
     this.missionPanel = this.add.graphics().setScrollFactor(0).setDepth(1501).setVisible(false);
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
     this.combatGraphics = this.add.graphics().setDepth(120);
@@ -585,6 +588,11 @@ export class MissionScene extends Phaser.Scene {
     this.hudPanels.fillRoundedRect(mapX - 2, mapY - 2, 242, 242, 7);
     this.hudPanels.fillStyle(0x000000, 1);
     this.hudPanels.fillRoundedRect(mapX, mapY, 238, 238, 5);
+    this.hudPanels.fillStyle(HUD_COLORS.panel, 0.99);
+    this.hudPanels.lineStyle(1, HUD_COLORS.metal, 0.45);
+    this.hudPanels.fillRoundedRect(mapX, mapY + 242, 238, 160, 5);
+    this.hudPanels.strokeRoundedRect(mapX, mapY + 242, 238, 160, 5);
+    this.drawMinimapBase(mapX + 6, mapY + 6);
 
     this.settingsButton = this.add.text(48, 48, '⚙', {
       fontFamily: 'Arial, sans-serif', fontSize: '29px', color: '#e8e3d8',
@@ -618,9 +626,11 @@ export class MissionScene extends Phaser.Scene {
       lineSpacing: 5, wordWrap: { width: 244 },
     }).setScrollFactor(0).setDepth(1505).setVisible(false);
 
-    // Minimap without heading or legend: its black frame is sufficient.
-    this.minimapGraphics.fillStyle(0x080c0d, 1);
-    this.minimapGraphics.fillRect(mapX + 6, mapY + 6, 226, 226);
+    // Minimap static terrain is cached in a separate Graphics object.
+    this.teamText = this.add.text(mapX + 12, mapY + 252, '', {
+      fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#f4f1e9',
+      lineSpacing: 3, wordWrap: { width: 214 },
+    }).setScrollFactor(0).setDepth(1505);
     this.waveText = this.add.text(mapX + 119, mapY + 248, '', {
       fontFamily: 'Arial, sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: '#f4f1e9', backgroundColor: '#101516', padding: { x: 8, y: 7 },
@@ -661,7 +671,7 @@ export class MissionScene extends Phaser.Scene {
 
     this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
     this.hudRoot.add([
-      this.hudPanels, this.missionPanel, this.minimapGraphics, this.settingsButton,
+      this.hudPanels, this.missionPanel, this.minimapStaticGraphics, this.minimapGraphics, this.teamText, this.settingsButton,
       this.fullscreenButton, this.missionToggle, this.missionText, this.waveText, this.dateTimeText,
       ...this.officerStatusIcons.map((item) => item.container), ...this.buildButtons,
     ]);
@@ -986,6 +996,42 @@ export class MissionScene extends Phaser.Scene {
       this.pauseMenuOpen;
   }
 
+  private drawMinimapBase(x: number, y: number): void {
+    const width = 226;
+    const height = 226;
+    const scale = Math.min(width / this.worldMap.width, height / this.worldMap.height);
+    const renderedWidth = this.worldMap.width * scale;
+    const renderedHeight = this.worldMap.height * scale;
+    const renderedX = x + (width - renderedWidth) / 2;
+    const renderedY = y + (height - renderedHeight) / 2;
+    const tileColors = [
+      0x46583a, 0x414749, 0x796346, 0x77796f,
+      0x806849, 0x8a887d, 0x344b31, 0x555b58,
+      0x4b5b3b, 0x3d5036, 0x555a3d, 0x394b35,
+      0x3c4446, 0x484e4e, 0x4d5552, 0x625c4e,
+    ];
+    this.minimapStaticGraphics.fillStyle(0x080c0d, 1);
+    this.minimapStaticGraphics.fillRect(x, y, width, height);
+    for (const layerName of ['Ground', 'Terrain', 'Structures']) {
+      const layer = this.worldMap.getLayer(layerName);
+      if (!layer) continue;
+      for (let row = 0; row < layer.data.length; row += 1) {
+        const tiles = layer.data[row] ?? [];
+        for (let column = 0; column < tiles.length; column += 1) {
+          const tile = tiles[column];
+          if (!tile || tile.index < 0) continue;
+          this.minimapStaticGraphics.fillStyle(tileColors[tile.index] ?? 0x555b58, 1);
+          this.minimapStaticGraphics.fillRect(
+            renderedX + column * scale,
+            renderedY + row * scale,
+            scale + 0.15,
+            scale + 0.15,
+          );
+        }
+      }
+    }
+  }
+
   private updateHud(): void {
     if (!this.simulation || !this.minimapGraphics) return;
     const state = this.simulation.getState();
@@ -1050,35 +1096,18 @@ export class MissionScene extends Phaser.Scene {
     const renderedMapHeight = this.worldMap.height * mapScale;
     const renderedMapX = mapX + (mapWidth - renderedMapWidth) / 2;
     const renderedMapY = mapY + (mapHeight - renderedMapHeight) / 2;
-    const minimapTileColors = [
-      0x46583a, 0x414749, 0x796346, 0x77796f,
-      0x806849, 0x8a887d, 0x344b31, 0x555b58,
-      0x4b5b3b, 0x3d5036, 0x555a3d, 0x394b35,
-      0x3c4446, 0x484e4e, 0x4d5552, 0x625c4e,
-    ];
-    this.minimapGraphics.fillStyle(0x080c0d, 1);
-    this.minimapGraphics.fillRect(mapX, mapY, mapWidth, mapHeight);
 
-    // Renderiza a geometria real do Tiled em escala, mantendo a proporção 80×45.
-    for (const layerName of ['Ground', 'Terrain', 'Structures']) {
-      const layer = this.worldMap.getLayer(layerName);
-      if (!layer) continue;
-      for (let row = 0; row < layer.data.length; row += 1) {
-        const tiles = layer.data[row] ?? [];
-        for (let column = 0; column < tiles.length; column += 1) {
-          const tile = tiles[column];
-          if (!tile || tile.index < 0) continue;
-          const color = minimapTileColors[tile.index] ?? 0x555b58;
-          this.minimapGraphics.fillStyle(color, 1);
-          this.minimapGraphics.fillRect(
-            renderedMapX + column * mapScale,
-            renderedMapY + row * mapScale,
-            mapScale + 0.15,
-            mapScale + 0.15,
-          );
-        }
-      }
-    }
+    const maintenance = this.simulation.getMaintenanceState();
+    const maintenanceJobs = maintenance?.jobs.map((job) =>
+      `${job.action} ${job.accessId}: ${job.remaining.toFixed(1)}s`).join(', ') || 'nenhum';
+    const resources = maintenance?.resources ?? { scrap: 0, parts: 0 };
+    const deployableResources = this.simulation.getDeployableResources();
+    this.teamText.setText([
+      `RECURSOS  ${resources.scrap} sucata / ${resources.parts} peças`,
+      `MANUTENÇÃO  ${maintenanceJobs}`,
+      `ESTRUTURAS  ${deployableResources.scrap} sucata / ${deployableResources.parts} peças`,
+      `CAPACIDADE DE ABRIGO  ${this.simulation.getShelterCapacity()} vagas`,
+    ].join('\n'));
 
     const toMinimap = (position: { x: number; y: number }) => ({
       x: renderedMapX + Phaser.Math.Clamp(position.x / this.cameraWorldWidth, 0, 1) * renderedMapWidth,
@@ -1399,6 +1428,181 @@ export class MissionScene extends Phaser.Scene {
       column: Math.floor(x / this.tileSize),
       row: Math.floor(y / this.tileSize),
     };
+  }
+
+  private spawnDebugInfected(): void {
+    const entries = getAvailableEntryPoints(this.worldGrid);
+    if (entries.length === 0) return;
+
+    const spawnPlans = [
+      { x: 128, y: 640, entryId: 'west-window' },
+      { x: 1920, y: 640, entryId: 'east-window' },
+      { x: 1024, y: 64, entryId: 'north-window-west' },
+      { x: 1024, y: 1216, entryId: 'front-door' },
+    ] as const;
+    const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
+    this.debugInfectedSpawnIndex += 1;
+    const entry = entries.find((candidate) => candidate.id === plan.entryId) ?? entries[0]!;
+    this.simulation.spawnInfected({
+      x: plan.x,
+      y: plan.y,
+      entryTile: entry.approachTile,
+    });
+  }
+
+  private updateInfectedVisuals(): void {
+    const activeIds = new Set<number>();
+    for (const infected of this.simulation.getInfected()) {
+      activeIds.add(infected.id);
+      let visual = this.infectedVisuals.get(infected.id);
+      if (!visual) {
+        this.audio.playInfectedGroan();
+        const sprite = this.add.sprite(0, 0, 'character-sprites', 12)
+          .setOrigin(0.5)
+          .setScale(1.2);
+        const container = this.add.container(infected.position.x, infected.position.y, [sprite])
+          .setDepth(110);
+        visual = { id: infected.id, container, sprite };
+        this.infectedVisuals.set(infected.id, visual);
+      }
+      visual.container.setPosition(infected.position.x, infected.position.y);
+      if (infected.state === 'dead') {
+        this.setCharacterFrame(visual.sprite, 17);
+      } else if (infected.state === 'attacking') {
+        this.setCharacterFrame(visual.sprite, 15);
+      } else if (infected.state === 'moving') {
+        this.playCharacterWalk(visual.sprite, 'infected-walk');
+      } else {
+        this.setCharacterFrame(visual.sprite, 12);
+      }
+    }
+
+    for (const [id, visual] of this.infectedVisuals) {
+      if (activeIds.has(id)) continue;
+      visual.container.destroy();
+      this.infectedVisuals.delete(id);
+    }
+  }
+
+  private updateCombatFeedback(): void {
+    this.combatGraphics.clear();
+    for (const event of this.simulation.getCombatEvents()) {
+      if (!this.playedCombatEvents.has(event)) {
+        this.playedCombatEvents.add(event);
+        this.audio.playGunshot();
+      }
+      this.combatGraphics.lineStyle(event.hit ? 2 : 1, event.hit ? 0xffd166 : 0x9aa0a6, 0.9);
+      this.combatGraphics.beginPath();
+      this.combatGraphics.moveTo(event.from.x, event.from.y);
+      this.combatGraphics.lineTo(event.to.x, event.to.y);
+      this.combatGraphics.strokePath();
+      this.combatGraphics.fillStyle(0xffdf70, 0.95);
+      this.combatGraphics.fillCircle(event.from.x, event.from.y, 4);
+      this.combatGraphics.lineStyle(2, 0xffdf70, 0.9);
+      for (const angle of [-0.8, 0, 0.8]) {
+        this.combatGraphics.beginPath();
+        this.combatGraphics.moveTo(event.from.x + Math.cos(angle) * 5, event.from.y + Math.sin(angle) * 5);
+        this.combatGraphics.lineTo(event.from.x + Math.cos(angle) * 10, event.from.y + Math.sin(angle) * 10);
+        this.combatGraphics.strokePath();
+      }
+      if (event.hit) {
+        this.combatGraphics.fillStyle(0xffe08a, 0.95);
+        this.combatGraphics.fillCircle(event.to.x, event.to.y, 3);
+      }
+    }
+  }
+
+  private updateOfficers(_dt: number): void {
+    for (const visual of this.officers) {
+      const officer = this.simulation.getOfficers().find((candidate) => candidate.id === visual.id);
+      if (!officer) continue;
+      const position = officer.position;
+      visual.container.setPosition(position.x, position.y);
+      visual.container.setRotation(officer.facingAngle + Math.PI / 2);
+      visual.container.setAlpha(officer.isIncapacitated ? 0.35 : 1);
+      if (officer.isIncapacitated) {
+        this.setCharacterFrame(visual.sprite, 5);
+      } else if (officer.state === 'attacking') {
+        this.setCharacterFrame(visual.sprite, 3);
+      } else if (officer.state === 'moving') {
+        this.playCharacterWalk(visual.sprite, 'police-walk');
+      } else {
+        this.setCharacterFrame(visual.sprite, 0);
+      }
+      visual.selectionRing.setVisible(
+        this.selectedOfficerIds.has(officer.id) && !officer.isIncapacitated,
+      );
+    }
+  }
+
+  private updateCamera(dt: number): void {
+    if (!this.cameraKeys) return;
+
+    const left = this.cameraKeys.A.isDown || this.cameraKeys.LEFT.isDown;
+    const right = this.cameraKeys.D.isDown || this.cameraKeys.RIGHT.isDown;
+    const up = this.cameraKeys.W.isDown || this.cameraKeys.UP.isDown;
+    const down = this.cameraKeys.S.isDown || this.cameraKeys.DOWN.isDown;
+    const horizontal = Number(right) - Number(left);
+    const vertical = Number(down) - Number(up);
+
+    if (horizontal === 0 && vertical === 0) return;
+
+    const length = Math.hypot(horizontal, vertical);
+    const camera = this.cameras.main;
+    const distance = (CAMERA_SPEED * dt) / camera.zoom;
+    camera.scrollX += (horizontal / length) * distance;
+    camera.scrollY += (vertical / length) * distance;
+    this.clampCamera();
+  }
+
+  private clampCamera(): void {
+    const camera = this.cameras.main;
+    const minimumZoom = Math.max(
+      MIN_CAMERA_ZOOM,
+      camera.width / this.cameraWorldWidth,
+      camera.height / this.cameraWorldHeight,
+    );
+    if (camera.zoom < minimumZoom) camera.setZoom(minimumZoom);
+    const maxScrollX = Math.max(0, this.cameraWorldWidth - camera.width / camera.zoom);
+    const maxScrollY = Math.max(0, this.cameraWorldHeight - camera.height / camera.zoom);
+    camera.setScroll(
+      Phaser.Math.Clamp(camera.scrollX, 0, maxScrollX),
+      Phaser.Math.Clamp(camera.scrollY, 0, maxScrollY),
+    );
+  }
+
+  private toggleFullscreen(): void {
+    if (this.scale.isFullscreen) this.scale.stopFullscreen();
+    else this.scale.startFullscreen();
+  }
+
+  private updateMissionResult(): void {
+    const status = this.simulation.getState().missionStatus;
+    if (status === 'playing') return;
+    if (this.resultShown) return;
+    this.resultShown = true;
+    this.isPaused = true;
+    this.simulation.setPaused(true);
+    this.pauseMenuOpen = false;
+    this.setPauseMenuVisible(false);
+    const centerX = this.scale.width / 2;
+    const centerY = this.scale.height / 2;
+    const victory = status === 'victory';
+    if (victory && this.missionId === 0) this.writeStorage(CAMPAIGN_UNLOCK_STORAGE_KEY, '1');
+    this.resultPanel.setVisible(true).setPosition(centerX, centerY);
+    this.resultText
+      .setText(getMissionResultMessage(this.missionId, status))
+      .setPosition(centerX, centerY - 48)
+      .setVisible(true);
+    this.resultHomeButton.setPosition(centerX - 135, centerY + 82).setVisible(true);
+    this.resultCampaignButton.setPosition(centerX + 135, centerY + 82)
+      .setVisible(victory && this.missionId === 0);
+    this.resultRestartButton.setPosition(centerX + 135, centerY + 82)
+      .setVisible(!victory || this.missionId === 1);
+  }
+
+
+}    };
   }
 
   private spawnDebugInfected(): void {
