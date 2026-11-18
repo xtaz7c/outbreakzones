@@ -57,8 +57,24 @@ function refreshCampaignAvailability(): void {
   campaignAction!.textContent = unlocked ? 'CONTINUAR CAMPANHA ↗' : 'BLOQUEADO · CONCLUA O TUTORIAL';
 }
 
+function clearPreviousMissionSave(): void {
+  try {
+    const seedValue = window.localStorage.getItem('outbreakzones:mission-seed');
+    const seed = seedValue === null ? null : Number(seedValue);
+    if (seed !== null && Number.isInteger(seed)) {
+      window.localStorage.removeItem(`outbreakzones:building-state:${seed}`);
+      window.localStorage.removeItem(`outbreakzones:maintenance-state:${seed}`);
+      window.localStorage.removeItem(`outbreakzones:deployable-state:${seed}`);
+    }
+    window.localStorage.removeItem('outbreakzones:mission-seed');
+  } catch {
+    // Storage may be unavailable; mission setup still starts without relying on saved data.
+  }
+}
+
 function startOperation(missionId: 0 | 1): void {
   if (game) return;
+  if (missionId === 1) clearPreviousMissionSave();
   modeDialog!.close();
   startButton!.disabled = true;
   startButton!.setAttribute('aria-busy', 'true');
