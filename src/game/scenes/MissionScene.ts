@@ -119,6 +119,8 @@ export class MissionScene extends Phaser.Scene {
   private hudScaleUpButton!: Phaser.GameObjects.Text;
   private hudPanels!: Phaser.GameObjects.Graphics;
   private minimapGraphics!: Phaser.GameObjects.Graphics;
+  private minimapStaticGraphics!: Phaser.GameObjects.Graphics;
+  private minimapStaticRendered = false;
   private missionText!: Phaser.GameObjects.Text;
   private missionToggle!: Phaser.GameObjects.Text;
   private missionPanel!: Phaser.GameObjects.Graphics;
@@ -689,6 +691,7 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.build.y = buildY;
 
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
+    this.minimapStaticGraphics = this.add.graphics().setScrollFactor(0).setDepth(1501);
     this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
     this.missionPanel = this.add.graphics().setScrollFactor(0).setDepth(1501).setVisible(false);
     this.selectionGraphics = this.add.graphics().setScrollFactor(0).setDepth(999);
@@ -1153,13 +1156,7 @@ export class MissionScene extends Phaser.Scene {
       ];
       graphics.clear();
       graphics.fillStyle(fill, 1);
-      graphics.lineStyle(selected ? 2 : 1, selected ? HUD_COLORS.paper : 0x000000, 0.95);
-      graphics.fillPoints(points, true);
-      graphics.strokePoints(points, true);
-      label.setColor(incapacitated ? '#a7aaa6' : '#ffffff');
-    });
-
-    this.minimapGraphics.clear();
+      graphics.lineStyle(selected ? 2 : 1, selected     this.minimapGraphics.clear();
     const mapX = this.hudBounds.minimap.x + 6;
     const mapY = this.hudBounds.minimap.y + 6;
     const mapWidth = 226;
@@ -1169,14 +1166,15 @@ export class MissionScene extends Phaser.Scene {
     const renderedMapHeight = this.worldMap.height * mapScale;
     const renderedMapX = mapX + (mapWidth - renderedMapWidth) / 2;
     const renderedMapY = mapY + (mapHeight - renderedMapHeight) / 2;
+    if (!this.minimapStaticRendered) {
     const minimapTileColors = [
       0x46583a, 0x414749, 0x796346, 0x77796f,
       0x806849, 0x8a887d, 0x344b31, 0x555b58,
       0x4b5b3b, 0x3d5036, 0x555a3d, 0x394b35,
       0x3c4446, 0x484e4e, 0x4d5552, 0x625c4e,
     ];
-    this.minimapGraphics.fillStyle(0x080c0d, 1);
-    this.minimapGraphics.fillRect(mapX, mapY, mapWidth, mapHeight);
+    this.minimapStaticGraphics.fillStyle(0x080c0d, 1);
+    this.minimapStaticGraphics.fillRect(mapX, mapY, mapWidth, mapHeight);
 
     // Renderiza a geometria real do Tiled em escala, mantendo a proporção 80×45.
     for (const layerName of ['Ground', 'Terrain', 'Structures']) {
@@ -1188,8 +1186,8 @@ export class MissionScene extends Phaser.Scene {
           const tile = tiles[column];
           if (!tile || tile.index < 0) continue;
           const color = minimapTileColors[tile.index] ?? 0x555b58;
-          this.minimapGraphics.fillStyle(color, 1);
-          this.minimapGraphics.fillRect(
+          this.minimapStaticGraphics.fillStyle(color, 1);
+          this.minimapStaticGraphics.fillRect(
             renderedMapX + column * mapScale,
             renderedMapY + row * mapScale,
             mapScale + 0.15,
@@ -1199,6 +1197,8 @@ export class MissionScene extends Phaser.Scene {
       }
     }
 
+      this.minimapStaticRendered = true;
+    }
     const toMinimap = (position: { x: number; y: number }) => ({
       x: renderedMapX + Phaser.Math.Clamp(position.x / this.cameraWorldWidth, 0, 1) * renderedMapWidth,
       y: renderedMapY + Phaser.Math.Clamp(position.y / this.cameraWorldHeight, 0, 1) * renderedMapHeight,
@@ -1246,6 +1246,12 @@ export class MissionScene extends Phaser.Scene {
     this.minimapGraphics.lineStyle(1, HUD_COLORS.paper, 0.9);
     this.minimapGraphics.strokeRect(
       Phaser.Math.Clamp(viewX, renderedMapX, renderedMapX + renderedMapWidth - viewWidth),
+      Phaser.Math.Clamp(viewY, renderedMapY, renderedMapY + renderedMapHeight - viewHeight),
+      viewWidth,
+      viewHeight,
+    );
+
+eredMapX, renderedMapX + renderedMapWidth - viewWidth),
       Phaser.Math.Clamp(viewY, renderedMapY, renderedMapY + renderedMapHeight - viewHeight),
       viewWidth,
       viewHeight,
