@@ -691,6 +691,7 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.build.y = buildY;
 
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
+    this.minimapStaticRendered = false;
     this.minimapStaticGraphics = this.add.graphics().setScrollFactor(0).setDepth(1501);
     this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
     this.missionPanel = this.add.graphics().setScrollFactor(0).setDepth(1501).setVisible(false);
