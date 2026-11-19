@@ -89,9 +89,6 @@ function refreshCampaignAvailability(): void {
 
 function startOperation(missionId: 0 | 1): void {
   if (game) return;
-  if (missionId === 1) {
-    try { window.localStorage.removeItem('outbreakzones:mission-seed'); } catch { /* storage indisponível */ }
-  }
   // Campanha deve iniciar com um seed independente; não herdar persistência do tutorial.
   if (missionId === 1) {
     try { window.localStorage.removeItem('outbreakzones:mission-seed'); } catch { /* storage indisponível */ }
