@@ -1126,6 +1126,9 @@ export class MissionScene extends Phaser.Scene {
       : state.missionStatus === 'defeat'
         ? 'EQUIPE INCAPACITADA'
         : this.missionId === 1 ? 'INVESTIGAR E DETER O SUSPEITO' : 'RESGATAR SOBREVIVENTES';
+    const maintenance = this.simulation.getMaintenanceState();
+    const deployableResources = this.simulation.getDeployableResources();
+    const maintenanceJobs = maintenance?.jobs.map((job) => `${job.action} ${job.accessId} · ${Math.ceil(job.remaining)}s`).join(' | ') || 'NENHUMA';
     this.missionText.setText([
       `MISSÃO ${this.missionId}  /  ${getMissionDefinition(this.missionId).title.toUpperCase()}`,
       objective,
@@ -1133,6 +1136,9 @@ export class MissionScene extends Phaser.Scene {
         ? [`OCORRÊNCIAS  ${this.investigatedSiteIds.size}/${this.investigationSitePositions.length} · SUSPEITO ${this.suspectArrested ? 'DETIDO' : this.suspectMarker?.visible ? 'LOCALIZADO' : 'NÃO IDENTIFICADO'}`, 'F INVESTIGAR  ·  J DETER']
         : [`RESGATE  ${state.rescuedCivilianCount} / ${state.civilianCount}`, `CIVIS  ${civilianStates.sheltered} AGUARDANDO · ${civilianStates.following} ESCOLTANDO · ${civilianStates.extracted} EXTRAÍDOS`]),
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
+      `RECURSOS  ${maintenance?.resources.scrap ?? 0} SUCATA · ${maintenance?.resources.parts ?? 0} PEÇAS`,
+      `DEPLOY  ${deployableResources.scrap} SUCATA · ${deployableResources.parts} PEÇAS · ABRIGO ${this.simulation.getShelterCapacity()} VAGAS`,
+      `MANUTENÇÃO  ${maintenanceJobs`,
       ...(this.buildStatus ? [this.buildStatus] : []),
     ].join('\\n'));
 
