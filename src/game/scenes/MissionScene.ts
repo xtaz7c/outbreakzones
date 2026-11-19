@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { MinimapRenderer } from '../world/MinimapRenderer';
 import { AudioManager } from '../audio/AudioManager';
 import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
 import { CAMPAIGN_PROGRESS_KEY, completeChapter, normalizeCampaignProgress, unlockChapter } from '../CampaignSave';
@@ -120,7 +121,7 @@ export class MissionScene extends Phaser.Scene {
   private hudPanels!: Phaser.GameObjects.Graphics;
   private minimapGraphics!: Phaser.GameObjects.Graphics;
   private minimapStaticGraphics!: Phaser.GameObjects.Graphics;
-  private minimapStaticRendered = false;
+  private readonly minimapRenderer = new MinimapRenderer();
   private missionText!: Phaser.GameObjects.Text;
   private missionToggle!: Phaser.GameObjects.Text;
   private missionPanel!: Phaser.GameObjects.Graphics;
@@ -691,7 +692,6 @@ export class MissionScene extends Phaser.Scene {
     this.hudBounds.build.y = buildY;
 
     this.hudPanels = this.add.graphics().setScrollFactor(0).setDepth(1500);
-    this.minimapStaticRendered = false;
     this.minimapStaticGraphics = this.add.graphics().setScrollFactor(0).setDepth(1501);
     this.minimapGraphics = this.add.graphics().setScrollFactor(0).setDepth(1502);
     this.missionPanel = this.add.graphics().setScrollFactor(0).setDepth(1501).setVisible(false);
@@ -783,7 +783,7 @@ export class MissionScene extends Phaser.Scene {
 
     this.hudRoot = this.add.container(0, 0).setScrollFactor(0).setDepth(1500);
     this.hudRoot.add([
-      this.hudPanels, this.missionPanel, this.minimapGraphics, this.settingsButton,
+      this.hudPanels, this.missionPanel, this.minimapStaticGraphics, this.minimapGraphics, this.settingsButton,
       this.fullscreenButton, this.missionToggle, this.missionText, this.waveText, this.dateTimeText,
       ...this.officerStatusIcons.map((item) => item.container), ...this.buildButtons,
     ]);
@@ -1138,7 +1138,7 @@ export class MissionScene extends Phaser.Scene {
       `AMEAÇAS ATIVAS  ${state.infectedCount}`,
       `RECURSOS  ${maintenance?.resources.scrap ?? 0} SUCATA · ${maintenance?.resources.parts ?? 0} PEÇAS`,
       `DEPLOY  ${deployableResources.scrap} SUCATA · ${deployableResources.parts} PEÇAS · ABRIGO ${this.simulation.getShelterCapacity()} VAGAS`,
-      `MANUTENÇÃO  ${maintenanceJobs`,
+      `MANUTENÇÃO  ${maintenanceJobs}`,
       ...(this.buildStatus ? [this.buildStatus] : []),
     ].join('\\n'));
 
@@ -1163,106 +1163,20 @@ export class MissionScene extends Phaser.Scene {
       ];
       graphics.clear();
       graphics.fillStyle(fill, 1);
-      graphics.lineStyle(selected ? 2 : 1, selected     this.minimapGraphics.clear();
-    const mapX = this.hudBounds.minimap.x + 6;
-    const mapY = this.hudBounds.minimap.y + 6;
-    const mapWidth = 226;
-    const mapHeight = 226;
-    const mapScale = Math.min(mapWidth / this.worldMap.width, mapHeight / this.worldMap.height);
-    const renderedMapWidth = this.worldMap.width * mapScale;
-    const renderedMapHeight = this.worldMap.height * mapScale;
-    const renderedMapX = mapX + (mapWidth - renderedMapWidth) / 2;
-    const renderedMapY = mapY + (mapHeight - renderedMapHeight) / 2;
-    if (!this.minimapStaticRendered) {
-    const minimapTileColors = [
-      0x46583a, 0x414749, 0x796346, 0x77796f,
-      0x806849, 0x8a887d, 0x344b31, 0x555b58,
-      0x4b5b3b, 0x3d5036, 0x555a3d, 0x394b35,
-      0x3c4446, 0x484e4e, 0x4d5552, 0x625c4e,
-    ];
-    this.minimapStaticGraphics.fillStyle(0x080c0d, 1);
-    this.minimapStaticGraphics.fillRect(mapX, mapY, mapWidth, mapHeight);
-
-    // Renderiza a geometria real do Tiled em escala, mantendo a proporção 80×45.
-    for (const layerName of ['Ground', 'Terrain', 'Structures']) {
-      const layer = this.worldMap.getLayer(layerName);
-      if (!layer) continue;
-      for (let row = 0; row < layer.data.length; row += 1) {
-        const tiles = layer.data[row] ?? [];
-        for (let column = 0; column < tiles.length; column += 1) {
-          const tile = tiles[column];
-          if (!tile || tile.index < 0) continue;
-          const color = minimapTileColors[tile.index] ?? 0x555b58;
-          this.minimapStaticGraphics.fillStyle(color, 1);
-          this.minimapStaticGraphics.fillRect(
-            renderedMapX + column * mapScale,
-            renderedMapY + row * mapScale,
-            mapScale + 0.15,
-            mapScale + 0.15,
-          );
-        }
-      }
-    }
-
-      this.minimapStaticRendered = true;
-    }
-    const toMinimap = (position: { x: number; y: number }) => ({
-      x: renderedMapX + Phaser.Math.Clamp(position.x / this.cameraWorldWidth, 0, 1) * renderedMapWidth,
-      y: renderedMapY + Phaser.Math.Clamp(position.y / this.cameraWorldHeight, 0, 1) * renderedMapHeight,
+      graphics.lineStyle(selected ? 2 : 1, selected ? HUD_COLORS.paper : 0x000000, 0.95);
+      graphics.fillPoints(points, true);
+      graphics.strokePoints(points, true);
+      label.setColor(incapacitated ? '#a7aaa6' : '#ffffff');
     });
 
-    if (this.minimapVisibility.civilians) {
-      for (const civilian of civilians) {
-        if (civilian.state === 'extracted') continue;
-        const point = toMinimap(civilian.position);
-        this.minimapGraphics.fillStyle(HUD_COLORS.civilian, 1);
-        this.minimapGraphics.fillCircle(point.x, point.y, 3.5);
-      }
-    }
-    if (this.minimapVisibility.infected) {
-      for (const infected of this.simulation.getInfected()) {
-        const point = toMinimap(infected.position);
-        this.minimapGraphics.fillStyle(HUD_COLORS.infected, 1);
-        this.minimapGraphics.fillCircle(point.x, point.y, 3.5);
-      }
-    }
-    if (this.minimapVisibility.officers) {
-      for (const officer of officers) {
-        const point = toMinimap(officer.position);
-        this.minimapGraphics.fillStyle(officer.isIncapacitated ? HUD_COLORS.muted : HUD_COLORS.officer, 1);
-        this.minimapGraphics.fillCircle(point.x, point.y, this.selectedOfficerIds.has(officer.id) ? 5 : 4);
-        if (this.selectedOfficerIds.has(officer.id)) {
-          this.minimapGraphics.lineStyle(1, HUD_COLORS.paper, 0.95);
-          this.minimapGraphics.strokeCircle(point.x, point.y, 7);
-        }
-      }
-    }
-
-    // A van policial é o ponto fixo de extração (Safe Zone) no minimapa.
-    const safeZonePoint = toMinimap({ x: 1280, y: 1216 });
-    this.minimapGraphics.lineStyle(1.5, 0x55c878, 0.95);
-    this.minimapGraphics.strokeCircle(safeZonePoint.x, safeZonePoint.y, 5);
-    this.minimapGraphics.fillStyle(0x55c878, 1);
-    this.minimapGraphics.fillCircle(safeZonePoint.x, safeZonePoint.y, 2);
-
-    const camera = this.cameras.main;
-    const viewX = renderedMapX + Phaser.Math.Clamp(camera.scrollX / this.cameraWorldWidth, 0, 1) * renderedMapWidth;
-    const viewY = renderedMapY + Phaser.Math.Clamp(camera.scrollY / this.cameraWorldHeight, 0, 1) * renderedMapHeight;
-    const viewWidth = Phaser.Math.Clamp((camera.width / camera.zoom) / this.cameraWorldWidth * renderedMapWidth, 2, renderedMapWidth);
-    const viewHeight = Phaser.Math.Clamp((camera.height / camera.zoom) / this.cameraWorldHeight * renderedMapHeight, 2, renderedMapHeight);
-    this.minimapGraphics.lineStyle(1, HUD_COLORS.paper, 0.9);
-    this.minimapGraphics.strokeRect(
-      Phaser.Math.Clamp(viewX, renderedMapX, renderedMapX + renderedMapWidth - viewWidth),
-      Phaser.Math.Clamp(viewY, renderedMapY, renderedMapY + renderedMapHeight - viewHeight),
-      viewWidth,
-      viewHeight,
-    );
-
-eredMapX, renderedMapX + renderedMapWidth - viewWidth),
-      Phaser.Math.Clamp(viewY, renderedMapY, renderedMapY + renderedMapHeight - viewHeight),
-      viewWidth,
-      viewHeight,
-    );
+    this.minimapRenderer.render({
+      map: this.worldMap, staticGraphics: this.minimapStaticGraphics, graphics: this.minimapGraphics,
+      camera: this.cameras.main, worldWidth: this.cameraWorldWidth, worldHeight: this.cameraWorldHeight,
+      bounds: { x: this.hudBounds.minimap.x + 6, y: this.hudBounds.minimap.y + 6, width: 226, height: 226 },
+      civilians, officers, infected: this.simulation.getInfected(), visibility: this.minimapVisibility,
+      selectedOfficerIds: this.selectedOfficerIds,
+      safeZone: this.missionId === 1 ? { x: 1600, y: 2080 } : { x: 1280, y: 1216 },
+    });
 
     this.settingsButton.setColor(this.pauseMenuOpen ? '#c33a36' : '#e8e3d8');
   }
