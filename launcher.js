@@ -173,8 +173,8 @@
       $('wallpaper-file').value = '';
       return;
     }
-    if (file.size > 4 * 1024 * 1024) {
-      message('A imagem deve ter no máximo 4 MB.', true);
+    if (file.size > 2 * 1024 * 1024) {
+      message('A imagem deve ter no máximo 2 MB.', true);
       $('wallpaper-file').value = '';
       return;
     }
