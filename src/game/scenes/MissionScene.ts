@@ -285,6 +285,7 @@ export class MissionScene extends Phaser.Scene {
     }
 
     this.tileSize = map.tileWidth;
+    if (!isSector04) this.createRuralUtilityLines();
     this.worldGrid = buildGridFromTiledLayers(
       map.width,
       map.height,
@@ -356,7 +357,7 @@ export class MissionScene extends Phaser.Scene {
     this.lastPersistedDeployableState = this.serializeDeployableState();
     this.deployableGraphics = this.add.graphics().setDepth(95);
     if (isSector04) this.simulation.setMissionObjectiveComplete(false);
-    const extraction = isSector04 ? { x: 1600, y: 2080, radius: 72 } : { x: 1280, y: 1216, radius: 72 };
+    const extraction = isSector04 ? { x: 1600, y: 2080, radius: 72 } : { x: 1936, y: 2032, radius: 72 };
     this.simulation.setExtractionZone(extraction);
     if (!isSector04) this.createPoliceSafeZone(extraction.x, extraction.y);
     const spawnPoints: WaveSpawnPoint[] = isSector04 ? [
@@ -365,10 +366,10 @@ export class MissionScene extends Phaser.Scene {
       { id: 'north', x: 1600, y: -48, entryTile: { column: 50, row: 1 } },
       { id: 'south', x: 1600, y: 2288, entryTile: { column: 50, row: 68 } },
     ] : [
-      { id: 'west', x: -48, y: 640, entryTile: { column: 21, row: 18 } },
-      { id: 'east', x: 2608, y: 720, entryTile: { column: 77, row: 22 } },
-      { id: 'north', x: 1024, y: -48, entryTile: { column: 32, row: 9 } },
-      { id: 'south', x: 1280, y: 1488, entryTile: { column: 40, row: 43 } },
+      { id: 'west', x: -48, y: 1504, entryTile: { column: 8, row: 47 } },
+      { id: 'east', x: 3888, y: 1504, entryTile: { column: 111, row: 47 } },
+      { id: 'north', x: 1936, y: -48, entryTile: { column: 60, row: 8 } },
+      { id: 'south', x: 1936, y: 2928, entryTile: { column: 60, row: 82 } },
     ];
     const mission = getMissionDefinition(this.missionId);
     this.simulation.configureWaves(
@@ -383,7 +384,7 @@ export class MissionScene extends Phaser.Scene {
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
       .setZoom(1)
       // Setor 04 começa no centro da malha urbana; o tutorial foca a casa principal.
-      .centerOn(isSector04 ? 1600 : 1024, isSector04 ? 1120 : 608);
+      .centerOn(isSector04 ? 1600 : 1936, isSector04 ? 1120 : 1504);
   }
 
   private createInvestigationObjectives(): void {
@@ -438,6 +439,19 @@ export class MissionScene extends Phaser.Scene {
     this.suspectSprite?.setTint(0x55c878);
     this.suspectLabel?.setText('SUSPEITO DETIDO').setColor('#8ee0a5');
     this.simulation.setMissionObjectiveComplete(true);
+  }
+
+  private createRuralUtilityLines(): void {
+    const graphics = this.add.graphics().setDepth(88);
+    const poleY = 56 * 32 + 16;
+    const westPoleX = 52 * 32 + 16;
+    const eastPoleX = 68 * 32 + 16;
+    graphics.lineStyle(2, 0x292b27, 0.95);
+    graphics.lineBetween(westPoleX, poleY - 52, eastPoleX, poleY - 52);
+    graphics.lineStyle(4, 0x5a4935, 1);
+    [westPoleX, eastPoleX].forEach((x) => graphics.lineBetween(x, poleY - 34, x, poleY + 30));
+    graphics.lineStyle(2, 0x92734a, 1);
+    [westPoleX, eastPoleX].forEach((x) => graphics.lineBetween(x - 8, poleY - 34, x + 8, poleY - 34));
   }
 
   private createPoliceSafeZone(x: number, y: number): void {
@@ -1142,7 +1156,7 @@ export class MissionScene extends Phaser.Scene {
       ...(this.buildStatus ? [this.buildStatus] : []),
     ].join('\\n'));
 
-    const elapsedCampaignMinutes = 8 * 60 + Math.floor(state.elapsed);
+    const elapsedCampaignMinutes = 17 * 60 + Math.floor(state.elapsed);
     const campaignDay = Math.floor(elapsedCampaignMinutes / (24 * 60)) + 1;
     const minuteOfDay = elapsedCampaignMinutes % (24 * 60);
     const campaignHour = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
