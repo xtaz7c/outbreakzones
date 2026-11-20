@@ -32836,24 +32836,6 @@
               "value": 160
             }
           ]
-        },
-        {
-          "id": 26,
-          "name": "garage-entry",
-          "type": "garage",
-          "x": 3232,
-          "y": 2432,
-          "rotation": 0,
-          "visible": true,
-          "properties": [
-            {
-              "name": "health",
-              "type": "int",
-              "value": 140
-            }
-          ],
-          "width": 96,
-          "height": 32
         }
       ],
       "opacity": 1,
