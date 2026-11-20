@@ -56,8 +56,8 @@ jobs:
           lock.version = version;
           if (!lock.packages?.['']) throw new Error('package-lock.json sem pacote raiz');
           lock.packages[''].version = version;
-          fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\\n');
-          fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\\n');
+          fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
+          fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
           console.log(`Game version synchronized to ${version}`);
           NODE
 
