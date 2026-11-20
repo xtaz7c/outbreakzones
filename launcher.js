@@ -188,7 +188,7 @@
         localStorage.setItem(wallpaperKey, reader.result);
         applyWallpaper(reader.result);
         message('Wallpaper personalizado aplicado.');
-      } catch (error) {
+      } catch {
         message('Não foi possível salvar o wallpaper. Escolha uma imagem menor.', true);
       }
     };
@@ -201,7 +201,7 @@
       localStorage.removeItem(wallpaperKey);
       applyWallpaper(defaultWallpaper);
       message('Wallpaper padrão restaurado.');
-    } catch (error) {
+    } catch {
       message('Não foi possível restaurar o wallpaper padrão.', true);
     }
   });
