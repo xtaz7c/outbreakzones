@@ -207,6 +207,9 @@ export class Infected {
       this.path = [];
       this.waypointIndex = 0;
       this.pathTargetKey = '';
+      // Strike immediately on first contact; otherwise a fleeing civilian can
+      // leave melee range before the first attack interval elapses.
+      if (this.currentState !== 'attacking') this.attackTimer = this.attackInterval;
       this.currentState = 'attacking';
       this.attackTimer += dt;
       while (this.attackTimer >= this.attackInterval) {
