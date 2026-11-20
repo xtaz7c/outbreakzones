@@ -1163,7 +1163,7 @@ export class MissionScene extends Phaser.Scene {
       ...(this.buildStatus ? [this.buildStatus] : []),
     ].join('\\n'));
 
-    const elapsedCampaignMinutes = 17 * 60 + Math.floor(state.elapsed);
+    const elapsedCampaignMinutes = 8 * 60 + Math.floor(state.elapsed);
     const campaignDay = Math.floor(elapsedCampaignMinutes / (24 * 60)) + 1;
     const minuteOfDay = elapsedCampaignMinutes % (24 * 60);
     const campaignHour = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
