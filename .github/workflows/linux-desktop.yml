@@ -101,7 +101,7 @@ jobs:
           const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
           config.version = version;
           fs.writeFileSync(cargoPath, updatedCargo);
-          fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\\n');
+          fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
           console.log(`Launcher version synchronized to ${version}`);
           NODE
 
