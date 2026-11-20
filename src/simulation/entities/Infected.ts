@@ -209,15 +209,21 @@ export class Infected {
       this.pathTargetKey = '';
       // Strike immediately on first contact; otherwise a fleeing civilian can
       // leave melee range before the first attack interval elapses.
-      if (this.currentState !== 'attacking') this.attackTimer = this.attackInterval;
+      const enteringAttack = this.currentState !== 'attacking';
       this.currentState = 'attacking';
-      this.attackTimer += dt;
-      while (this.attackTimer >= this.attackInterval) {
-        this.attackTimer -= this.attackInterval;
+      if (enteringAttack) {
+        this.attackTimer = 0;
         if (target.kind === 'human') target.human.takeDamage(this.damage);
         else target.structure.takeDamage(this.damage);
-        if (target.kind === 'structure' && target.structure.isDestroyed) break;
-        if (target.kind === 'human' && target.human.isIncapacitated) break;
+      } else {
+        this.attackTimer += dt;
+        while (this.attackTimer >= this.attackInterval) {
+          this.attackTimer -= this.attackInterval;
+          if (target.kind === 'human') target.human.takeDamage(this.damage);
+          else target.structure.takeDamage(this.damage);
+          if (target.kind === 'structure' && target.structure.isDestroyed) break;
+          if (target.kind === 'human' && target.human.isIncapacitated) break;
+        }
       }
       return;
     }
