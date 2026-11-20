@@ -1465,18 +1465,11 @@ export class MissionScene extends Phaser.Scene {
     const entries = getAvailableEntryPoints(this.worldGrid);
     if (entries.length === 0) return;
 
-    const spawnPlans = [
-      { x: 128, y: 640, entryId: 'west-window' },
-      { x: 1920, y: 640, entryId: 'east-window' },
-      { x: 1024, y: 64, entryId: 'north-window-west' },
-      { x: 1024, y: 1216, entryId: 'front-door' },
-    ] as const;
-    const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
+    const entry = entries[this.debugInfectedSpawnIndex % entries.length]!;
     this.debugInfectedSpawnIndex += 1;
-    const entry = entries.find((candidate) => candidate.id === plan.entryId) ?? entries[0]!;
     this.simulation.spawnInfected({
-      x: plan.x,
-      y: plan.y,
+      x: entry.approachTile.column * 32 + 16,
+      y: entry.approachTile.row * 32 + 16,
       entryTile: entry.approachTile,
     });
   }
