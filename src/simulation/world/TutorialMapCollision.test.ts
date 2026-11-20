@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { BuildingSystem } from '../systems/buildings/BuildingSystem';
 import { buildGridFromTiledLayers } from './WorldMapLoader';
 
 interface TiledObject {
@@ -98,6 +99,34 @@ describe('tutorial rural map collision and navigation', () => {
       expect(grid.isWalkable({ column, row: 49 })).toBe(true);
     }
     expect(grid.isWalkable({ column: 75, row: 47 })).toBe(true);
+  });
+
+  it('opens and closes the detached garage gate through BuildingSystem', () => {
+    const grid = buildGridFromTiledLayers(
+      tutorialMap.width,
+      tutorialMap.height,
+      tutorialMap.tilewidth,
+      [getLayer('Collision')],
+    );
+    const garageDoor = getLayer('Entrances').objects?.find((object) => object.name === 'garage-door');
+    if (!garageDoor) throw new Error('Detached garage entrance is missing.');
+
+    const buildings = new BuildingSystem([{
+      id: garageDoor.name ?? 'garage-door',
+      kind: 'garage',
+      x: garageDoor.x ?? 0,
+      y: garageDoor.y ?? 0,
+      width: garageDoor.width ?? 0,
+      height: garageDoor.height ?? 0,
+      maxHealth: 160,
+    }], grid, tutorialMap.tilewidth, 42);
+    buildings.restoreState([{ id: 'garage-door', state: 'closed', health: 160 }]);
+
+    expect(buildings.getNavigationGrid('police').isWalkable({ column: 75, row: 49 })).toBe(false);
+    expect(buildings.interact('garage-door', 'police')).toBe(true);
+    expect(buildings.getNavigationGrid('police').isWalkable({ column: 75, row: 49 })).toBe(true);
+    expect(buildings.interact('garage-door', 'police')).toBe(true);
+    expect(buildings.getNavigationGrid('police').isWalkable({ column: 75, row: 49 })).toBe(false);
   });
 
   it('connects the property driveway to the south road through the gate', () => {
