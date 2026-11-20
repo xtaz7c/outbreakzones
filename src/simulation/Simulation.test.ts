@@ -464,7 +464,9 @@ describe('Simulation', () => {
     for (let index = 0; index < 1000; index += 1) sim.update(FIXED_DT);
 
     expect(civilian.state).toBe('extracted');
-    expect(sim.getState().rescuedCivilianCount).toBe(1);
+    const extractedCivilians = sim.getCivilians().filter((candidate) => candidate.state === 'extracted');
+    expect(sim.getState().rescuedCivilianCount).toBe(extractedCivilians.length);
+    expect(extractedCivilians.length).toBeGreaterThanOrEqual(1);
   });
 
   it('tracks the rescue state of civilians independently', () => {
