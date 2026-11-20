@@ -91,6 +91,18 @@ describe('Infected', () => {
     expect(officer.health).toBe(88);
   });
 
+  it('strikes immediately on first contact before a fleeing target can escape', () => {
+    const infected = new Infected({
+      id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 },
+      detectionRange: 100, attackRange: 30, attackInterval: 0.5, damage: 12,
+    });
+    const civilian = new Civilian({ id: 1, x: 40, y: 16 });
+    infected.update(1 / 60, 32, map, [], undefined, [], [civilian]);
+    expect(civilian.health).toBe(48);
+    expect(civilian.mood).toBe('panicked');
+    expect(infected.state).toBe('attacking');
+  });
+
   it('ignores incapacitated officers when selecting targets', () => {
     const infected = new Infected({
       id: 1, x: 16, y: 16, entryTile: { column: 8, row: 8 }, moveSpeed: 32,

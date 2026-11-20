@@ -78,6 +78,23 @@ describe('Civilian awareness and survival', () => {
     expect(civilian.position.x).toBeLessThan(160);
   });
 
+
+  it('sprints from visible threats until exhausted, then walks and recovers stamina', () => {
+    const grid = new GridMap(30, 30);
+    const civilian = new Civilian({ id: 1, x: 480, y: 480, moveSpeed: 72 });
+
+    for (let index = 0; index < 240; index += 1) {
+      const position = civilian.position;
+      civilian.updateAwareness(1 / 60, 32, grid, [], [{ x: position.x + 48, y: position.y }]);
+    }
+
+    expect(civilian.currentStamina).toBe(0);
+    expect(civilian.isRunning).toBe(false);
+
+    civilian.updateAwareness(1, 32, grid, [], []);
+    expect(civilian.currentStamina).toBeGreaterThan(0);
+  });
+
   it('loses an escort when the officer is too far away', () => {
     const grid = new GridMap(20, 20);
     const civilian = new Civilian({ id: 1, x: 48, y: 48 });

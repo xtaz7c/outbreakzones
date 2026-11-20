@@ -28,6 +28,12 @@ export class Civilian {
   readonly maxHealth: number;
   readonly isArmed: boolean;
   private fireCooldown = 0;
+  private stamina = 100;
+  private running = false;
+  private static readonly MAX_STAMINA = 100;
+  private static readonly SPRINT_DRAIN_PER_SECOND = 30;
+  private static readonly STAMINA_RECOVERY_PER_SECOND = 18;
+  private static readonly SPRINT_SPEED_MULTIPLIER = 1.65;
   private currentHealth: number;
   private currentPosition: { x: number; y: number };
   private currentState: CivilianState = 'sheltered';
@@ -66,6 +72,15 @@ export class Civilian {
   get position(): CivilianPosition { return { ...this.currentPosition }; }
   get isRescued(): boolean { return this.currentState === 'extracted'; }
   get escortId(): number | null { return this.escortOfficerId; }
+  get currentStamina(): number { return this.stamina; }
+  get isRunning(): boolean { return this.running; }
+
+  private recoverStamina(dt: number): void {
+    this.stamina = Math.min(
+      Civilian.MAX_STAMINA,
+      this.stamina + Civilian.STAMINA_RECOVERY_PER_SECOND * dt,
+    );
+  }
 
   beginFollowing(officerId?: number): boolean {
     if (this.currentState !== 'sheltered') return false;
@@ -137,6 +152,7 @@ export class Civilian {
     threats: readonly CivilianPosition[],
   ): void {
     if (this.isIncapacitated || this.isRescued || !Number.isFinite(dt) || dt <= 0) return;
+    this.running = false;
 
     const threat = threats
       .filter((candidate) =>
@@ -178,14 +194,24 @@ export class Civilian {
       const fleeTile = candidates.find((candidate) =>
         Math.hypot(candidate.column - start.column, candidate.row - start.row) >= 2);
       if (fleeTile) {
-        this.moveTo(dt, tileSize, map, {
+        const fleeTarget = {
           x: fleeTile.column * tileSize + tileSize / 2,
           y: fleeTile.row * tileSize + tileSize / 2,
-        });
+        };
+        const sprintDuration = Math.min(dt, this.stamina / Civilian.SPRINT_DRAIN_PER_SECOND);
+        if (sprintDuration > 0) {
+          this.running = true;
+          this.moveTo(sprintDuration, tileSize, map, fleeTarget,
+            this.moveSpeed * Civilian.SPRINT_SPEED_MULTIPLIER);
+          this.stamina = Math.max(0, this.stamina - sprintDuration * Civilian.SPRINT_DRAIN_PER_SECOND);
+        }
+        const walkingDuration = dt - sprintDuration;
+        if (walkingDuration > 0) this.moveTo(walkingDuration, tileSize, map, fleeTarget);
       }
       return;
     }
 
+    this.recoverStamina(dt);
     if (this.panicRemaining > 0) {
       this.panicRemaining = Math.max(0, this.panicRemaining - dt);
       if (this.panicRemaining > 0) return;
@@ -243,10 +269,17 @@ export class Civilian {
     if (this.currentState !== 'following' || !Number.isFinite(dt) || dt <= 0) return;
     if (!Number.isFinite(tileSize) || tileSize <= 0 ||
         !Number.isFinite(target.x) || !Number.isFinite(target.y)) return;
+    this.recoverStamina(dt);
     this.moveTo(dt, tileSize, map, target);
   }
 
-  private moveTo(dt: number, tileSize: number, map: GridMap, target: CivilianPosition): void {
+  private moveTo(
+    dt: number,
+    tileSize: number,
+    map: GridMap,
+    target: CivilianPosition,
+    speed = this.moveSpeed,
+  ): void {
     const goal = {
       column: Math.floor(target.x / tileSize),
       row: Math.floor(target.y / tileSize),
@@ -269,7 +302,7 @@ export class Civilian {
       this.pathGoal = { ...goal };
     }
 
-    let distanceRemaining = this.moveSpeed * dt;
+    let distanceRemaining = speed * dt;
     while (distanceRemaining > 0 && this.waypointIndex < this.path.length) {
       const waypoint = this.path[this.waypointIndex]!;
       const targetX = waypoint.column * tileSize + tileSize / 2;
