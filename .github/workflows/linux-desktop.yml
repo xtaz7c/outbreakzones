@@ -96,8 +96,9 @@ jobs:
           const cargoPath = 'src-tauri/Cargo.toml';
           const configPath = 'src-tauri/tauri.conf.json';
           const cargo = fs.readFileSync(cargoPath, 'utf8');
-          const updatedCargo = cargo.replace(/^(version = ")[^"]+(")$/m, `$1${version}$2`);
-          if (updatedCargo === cargo) throw new Error('Não foi possível localizar a versão do pacote em Cargo.toml');
+          const versionLine = /^version = "[^"]+"$/m;
+          if (!versionLine.test(cargo)) throw new Error('Não foi possível localizar a versão do pacote em Cargo.toml');
+          const updatedCargo = cargo.replace(versionLine, `version = "${version}"`);
           const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
           config.version = version;
           fs.writeFileSync(cargoPath, updatedCargo);
