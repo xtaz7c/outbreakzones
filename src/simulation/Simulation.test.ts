@@ -400,7 +400,7 @@ describe('Simulation', () => {
     sim.setWorldGrid(new GridMap(120, 90), 32);
     const civilian = sim.getCivilians()[0]!;
     sim.spawnInfected({
-      x: 816, y: 480, entryTile: { column: 25, row: 15 },
+      x: 1816, y: 1456, entryTile: { column: 56, row: 45 },
       detectionRange: 200, attackRange: 40, attackInterval: 0.25, damage: 10,
     });
     for (let index = 0; index < 30; index += 1) sim.update(FIXED_DT);
