@@ -1,5 +1,13 @@
 {
   "schema": 1,
-  "latest_version": null,
-  "versions": []
+  "latest_version": "0.2.2",
+  "versions": [
+    {
+      "version": "0.2.2",
+      "archive_url": "https://github.com/xtaz7c/outbreakzones/releases/download/v0.2.2/outbreak-zones-game-0.2.2.zip",
+      "sha256": "b0783edbafc547e549c26ca23fe30e9a0819c13b0948dd3d06689a1182594392",
+      "notes": "",
+      "released_at": "2026-11-20T19:07:10.610Z"
+    }
+  ]
 }
