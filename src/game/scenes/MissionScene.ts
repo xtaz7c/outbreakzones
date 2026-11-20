@@ -258,6 +258,13 @@ export class MissionScene extends Phaser.Scene {
       }
     }
 
+    if (!isSector04) {
+      const fenceLayer = map.createLayer('Fence', tileset, 0, 0);
+      if (!fenceLayer) {
+        throw new Error('Required tutorial Tiled layer "Fence" is missing.');
+      }
+    }
+
     if (isSector04) {
       const buildings = map.getObjectLayer('Buildings');
       const buildingGraphics = this.add.graphics().setDepth(35);
