@@ -19,6 +19,7 @@ interface TiledLayer {
   readonly objects?: readonly TiledObject[];
 }
 interface TiledMapFixture {
+  readonly tilesets: readonly { readonly name: string; readonly image: string; readonly imageheight: number; readonly tilecount: number }[];
   readonly width: number;
   readonly height: number;
   readonly tilewidth: number;
@@ -36,7 +37,7 @@ const getLayer = (name: string): TiledLayer => {
 };
 
 describe('tutorial rural map collision and navigation', () => {
-  it('renders the property fence separately from the garage roof', () => {
+  it('renders the property fence separately from the garage roof, walls, and sectional door', () => {
     const fence = getLayer('Fence').data;
     const structures = getLayer('Structures').data;
     expect(fence).toBeDefined();
@@ -44,7 +45,15 @@ describe('tutorial rural map collision and navigation', () => {
     expect(fence?.[42 * tutorialMap.width + 50]).toBe(5);
     expect(fence?.[55 * tutorialMap.width + 80]).toBe(5);
     expect(fence?.[68 * tutorialMap.width + 60]).toBe(0);
-    expect(structures?.[47 * tutorialMap.width + 75]).toBe(5);
+    expect(structures?.[46 * tutorialMap.width + 75]).toBe(18);
+    expect(structures?.[47 * tutorialMap.width + 75]).toBe(17);
+    expect(structures?.[49 * tutorialMap.width + 75]).toBe(19);
+    expect(tutorialMap.tilesets[0]).toMatchObject({
+      name: 'mission-tiles',
+      image: '../assets/tiles/terrain/mission-tiles.svg',
+      imageheight: 160,
+      tilecount: 19,
+    });
   });
 
   it('blocks the perimeter fence and keeps the south gate passable', () => {
