@@ -22,12 +22,20 @@
   const selectedVersion = () => $('version-select').value;
   const isInstalled = (version) => state.installed.some(item => item.version === version);
   const findRelease = (version) => state.releases.find(item => item.version === version);
+  const updateLatestBadge = () => {
+    $('latest-release').textContent = state.latest ? 'v' + state.latest : 'SEM RELEASE';
+    const installed = Boolean(state.latest && isInstalled(state.latest));
+    $('latest-status').textContent = !state.latest
+      ? 'VERSÃO NÃO PUBLICADA'
+      : installed ? 'JOGO ATUALIZADO' : 'NOVA VERSÃO DISPONÍVEL';
+  };
   const updateMain = () => {
     const selected = state.latestDefault
       ? (state.latest && isInstalled(state.latest) ? state.latest : latestInstalled())
       : (state.preferred && isInstalled(state.preferred) ? state.preferred : latestInstalled());
     $('current-version').textContent = selected ? 'v' + selected : 'NOT INSTALLED';
     $('play').disabled = !selected;
+    updateLatestBadge();
   };
   const updateSelectionActions = () => {
     const version = selectedVersion();
@@ -101,6 +109,7 @@
       const manifest = await invoke('fetch_manifest');
       state.releases = Array.isArray(manifest.versions) ? manifest.versions : [];
       state.latest = manifest.latest_version || latestRelease();
+      updateLatestBadge();
       renderVersions(state.latestDefault && state.latest ? state.latest : '');
       const installedSet = new Set(state.installed.map(item => item.version));
       $('connection').textContent = state.latest
@@ -138,8 +147,64 @@
       $('launcher-update-status').textContent = 'Falha na atualização: ' + String(error);
     }
   });
-  $('settings-toggle').addEventListener('click', () => $('settings-panel').classList.toggle('open'));
-  $('settings-close').addEventListener('click', () => $('settings-panel').classList.remove('open'));
+  $('settings-toggle').addEventListener('click', () => {
+    const open = $('settings-panel').classList.toggle('open');
+    $('settings-toggle').setAttribute('aria-expanded', String(open));
+  });
+  $('settings-close').addEventListener('click', () => {
+    $('settings-panel').classList.remove('open');
+    $('settings-toggle').setAttribute('aria-expanded', 'false');
+  });
+  const defaultWallpaper = './images/wallpaper_launcher_cidade_noite_1920x1080.png';
+  const wallpaperKey = 'oz-launcher-wallpaper-v1';
+  const applyWallpaper = (source) => { $('wallpaper-image').src = source || defaultWallpaper; };
+  try {
+    const savedWallpaper = localStorage.getItem(wallpaperKey);
+    if (savedWallpaper?.startsWith('data:image/')) applyWallpaper(savedWallpaper);
+  } catch (error) {
+    console.warn('[Launcher] Não foi possível recuperar o wallpaper personalizado.', error);
+  }
+  $('choose-wallpaper').addEventListener('click', () => $('wallpaper-file').click());
+  $('wallpaper-file').addEventListener('change', () => {
+    const file = $('wallpaper-file').files?.[0];
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      message('Formato inválido. Use PNG, JPG ou WebP.', true);
+      $('wallpaper-file').value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      message('A imagem deve ter no máximo 2 MB.', true);
+      $('wallpaper-file').value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string' || !reader.result.startsWith('data:image/')) {
+        message('Não foi possível carregar a imagem selecionada.', true);
+        return;
+      }
+      try {
+        localStorage.setItem(wallpaperKey, reader.result);
+        applyWallpaper(reader.result);
+        message('Wallpaper personalizado aplicado.');
+      } catch {
+        message('Não foi possível salvar o wallpaper. Escolha uma imagem menor.', true);
+      }
+    };
+    reader.onerror = () => message('Falha ao ler a imagem selecionada.', true);
+    reader.readAsDataURL(file);
+    $('wallpaper-file').value = '';
+  });
+  $('reset-wallpaper').addEventListener('click', () => {
+    try {
+      localStorage.removeItem(wallpaperKey);
+      applyWallpaper(defaultWallpaper);
+      message('Wallpaper padrão restaurado.');
+    } catch {
+      message('Não foi possível restaurar o wallpaper padrão.', true);
+    }
+  });
   $('latest-default').addEventListener('change', () => {
     state.latestDefault = $('latest-default').checked;
     localStorage.setItem('oz-latest-default', String(state.latestDefault));

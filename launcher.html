@@ -6,79 +6,204 @@
   <meta name="theme-color" content="#111415" />
   <title>Outbreak Zones — Launcher</title>
   <style>
-    :root{font-family:Arial,sans-serif;color:#eee9df;background:#111415;font-synthesis:none;text-rendering:optimizeLegibility}
-    *{box-sizing:border-box}body{margin:0;min-width:320px;min-height:100vh;display:grid;place-items:center;position:relative;isolation:isolate;background:#111415}.wallpaper{position:fixed;inset:0;z-index:-1;overflow:hidden;background:#111415}.wallpaper img{width:100%;height:100%;object-fit:cover;object-position:center;filter:brightness(.48)}.wallpaper::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,10,14,.55),rgba(8,10,14,.2)),linear-gradient(0deg,rgba(8,10,14,.48),rgba(8,10,14,.12))}
-    button,select{font:inherit}button{cursor:pointer}
-    .launcher{width:min(620px,calc(100% - 36px));padding:24px;border:1px solid #343b39;background:rgba(17,21,23,.88);backdrop-filter:blur(8px);box-shadow:0 24px 80px #000b}
-    header{display:flex;align-items:center;gap:14px}
-    .game-icon{width:54px;height:54px;display:block;object-fit:cover;border:1px solid #d45a52;flex:0 0 auto}
-    .brand{flex:1;font-size:18px;font-weight:900;letter-spacing:1.4px}.brand span{color:#d44a43}
-    .launcher-version{color:#8d9691;font:11px monospace;text-align:right}
-    .settings{width:38px;height:38px;border:1px solid #454d49;background:#202727;color:#e8e3d8;font-size:19px}
-    .settings:hover{border-color:#c33a36;color:#fff}.settings.update-available{position:relative;border-color:#c33a36;color:#fff}.settings.update-available::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:#d84a43;box-shadow:0 0 0 2px #202727}
-    .divider{height:1px;background:#343b39;margin:22px 0}
-    .main-action{display:flex;align-items:center;gap:18px}
-    .play{flex:1;min-height:64px;border:0;background:#ad3032;color:white;font-size:17px;font-weight:900;letter-spacing:1.5px}
-    .play:hover:not(:disabled){background:#c23b3d}.play:disabled{opacity:.45;cursor:not-allowed}
-    .game-version{min-width:110px;color:#8d9691;font:11px monospace;text-align:right}
-    .game-version strong{display:block;margin-top:5px;color:#eee9df;font-size:14px}
-    .message{min-height:18px;margin:14px 0 0;color:#9ca59f;font-size:12px;line-height:1.5}
-    .message.error{color:#e58b83}
-    .settings-panel{display:none;margin-top:20px;padding-top:18px;border-top:1px solid #343b39}
-    .settings-panel.open{display:block}
-    .settings-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-    h2{margin:0;font-size:15px}.close{border:0;background:transparent;color:#a8aca4;font-size:22px}
-    .field{margin:0 0 16px}.field label{display:block;margin-bottom:8px;color:#9ba39d;font-size:10px;font-weight:700;letter-spacing:1px}
-    select{width:100%;padding:12px;background:#111415;color:#eee9df;border:1px solid #4a534e}
-    .preference{display:flex;align-items:center;gap:9px;margin:16px 0;color:#c4c9c2;font-size:12px}
-    .preference input{accent-color:#bd3738;width:16px;height:16px}
-    .actions{display:flex;gap:9px;flex-wrap:wrap}
-    .secondary{padding:11px 14px;border:1px solid #555e58;background:transparent;color:#eee9df;font-size:11px;font-weight:800;letter-spacing:.5px}
-    .secondary:hover{border-color:#c33a36}.secondary:disabled{opacity:.45;cursor:not-allowed}
-    .status{margin:12px 0 0;color:#8d9691;font-size:11px}.launcher-update{margin-top:18px;padding-top:16px;border-top:1px solid #343b39}.launcher-update-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.launcher-update-title{font-size:11px;font-weight:800;letter-spacing:.8px}.launcher-update-status{margin:8px 0 12px;color:#9ba39d;font-size:11px;line-height:1.5}.launcher-update-status.available{color:#e7b36c}.launcher-update-status.error{color:#e58b83}
-    @media(max-width:480px){.launcher{padding:18px}.brand{font-size:15px}.game-icon{width:46px;height:46px}.main-action{gap:12px}.game-version{min-width:88px}}
+    :root {
+      color-scheme: dark;
+      font-family: "Barlow", "Arial", sans-serif;
+      color: #eee9df;
+      background: #111415;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --oz-red: #c33a36;
+      --oz-paper: #eee9df;
+      --oz-muted: #a5aaa3;
+      --oz-panel: rgba(13, 16, 17, .9);
+      --oz-line: rgba(232, 227, 216, .2);
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-width: 320px; min-height: 100%; margin: 0; }
+    body { position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden; isolation: isolate; background: #111415; }
+    button, select, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, select:focus-visible, input:focus-visible {
+      outline: 2px solid var(--oz-red); outline-offset: 3px;
+    }
+    [hidden] { display: none !important; }
+
+    .wallpaper { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #111415; }
+    .wallpaper img { width: 100%; height: 100%; object-fit: cover; object-position: center; filter: brightness(.68) saturate(.78); }
+    .wallpaper::after {
+      position: absolute; inset: 0; content: "";
+      background:
+        linear-gradient(90deg, rgba(7, 9, 10, .82) 0%, rgba(7, 9, 10, .38) 48%, rgba(7, 9, 10, .2) 100%),
+        linear-gradient(0deg, rgba(7, 9, 10, .74) 0%, transparent 42%, rgba(7, 9, 10, .34) 100%);
+      pointer-events: none;
+    }
+    .grain { position: fixed; inset: 0; z-index: 1; opacity: .045; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+    }
+    .screen { position: relative; z-index: 2; display: flex; width: 100%; height: 100vh; height: 100svh; min-height: 480px; flex-direction: column; justify-content: space-between; padding: clamp(22px, 3.4vw, 48px) clamp(24px, 5vw, 76px); }
+    .topbar, .bottombar { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+    .settings { display: inline-flex; width: 46px; height: 46px; align-items: center; justify-content: center;
+      border: 1px solid rgba(238, 233, 223, .48); background: rgba(12, 15, 16, .58); color: var(--oz-paper);
+      font-size: 22px; transition: background .2s ease, border-color .2s ease;
+    }
+    .settings:hover, .settings.update-available { border-color: var(--oz-red); background: rgba(130, 31, 34, .55); }
+    .settings.update-available { position: relative; }
+    .settings.update-available::after { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--oz-red); content: ""; }
+    .latest { padding-top: 7px; text-align: right; text-shadow: 0 2px 12px #000; }
+    .latest__label, .meta-label { display: block; color: rgba(238, 233, 223, .68); font-size: 9px; font-weight: 800; letter-spacing: 2px; }
+    .latest__version { display: block; margin-top: 5px; color: var(--oz-paper); font-family: "Barlow Condensed", Impact, sans-serif; font-size: 21px; font-weight: 900; letter-spacing: 1px; }
+    .latest__status { display: block; margin-top: 3px; color: #b4b8af; font-size: 9px; letter-spacing: 1px; }
+
+    .brand-block { position: absolute; left: clamp(24px, 5vw, 76px); bottom: clamp(108px, 17vh, 170px); max-width: min(620px, 70vw); text-shadow: 0 3px 22px rgba(0,0,0,.7); pointer-events: none; }
+    .brand-mark { display: block; width: clamp(220px, 31vw, 410px); max-height: 190px; object-fit: contain; object-position: left center; filter: drop-shadow(0 8px 24px rgba(0,0,0,.55)); }
+    .brand-caption { margin: 16px 0 0; color: rgba(238,233,223,.74); font-size: 10px; font-weight: 700; letter-spacing: 3px; }
+    .brand-caption span { color: var(--oz-red); }
+
+    .bottombar { align-items: flex-end; }
+    .play { display: inline-flex; min-width: 210px; min-height: 58px; align-items: center; justify-content: space-between; gap: 28px;
+      padding: 0 22px; border: 1px solid #e04b45; background: linear-gradient(110deg, #b12f33, #7c1d23);
+      color: white; font-size: 12px; font-weight: 900; letter-spacing: 2px; box-shadow: 0 12px 38px rgba(0,0,0,.32);
+      transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+    .play:hover:not(:disabled) { transform: translateY(-2px); background: linear-gradient(110deg, #d0443e, #97262a); box-shadow: 0 16px 44px rgba(0,0,0,.4); }
+    .play:disabled { cursor: not-allowed; opacity: .48; }
+    .play__arrow { font-size: 22px; font-weight: 400; }
+    .version-credit { padding-bottom: 5px; text-align: right; text-shadow: 0 2px 14px #000; }
+    .game-version { display: block; margin-top: 5px; color: var(--oz-paper); font: 800 14px/1.2 monospace; }
+    .credit { display: block; margin-top: 10px; color: rgba(238,233,223,.68); font-size: 10px; font-weight: 700; letter-spacing: 1.6px; }
+    .credit strong { color: var(--oz-paper); }
+
+    .message { position: absolute; left: clamp(24px, 5vw, 76px); bottom: 84px; max-width: min(520px, calc(100% - 48px)); margin: 0; color: #e2ded4; font-size: 11px; line-height: 1.5; text-shadow: 0 2px 10px #000; }
+    .message.error { color: #ffaaa2; }
+
+    .settings-panel { position: fixed; z-index: 10; top: 82px; left: clamp(24px, 5vw, 76px); display: none; width: min(420px, calc(100vw - 48px)); max-height: calc(100svh - 110px); overflow: auto;
+      padding: 22px; border: 1px solid rgba(195,58,54,.55); background: var(--oz-panel); backdrop-filter: blur(16px); box-shadow: 0 24px 80px rgba(0,0,0,.7);
+    }
+    .settings-panel.open { display: block; }
+    .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+    .settings-head h2 { margin: 0; font-family: "Barlow Condensed", Impact, sans-serif; font-size: 25px; letter-spacing: .8px; }
+    .close { width: 30px; height: 30px; border: 0; background: transparent; color: #c9c9c0; font-size: 25px; }
+    .field { margin: 0 0 16px; }
+    .field label, .field-title { display: block; margin-bottom: 8px; color: var(--oz-muted); font-size: 9px; font-weight: 800; letter-spacing: 1.5px; }
+    select { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #4a514d; background: #151a1b; color: var(--oz-paper); }
+    .preference { display: flex; align-items: center; gap: 9px; margin: 15px 0; color: #c4c9c2; font-size: 11px; }
+    .preference input { width: 16px; height: 16px; accent-color: var(--oz-red); }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .secondary { min-height: 38px; padding: 9px 12px; border: 1px solid #59615b; background: rgba(255,255,255,.035); color: var(--oz-paper); font-size: 9px; font-weight: 800; letter-spacing: .7px; }
+    .secondary:hover:not(:disabled) { border-color: var(--oz-red); background: rgba(195,58,54,.13); }
+    .secondary:disabled { cursor: not-allowed; opacity: .42; }
+    .status { margin: 12px 0 0; color: #929b94; font-size: 10px; line-height: 1.5; }
+    .wallpaper-settings { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--oz-line); }
+    .wallpaper-settings p { margin: 0 0 10px; color: #929b94; font-size: 10px; line-height: 1.5; }
+    .wallpaper-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .launcher-update { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--oz-line); }
+    .launcher-update-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .launcher-update-title { font-size: 9px; font-weight: 800; letter-spacing: 1px; }
+    .launcher-update-status { margin: 8px 0 12px; color: #9ba39d; font-size: 10px; line-height: 1.5; }
+    .launcher-update-status.available { color: #e7b36c; }
+    .launcher-update-status.error { color: #e58b83; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 620px) {
+      .screen { min-height: 420px; padding: 18px 20px 20px; }
+      .settings { width: 40px; height: 40px; }
+      .latest__label, .meta-label { font-size: 7px; letter-spacing: 1.3px; }
+      .latest__version { font-size: 17px; }
+      .brand-block { left: 20px; bottom: 126px; max-width: calc(100% - 40px); }
+      .brand-mark { width: min(68vw, 300px); max-height: 130px; }
+      .brand-caption { font-size: 8px; letter-spacing: 1.8px; }
+      .bottombar { align-items: flex-end; }
+      .play { min-width: 164px; min-height: 50px; padding: 0 14px; font-size: 10px; letter-spacing: 1.3px; }
+      .version-credit { max-width: 135px; }
+      .game-version { font-size: 12px; }
+      .credit { font-size: 8px; letter-spacing: 1px; }
+      .message { left: 20px; bottom: 82px; }
+      .settings-panel { top: 68px; left: 20px; width: calc(100vw - 40px); max-height: calc(100svh - 88px); padding: 17px; }
+    }
+    @media (max-height: 520px) {
+      .screen { min-height: 0; padding-top: 14px; padding-bottom: 14px; }
+      .brand-block { bottom: 94px; }
+      .brand-mark { width: 210px; max-height: 90px; }
+      .brand-caption { margin-top: 8px; }
+      .play { min-height: 46px; }
+      .message { bottom: 66px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
   </style>
 </head>
 <body>
-  <div class="wallpaper" aria-hidden="true"><img src="./images/wallpaper_launcher_cidade_noite_1920x1080.png" alt="" /></div>
-  <main class="launcher">
-    <header>
-      <img class="game-icon" src="./images/icone_game_zumbi_512.png" alt="Outbreak Zones" />
-      <div class="brand">OUTBREAK <span>ZONES</span></div>
-      <div class="launcher-version">LAUNCHER<strong id="launcher-version">v—</strong></div>
-      <button class="settings" id="settings-toggle" type="button" aria-label="Configurações" title="Configurações">⚙</button>
+  <div class="wallpaper" aria-hidden="true">
+    <img id="wallpaper-image" src="./images/wallpaper_launcher_cidade_noite_1920x1080.png" alt="" />
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <main class="screen">
+    <header class="topbar">
+      <button class="settings" id="settings-toggle" type="button" aria-label="Abrir configurações" aria-expanded="false" aria-controls="settings-panel" title="Configurações">⚙</button>
+      <div class="latest" aria-live="polite">
+        <span class="latest__label">ÚLTIMA VERSÃO DISPONÍVEL</span>
+        <strong class="latest__version" id="latest-release">VERIFICANDO…</strong>
+        <span class="latest__status" id="latest-status">OUTBREAK ZONES</span>
+      </div>
     </header>
 
-    <div class="divider"></div>
+    <div class="brand-block" aria-label="Outbreak Zones">
+      <img class="brand-mark" src="./images/icone_game_zumbi_512.png" alt="Outbreak Zones" />
+      <p class="brand-caption">NÃO HÁ GARANTIA DE <span>EXTRAÇÃO</span></p>
+    </div>
 
-    <section class="main-action" aria-label="Iniciar jogo">
-      <button class="play" id="play" type="button" disabled>PLAY</button>
-      <div class="game-version">GAME VERSION<strong id="current-version">—</strong></div>
-    </section>
+    <footer class="bottombar">
+      <button class="play" id="play" type="button" disabled>
+        <span>JOGAR</span><span class="play__arrow" aria-hidden="true">↗</span>
+      </button>
+      <div class="version-credit">
+        <span class="meta-label">VERSÃO DO JOGO</span>
+        <strong class="game-version" id="current-version">—</strong>
+        <span class="credit">BY <strong>@XTARZ</strong></span>
+      </div>
+    </footer>
+
     <p class="message" id="message" role="status" aria-live="polite"></p>
-
-    <section class="settings-panel" id="settings-panel" aria-label="Configurações do launcher">
-      <div class="settings-head"><h2>Configurações</h2><button class="close" id="settings-close" type="button" aria-label="Fechar">×</button></div>
-      <div class="field">
-        <label for="version-select">VERSÃO DO JOGO</label>
-        <select id="version-select"><option value="">Carregando versões…</option></select>
-      </div>
-      <label class="preference"><input id="latest-default" type="checkbox" checked /> Usar a última versão lançada por padrão</label>
-      <div class="actions">
-        <button class="secondary" id="save-version" type="button" disabled>APLICAR VERSÃO</button>
-        <button class="secondary" id="refresh" type="button">VERIFICAR ATUALIZAÇÕES</button>
-        <button class="secondary" id="install" type="button" disabled>INSTALAR VERSÃO SELECIONADA</button>
-      </div>
-      <p class="status" id="connection">Aguardando verificação…</p>
-      <div class="launcher-update">
-        <div class="launcher-update-row">
-          <span class="launcher-update-title">ATUALIZAÇÃO DO LAUNCHER</span>
-          <button class="secondary" id="launcher-update" type="button" disabled>ATUALIZAR LAUNCHER</button>
-        </div>
-        <p class="launcher-update-status" id="launcher-update-status" role="status" aria-live="polite">Verificando versão instalada…</p>
-      </div>
-    </section>
   </main>
+
+  <section class="settings-panel" id="settings-panel" aria-label="Configurações do launcher">
+    <div class="settings-head">
+      <h2>CONFIGURAÇÕES</h2>
+      <button class="close" id="settings-close" type="button" aria-label="Fechar configurações">×</button>
+    </div>
+    <div class="field">
+      <label for="version-select">VERSÃO DO JOGO</label>
+      <select id="version-select"><option value="">Carregando versões…</option></select>
+    </div>
+    <label class="preference"><input id="latest-default" type="checkbox" checked /> Iniciar sempre com a última versão lançada</label>
+    <div class="actions">
+      <button class="secondary" id="save-version" type="button" disabled>APLICAR VERSÃO</button>
+      <button class="secondary" id="refresh" type="button">VERIFICAR ATUALIZAÇÕES</button>
+      <button class="secondary" id="install" type="button" disabled>INSTALAR VERSÃO SELECIONADA</button>
+    </div>
+    <p class="status" id="connection">Aguardando verificação…</p>
+
+    <div class="wallpaper-settings">
+      <span class="field-title">WALLPAPER PERSONALIZADO</span>
+      <p>Escolha uma imagem para o fundo do launcher. A imagem fica salva neste dispositivo.</p>
+      <div class="wallpaper-actions">
+        <button class="secondary" id="choose-wallpaper" type="button">ESCOLHER IMAGEM</button>
+        <button class="secondary" id="reset-wallpaper" type="button">RESTAURAR PADRÃO</button>
+        <input class="sr-only" id="wallpaper-file" type="file" accept="image/png,image/jpeg,image/webp" />
+      </div>
+    </div>
+
+    <div class="launcher-update">
+      <div class="launcher-update-row">
+        <span class="launcher-update-title">VERSÃO DO LAUNCHER</span>
+        <strong id="launcher-version">v—</strong>
+      </div>
+      <p class="launcher-update-status" id="launcher-update-status" role="status" aria-live="polite">Verificando versão instalada…</p>
+      <button class="secondary" id="launcher-update" type="button" disabled>ATUALIZAR LAUNCHER</button>
+    </div>
+  </section>
+
   <script type="module" src="./launcher.js"></script>
 </body>
 </html>
