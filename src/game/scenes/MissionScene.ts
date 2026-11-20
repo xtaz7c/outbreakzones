@@ -1189,7 +1189,7 @@ export class MissionScene extends Phaser.Scene {
       bounds: { x: this.hudBounds.minimap.x + 6, y: this.hudBounds.minimap.y + 6, width: 226, height: 226 },
       civilians, officers, infected: this.simulation.getInfected(), visibility: this.minimapVisibility,
       selectedOfficerIds: this.selectedOfficerIds,
-      safeZone: this.missionId === 1 ? { x: 1600, y: 2080 } : { x: 1280, y: 1216 },
+      safeZone: this.missionId === 1 ? { x: 1600, y: 2080 } : { x: 1936, y: 2032 },
     });
 
     this.settingsButton.setColor(this.pauseMenuOpen ? '#c33a36' : '#e8e3d8');
