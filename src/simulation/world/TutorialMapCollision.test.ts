@@ -138,6 +138,35 @@ describe('tutorial rural map collision and navigation', () => {
     expect(buildings.getNavigationGrid('police').isWalkable({ column: 75, row: 49 })).toBe(false);
   });
 
+  it('keeps every road segment in one connected road network', () => {
+    const ground = getLayer('Ground').data;
+    if (!ground) throw new Error('Ground layer is missing.');
+    const roadIndexes = ground.flatMap((gid, index) => gid === 2 || gid === 13 ? [index] : []);
+    expect(roadIndexes.length).toBeGreaterThan(0);
+
+    const roadSet = new Set(roadIndexes);
+    const visited = new Set<number>();
+    const pending = [roadIndexes[0]!];
+    while (pending.length > 0) {
+      const index = pending.pop()!;
+      if (visited.has(index)) continue;
+      visited.add(index);
+      const column = index % tutorialMap.width;
+      const row = Math.floor(index / tutorialMap.width);
+      const neighbors = [
+        column > 0 ? index - 1 : -1,
+        column + 1 < tutorialMap.width ? index + 1 : -1,
+        row > 0 ? index - tutorialMap.width : -1,
+        row + 1 < tutorialMap.height ? index + tutorialMap.width : -1,
+      ];
+      for (const neighbor of neighbors) {
+        if (neighbor >= 0 && roadSet.has(neighbor) && !visited.has(neighbor)) pending.push(neighbor);
+      }
+    }
+
+    expect(visited.size).toBe(roadIndexes.length);
+  });
+
   it('connects the property driveway to the south road through the gate', () => {
     const ground = getLayer('Ground').data;
     expect(ground).toBeDefined();
