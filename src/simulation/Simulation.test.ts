@@ -283,7 +283,7 @@ describe('Simulation', () => {
       sim.setOfficerTacticalPosture(member.id, 'hold_fire');
     }
     const infected = sim.spawnInfected({
-      x: 1000, y: 1072, entryTile: { column: 31, row: 33 },
+      x: 1896, y: 1808, entryTile: { column: 59, row: 56 },
       moveSpeed: 1, detectionRange: 1,
     });
     expect(sim.setOfficerTacticalPosture(officer.id, 'hold_fire')).toBe(true);
