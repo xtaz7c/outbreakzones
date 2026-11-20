@@ -80,6 +80,32 @@ jobs:
             exit 1
           }
 
+      - name: Sync launcher version from release tag
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'launcher-v')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${RELEASE_TAG#launcher-v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid launcher release tag: $RELEASE_TAG"
+            exit 1
+          fi
+          VERSION="$VERSION" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const version = process.env.VERSION;
+          const cargoPath = 'src-tauri/Cargo.toml';
+          const configPath = 'src-tauri/tauri.conf.json';
+          const cargo = fs.readFileSync(cargoPath, 'utf8');
+          const versionLine = /^version = "[^"]+"$/m;
+          if (!versionLine.test(cargo)) throw new Error('Não foi possível localizar a versão do pacote em Cargo.toml');
+          const updatedCargo = cargo.replace(versionLine, `version = "${version}"`);
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          config.version = version;
+          fs.writeFileSync(cargoPath, updatedCargo);
+          fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+          console.log(`Launcher version synchronized to ${version}`);
+          NODE
+
       - name: Validate launcher release version
         if: github.ref_type == 'tag' && startsWith(github.ref_name, 'launcher-v')
         run: |
