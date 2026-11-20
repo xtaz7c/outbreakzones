@@ -70,14 +70,14 @@ export class Simulation {
   private missionStatus: 'playing' | 'victory' | 'defeat' = 'playing';
   private requireCivilianExtraction = true;
   private missionObjectiveComplete = true;
-  private extractionZone = { x: 1024, y: 1120, radius: 72 };
+  private extractionZone = { x: 1936, y: 2032, radius: 72 };
 
   constructor(scenarioOrCombatOptions: 'tutorial' | 'sector-04' | CombatSystemOptions = {}, combatOptions: CombatSystemOptions = {}) {
     const scenario = typeof scenarioOrCombatOptions === 'string' ? scenarioOrCombatOptions : 'tutorial';
     this.combat = new CombatSystem(typeof scenarioOrCombatOptions === 'string' ? combatOptions : scenarioOrCombatOptions);
     const officerPositions = scenario === 'sector-04'
       ? [39, 41, 43].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 35 * WORLD_TILE_SIZE + 16 }))
-      : [29, 32, 35].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 33 * WORLD_TILE_SIZE + 16 }));
+      : [57, 60, 63].map((column) => ({ x: column * WORLD_TILE_SIZE + 16, y: 56 * WORLD_TILE_SIZE + 16 }));
     officerPositions.forEach((position, index) => this.officers.push(new PoliceOfficer({ id: index + 1, ...position })));
     const civilianPositions = scenario === 'sector-04'
       ? [
@@ -94,7 +94,7 @@ export class Simulation {
           [91 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
           [95 * WORLD_TILE_SIZE + 16, 41 * WORLD_TILE_SIZE + 16],
         ]
-      : [[800, 480], [1200, 480]];
+      : [[1856, 1456], [2016, 1456]];
     civilianPositions.forEach(([x, y], index) => this.civilians.push(new Civilian({
       id: index + 1,
       x: x!,
