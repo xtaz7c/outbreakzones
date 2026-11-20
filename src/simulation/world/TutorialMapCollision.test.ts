@@ -35,6 +35,17 @@ const getLayer = (name: string): TiledLayer => {
 };
 
 describe('tutorial rural map collision and navigation', () => {
+  it('renders the property fence separately from the garage roof', () => {
+    const fence = getLayer('Fence').data;
+    const structures = getLayer('Structures').data;
+    expect(fence).toBeDefined();
+    expect(structures).toBeDefined();
+    expect(fence?.[42 * tutorialMap.width + 50]).toBe(5);
+    expect(fence?.[55 * tutorialMap.width + 80]).toBe(5);
+    expect(fence?.[68 * tutorialMap.width + 60]).toBe(0);
+    expect(structures?.[47 * tutorialMap.width + 75]).toBe(5);
+  });
+
   it('blocks the perimeter fence and keeps the south gate passable', () => {
     const grid = buildGridFromTiledLayers(
       tutorialMap.width,
