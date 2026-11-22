@@ -98,7 +98,12 @@ pub fn restore_backup(save: &Path, backup_id: &str) -> Result<(), String> {
     let source = backup_dir(save).join(format!("backup-{stamp}.json"));
     let raw = fs::read(&source).map_err(|e| format!("Não foi possível ler o backup: {e}"))?;
     validate(&raw).map_err(|_| "O backup selecionado está inválido.".to_string())?;
-    preserve_valid_save(save)?;
+    if save.exists() {
+        let current = fs::read(save).map_err(|e| format!("Não foi possível ler o salvamento atual: {e}"))?;
+        if validate(&current).is_ok() {
+            preserve_valid_save(save)?;
+        }
+    }
     let temporary = save.with_extension("restore.tmp");
     fs::write(&temporary, raw).map_err(|e| format!("Não foi possível preparar a restauração: {e}"))?;
     if let Err(error) = fs::rename(&temporary, save) {
@@ -114,4 +119,29 @@ mod tests {
     #[test] fn rejects_invalid_json() { assert!(validate(b"broken").is_err()); }
     #[test] fn rejects_wrong_schema() { assert!(validate(br#"{"schemaVersion":2,"entries":{}}"#).is_err()); }
     #[test] fn accepts_valid_empty_envelope() { assert!(validate(br#"{"schemaVersion":1,"entries":{}}"#).is_ok()); }
+    #[test]
+    fn restores_valid_backup_when_current_save_is_corrupt() {
+        let root = std::env::temp_dir().join(format!("oz-save-restore-{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()));
+        fs::create_dir_all(&root).unwrap();
+        let save = root.join("campaign-save.json");
+        let backups = backup_dir(&save);
+        fs::create_dir_all(&backups).unwrap();
+        fs::write(&save, b"corrupt").unwrap();
+        let expected = br#"{"schemaVersion":1,"entries":{}}"#;
+        fs::write(backups.join("backup-123.json"), expected).unwrap();
+        restore_backup(&save, "backup-123.json").unwrap();
+        let restored = fs::read(&save).unwrap();
+        assert_eq!(validate(&restored).unwrap(), validate(expected).unwrap());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn rejects_backup_path_traversal() {
+        let root = std::env::temp_dir().join(format!("oz-save-path-{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()));
+        fs::create_dir_all(&root).unwrap();
+        let save = root.join("campaign-save.json");
+        assert!(restore_backup(&save, "../campaign-save.json").is_err());
+        let _ = fs::remove_dir_all(root);
+    }
+
 }
