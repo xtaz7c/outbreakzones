@@ -482,8 +482,7 @@ fn serve_version(root: PathBuf, save_path: PathBuf) -> Result<SocketAddr, String
                         .map(|duration| duration.as_nanos()).unwrap_or_default();
                     let temporary = save_path.with_file_name(format!("campaign-save-{}-{nonce}.tmp", std::process::id()));
                     let backup_result = save_recovery::preserve_valid_save(&save_path);
-                    let write_result = backup_result.and_then(|_| fs::write(&temporary, serialized)
-                        .and_then(|_| fs::rename(&temporary, &save_path)));
+                    let write_result = backup_result.and_then(|_| fs::write(&temporary, serialized).map_err(|e| e.to_string())\n                        .and_then(|_| fs::rename(&temporary, &save_path).map_err(|e| e.to_string())));
                     if write_result.is_err() {
                         let _ = fs::remove_file(&temporary);
                         let _ = request.respond(Response::from_string("Save write failed").with_status_code(500));
