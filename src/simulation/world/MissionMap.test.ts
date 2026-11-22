@@ -59,16 +59,20 @@ describe('mission-01 Tiled map', () => {
 
     expect(accesses.length).toBeGreaterThan(0);
     for (const object of accesses) {
-      expect(Number.isFinite(object.x)).toBe(true);
-      expect(Number.isFinite(object.y)).toBe(true);
-      expect(Number.isFinite(object.width)).toBe(true);
-      expect(Number.isFinite(object.height)).toBe(true);
-      expect(object.width).toBeGreaterThan(0);
-      expect(object.height).toBeGreaterThan(0);
-      expect(object.x).toBeGreaterThanOrEqual(0);
-      expect(object.y).toBeGreaterThanOrEqual(0);
-      expect(object.x! + object.width!).toBeLessThanOrEqual(missionMap.width * missionMap.tilewidth);
-      expect(object.y! + object.height!).toBeLessThanOrEqual(missionMap.height * missionMap.tileheight);
+      const x = object.x ?? Number.NaN;
+      const y = object.y ?? Number.NaN;
+      const width = object.width ?? Number.NaN;
+      const height = object.height ?? Number.NaN;
+      expect(Number.isFinite(x)).toBe(true);
+      expect(Number.isFinite(y)).toBe(true);
+      expect(Number.isFinite(width)).toBe(true);
+      expect(Number.isFinite(height)).toBe(true);
+      expect(width).toBeGreaterThan(0);
+      expect(height).toBeGreaterThan(0);
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(y).toBeGreaterThanOrEqual(0);
+      expect(x + width).toBeLessThanOrEqual(missionMap.width * missionMap.tilewidth);
+      expect(y + height).toBeLessThanOrEqual(missionMap.height * missionMap.tileheight);
     }
 
     const garageEntry = accesses.find((object) => object.name === 'garage-entry');
