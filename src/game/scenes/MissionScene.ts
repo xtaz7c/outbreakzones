@@ -5,6 +5,7 @@ import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
 import { CAMPAIGN_PROGRESS_KEY, completeChapter, normalizeCampaignProgress, unlockChapter } from '../CampaignSave';
 import { scheduleGamePersistence } from '../../persistence/GamePersistence';
 import { canStartCampaign, getMissionDefinition, getMissionResultMessage, type MissionId } from '../MissionProgression';
+import { formatMissionLines } from '../MissionText';
 import { Simulation } from '../../simulation/Simulation';
 import type { CombatEvent } from '../../simulation/systems/CombatSystem';
 import { GridMap } from '../../simulation/world/GridMap';
@@ -1150,7 +1151,7 @@ export class MissionScene extends Phaser.Scene {
     const maintenance = this.simulation.getMaintenanceState();
     const deployableResources = this.simulation.getDeployableResources();
     const maintenanceJobs = maintenance?.jobs.map((job) => `${job.action} ${job.accessId} · ${Math.ceil(job.remaining)}s`).join(' | ') || 'NENHUMA';
-    this.missionText.setText([
+    this.missionText.setText(formatMissionLines([
       `MISSÃO ${this.missionId}  /  ${getMissionDefinition(this.missionId).title.toUpperCase()}`,
       objective,
       ...(this.missionId === 1
@@ -1161,7 +1162,7 @@ export class MissionScene extends Phaser.Scene {
       `DEPLOY  ${deployableResources.scrap} SUCATA · ${deployableResources.parts} PEÇAS · ABRIGO ${this.simulation.getShelterCapacity()} VAGAS`,
       `MANUTENÇÃO  ${maintenanceJobs}`,
       ...(this.buildStatus ? [this.buildStatus] : []),
-    ].join('\\n'));
+    ]));
 
     const elapsedCampaignMinutes = 8 * 60 + Math.floor(state.elapsed);
     const campaignDay = Math.floor(elapsedCampaignMinutes / (24 * 60)) + 1;
