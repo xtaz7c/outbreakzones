@@ -513,6 +513,18 @@ fn serve_version(root: PathBuf, save_path: PathBuf) -> Result<SocketAddr, String
 }
 
 #[tauri::command]
+fn list_save_backups(app: tauri::AppHandle) -> Result<Vec<save_recovery::SaveBackupInfo>, String> {
+    let save_path = data_dir(&app)?.join("campaign-save.json");
+    save_recovery::list_valid_backups(&save_path)
+}
+
+#[tauri::command]
+fn restore_save_backup(app: tauri::AppHandle, backup_id: String) -> Result<(), String> {
+    let save_path = data_dir(&app)?.join("campaign-save.json");
+    save_recovery::restore_backup(&save_path, &backup_id)
+}
+
+#[tauri::command]
 fn launch_game(app: tauri::AppHandle, version: String) -> Result<(), String> {
     validate_version(&version)?;
     let root = versions_dir(&app)?.join(&version);
@@ -563,6 +575,8 @@ fn main() {
             get_preferred_version,
             set_preferred_version,
             download_game_version,
+            list_save_backups,
+            restore_save_backup,
             launch_game
         ])
         .run(tauri::generate_context!())
