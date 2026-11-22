@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{fs, path::{Path, PathBuf}, time::{SystemTime, UNIX_EPOCH}};
+use std::{fs::{self, OpenOptions}, io::Write, path::{Path, PathBuf}, time::{SystemTime, UNIX_EPOCH}};
 
 const MAX_BACKUPS: usize = 5;
 const MAX_SAVE_BYTES: usize = 1024 * 1024;
@@ -36,10 +36,27 @@ pub fn preserve_valid_save(save: &Path) -> Result<(), String> {
     validate(&raw)?;
     let dir = backup_dir(save);
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let stamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
-    let destination = dir.join(format!("backup-{stamp}.json"));
-    if destination.exists() { return Ok(()); }
-    fs::write(&destination, raw).map_err(|e| e.to_string())?;
+
+    // Nanosecond IDs plus create_new avoid silently reusing a backup when
+    // multiple saves happen during the same Unix second.
+    let mut stamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
+    loop {
+        let destination = dir.join(format!("backup-{stamp}.json"));
+        match OpenOptions::new().write(true).create_new(true).open(&destination) {
+            Ok(mut file) => {
+                if let Err(error) = file.write_all(&raw) {
+                    let _ = fs::remove_file(&destination);
+                    return Err(error.to_string());
+                }
+                break;
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                stamp = stamp.saturating_add(1);
+            }
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+
     let mut backups: Vec<_> = fs::read_dir(&dir).map_err(|e| e.to_string())?
         .filter_map(|e| e.ok()).filter(|e| e.path().extension().is_some_and(|x| x == "json")).collect();
     backups.sort_by_key(|e| e.metadata().and_then(|m| m.modified()).ok());
@@ -77,7 +94,9 @@ pub fn list_valid_backups(save: &Path) -> Result<Vec<SaveBackupInfo>, String> {
         if stamp.is_empty() || !stamp.chars().all(|character| character.is_ascii_digit()) { continue; }
         let Ok(raw) = fs::read(&path) else { continue };
         if validate(&raw).is_err() { continue; }
-        let created_at = stamp.parse::<u64>().unwrap_or_else(|_| {
+        let created_at = stamp.parse::<u128>().map(|value| {
+            if value > 9_999_999_999 { (value / 1_000_000_000) as u64 } else { value as u64 }
+        }).unwrap_or_else(|_| {
             entry.metadata().ok().and_then(|metadata| metadata.modified().ok())
                 .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
                 .map(|duration| duration.as_secs()).unwrap_or_default()
@@ -141,6 +160,29 @@ mod tests {
         fs::create_dir_all(&root).unwrap();
         let save = root.join("campaign-save.json");
         assert!(restore_backup(&save, "../campaign-save.json").is_err());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn preserves_distinct_saves_written_within_the_same_second() {
+        let root = std::env::temp_dir().join(format!("oz-save-collision-{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()));
+        fs::create_dir_all(&root).unwrap();
+        let save = root.join("campaign-save.json");
+        let first = br#"{"schemaVersion":1,"entries":{"outbreakzones:progress":"chapter-1"}}"#;
+        let second = br#"{"schemaVersion":1,"entries":{"outbreakzones:progress":"chapter-2"}}"#;
+        fs::write(&save, first).unwrap();
+        preserve_valid_save(&save).unwrap();
+        fs::write(&save, second).unwrap();
+        preserve_valid_save(&save).unwrap();
+
+        let backups = list_valid_backups(&save).unwrap();
+        assert_eq!(backups.len(), 2);
+        let restored: Vec<_> = backups.iter().map(|backup| {
+            let path = backup_dir(&save).join(&backup.id);
+            validate(&fs::read(path).unwrap()).unwrap()
+        }).collect();
+        assert!(restored.iter().any(|save| save.entries.get("outbreakzones:progress").is_some_and(|v| v == "chapter-1")));
+        assert!(restored.iter().any(|save| save.entries.get("outbreakzones:progress").is_some_and(|v| v == "chapter-2")));
         let _ = fs::remove_dir_all(root);
     }
 
