@@ -97,6 +97,10 @@
     .wallpaper-settings { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--oz-line); }
     .wallpaper-settings p { margin: 0 0 10px; color: #929b94; font-size: 10px; line-height: 1.5; }
     .wallpaper-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .save-recovery { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--oz-line); }
+    .save-recovery p { margin: 8px 0 12px; color: #929b94; font-size: 10px; line-height: 1.5; }
+    .save-recovery-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .save-recovery-status { margin: 10px 0 0; color: #9ba39d; font-size: 10px; line-height: 1.5; }
     .launcher-update { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--oz-line); }
     .launcher-update-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .launcher-update-title { font-size: 9px; font-weight: 800; letter-spacing: 1px; }
@@ -192,6 +196,20 @@
         <button class="secondary" id="reset-wallpaper" type="button">RESTAURAR PADRÃO</button>
         <input class="sr-only" id="wallpaper-file" type="file" accept="image/png,image/jpeg,image/webp" />
       </div>
+    </div>
+
+    <div class="save-recovery">
+      <span class="field-title">BACKUPS DO SALVAMENTO</span>
+      <p>Consulte cópias válidas do progresso local. Restaurar substitui o salvamento atual; uma cópia válida atual será preservada antes da troca.</p>
+      <div class="field">
+        <label for="save-backup-select">BACKUP DISPONÍVEL</label>
+        <select id="save-backup-select"><option value="">Carregando backups…</option></select>
+      </div>
+      <div class="save-recovery-actions">
+        <button class="secondary" id="refresh-save-backups" type="button">ATUALIZAR LISTA</button>
+        <button class="secondary" id="restore-save-backup" type="button" disabled>RESTAURAR BACKUP</button>
+      </div>
+      <p class="save-recovery-status" id="save-recovery-status" role="status" aria-live="polite">Verificando backups locais…</p>
     </div>
 
     <div class="launcher-update">

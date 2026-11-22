@@ -1,7 +1,7 @@
 (() => {
   const invoke = window.__TAURI__?.core?.invoke;
   const $ = (id) => document.getElementById(id);
-  const state = { installed: [], releases: [], preferred: null, latest: null, latestDefault: true, launcherUpdate: null };
+  const state = { installed: [], releases: [], preferred: null, latest: null, latestDefault: true, launcherUpdate: null, saveBackups: [] };
   const message = (text, error = false) => {
     $('message').textContent = text;
     $('message').classList.toggle('error', error);
@@ -100,6 +100,43 @@
     state.preferred = await invoke('get_preferred_version');
     renderVersions();
     updateMain();
+  };
+  const refreshSaveBackups = async () => {
+    const select = $('save-backup-select');
+    const restore = $('restore-save-backup');
+    const status = $('save-recovery-status');
+    if (!invoke) {
+      select.replaceChildren(new Option('Disponível apenas no launcher instalado', ''));
+      restore.disabled = true;
+      status.textContent = 'A recuperação de backups está disponível na versão desktop.';
+      return;
+    }
+    select.disabled = true;
+    restore.disabled = true;
+    status.textContent = 'Verificando backups locais…';
+    try {
+      state.saveBackups = await invoke('list_save_backups');
+      select.replaceChildren();
+      if (!Array.isArray(state.saveBackups) || state.saveBackups.length === 0) {
+        select.add(new Option('Nenhum backup válido encontrado', ''));
+        status.textContent = 'Nenhum backup válido disponível neste dispositivo.';
+        return;
+      }
+      for (const backup of state.saveBackups) {
+        const date = new Date(Number(backup.createdAt) * 1000);
+        const label = Number.isNaN(date.getTime())
+          ? backup.id
+          : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        select.add(new Option(label, backup.id));
+      }
+      status.textContent = state.saveBackups.length + ' backup(s) válido(s) encontrado(s).';
+      restore.disabled = !select.value;
+    } catch (error) {
+      select.replaceChildren(new Option('Não foi possível listar os backups', ''));
+      status.textContent = 'Falha ao consultar backups: ' + String(error);
+    } finally {
+      select.disabled = false;
+    }
   };
   const refreshManifest = async () => {
     if (!invoke) { message('Abra este aplicativo pelo launcher instalado.', true); return; }
@@ -245,6 +282,35 @@
     } catch (error) { message('Não foi possível instalar: ' + String(error), true); }
     finally { updateSelectionActions(); }
   });
+  $('save-backup-select').addEventListener('change', () => {
+    $('restore-save-backup').disabled = !$('save-backup-select').value;
+  });
+  $('refresh-save-backups').addEventListener('click', () => {
+    void refreshSaveBackups();
+  });
+  $('restore-save-backup').addEventListener('click', async () => {
+    const backupId = $('save-backup-select').value;
+    if (!backupId || !state.saveBackups.some(item => item.id === backupId)) return;
+    const confirmed = window.confirm(
+      'Restaurar este backup? O salvamento atual será substituído. Uma cópia válida atual será preservada antes da restauração.'
+    );
+    if (!confirmed) return;
+    $('restore-save-backup').disabled = true;
+    $('refresh-save-backups').disabled = true;
+    $('save-recovery-status').textContent = 'Restaurando backup…';
+    try {
+      await invoke('restore_save_backup', { backupId });
+      $('save-recovery-status').textContent = 'Backup restaurado. Inicie o jogo para carregar o progresso recuperado.';
+      message('Salvamento restaurado com sucesso.');
+      await refreshSaveBackups();
+    } catch (error) {
+      $('save-recovery-status').textContent = 'Falha ao restaurar: ' + String(error);
+      message('Não foi possível restaurar o backup: ' + String(error), true);
+    } finally {
+      $('refresh-save-backups').disabled = false;
+      $('restore-save-backup').disabled = !$('save-backup-select').value;
+    }
+  });
   $('play').addEventListener('click', async () => {
     const version = $('current-version').textContent.replace(/^v/, '');
     if (!version || version === 'NOT INSTALLED' || !isInstalled(version)) return;
@@ -262,7 +328,7 @@
     if (!invoke) { message('Abra este aplicativo pelo launcher instalado.', true); return; }
     state.latestDefault = localStorage.getItem('oz-latest-default') !== 'false';
     $('latest-default').checked = state.latestDefault;
-    try { await refreshInstalled(); await refreshManifest(); await checkLauncherUpdate(); }
+    try { await refreshInstalled(); await refreshSaveBackups(); await refreshManifest(); await checkLauncherUpdate(); }
     catch (error) { message(String(error), true); }
   })();
 })();
