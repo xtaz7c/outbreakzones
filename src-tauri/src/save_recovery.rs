@@ -11,6 +11,11 @@ pub struct SaveEnvelope {
     pub entries: std::collections::HashMap<String, String>,
 }
 
+
+impl Default for SaveEnvelope {
+    fn default() -> Self { Self { schema_version: 1, entries: std::collections::HashMap::new() } }
+}
+
 pub fn validate(raw: &[u8]) -> Result<SaveEnvelope, String> {
     if raw.len() > MAX_SAVE_BYTES { return Err("Save excede 1 MiB".into()); }
     let data: SaveEnvelope = serde_json::from_slice(raw).map_err(|e| format!("JSON inválido: {e}"))?;
