@@ -17,6 +17,7 @@ use tiny_http::{Header, Method, Response, Server};
 use zip::ZipArchive;
 
 const MAX_SAVE_BYTES: u64 = 1024 * 1024;
+mod save_recovery;
 const MANIFEST_URL: &str = "https://raw.githubusercontent.com/xtaz7c/outbreakzones/main/releases/manifest.json";
 const LAUNCHER_RELEASES_URL: &str = "https://api.github.com/repos/xtaz7c/outbreakzones/releases?per_page=100";
 const MAX_LAUNCHER_PACKAGE_BYTES: usize = 512 * 1024 * 1024;
@@ -71,18 +72,7 @@ struct LauncherUpdate {
     notes: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct SaveEnvelope {
-    schema_version: u32,
-    entries: HashMap<String, String>,
-}
-
-impl Default for SaveEnvelope {
-    fn default() -> Self {
-        Self { schema_version: 1, entries: HashMap::new() }
-    }
-}
+use save_recovery::SaveEnvelope;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct LauncherSettings {
@@ -427,13 +417,24 @@ fn serve_version(root: PathBuf, save_path: PathBuf) -> Result<SocketAddr, String
             if requested == "/__save" {
                 if request.method() == &Method::Get {
                     let envelope = if save_path.is_file() {
-                        fs::read(&save_path).ok()
-                            .and_then(|raw| serde_json::from_slice::<SaveEnvelope>(&raw).ok())
-                            .filter(|data| data.schema_version == 1)
-                            .unwrap_or_default()
-                    } else {
-                        SaveEnvelope::default()
-                    };
+                        match fs::read(&save_path).ok().and_then(|raw| save_recovery::validate(&raw).ok()) {
+                            Some(valid) => valid,
+                            None => match save_recovery::newest_valid_backup(&save_path) {
+                                Some(recovered) => {
+                                    let serialized = serde_json::to_vec(&recovered).unwrap_or_default();
+                                    let temp = save_path.with_extension("recovered.tmp");
+                                    if fs::write(&temp, serialized).and_then(|_| fs::rename(&temp, &save_path)).is_err() {
+                                        let _ = fs::remove_file(&temp);
+                                    }
+                                    recovered
+                                },
+                                None => {
+                                    let _ = request.respond(Response::from_string("Save corrompido e nenhum backup válido encontrado").with_status_code(500));
+                                    continue;
+                                }
+                            }
+                        }
+                    } else { SaveEnvelope::default() };
                     let body = serde_json::to_string(&envelope).unwrap_or_else(|_| r#"{"schema_version":1,"entries":{}}"#.into());
                     let header = Header::from_bytes("Content-Type", "application/json; charset=utf-8").expect("header válido");
                     let _ = request.respond(Response::from_string(body).with_header(header));
@@ -470,8 +471,9 @@ fn serve_version(root: PathBuf, save_path: PathBuf) -> Result<SocketAddr, String
                     let nonce = SystemTime::now().duration_since(UNIX_EPOCH)
                         .map(|duration| duration.as_nanos()).unwrap_or_default();
                     let temporary = save_path.with_file_name(format!("campaign-save-{}-{nonce}.tmp", std::process::id()));
-                    let write_result = fs::write(&temporary, serialized)
-                        .and_then(|_| fs::rename(&temporary, &save_path));
+                    let backup_result = save_recovery::preserve_valid_save(&save_path);
+                    let write_result = backup_result.and_then(|_| fs::write(&temporary, serialized).map_err(|e| e.to_string())
+                        .and_then(|_| fs::rename(&temporary, &save_path).map_err(|e| e.to_string())));
                     if write_result.is_err() {
                         let _ = fs::remove_file(&temporary);
                         let _ = request.respond(Response::from_string("Save write failed").with_status_code(500));
