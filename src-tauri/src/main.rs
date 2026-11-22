@@ -16,7 +16,8 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tiny_http::{Header, Method, Response, Server};
 use zip::ZipArchive;
 
-const MAX_SAVE_BYTES: u64 = 1024 * 1024;\nmod save_recovery;
+const MAX_SAVE_BYTES: u64 = 1024 * 1024;
+mod save_recovery;
 const MANIFEST_URL: &str = "https://raw.githubusercontent.com/xtaz7c/outbreakzones/main/releases/manifest.json";
 const LAUNCHER_RELEASES_URL: &str = "https://api.github.com/repos/xtaz7c/outbreakzones/releases?per_page=100";
 const MAX_LAUNCHER_PACKAGE_BYTES: usize = 512 * 1024 * 1024;
