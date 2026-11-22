@@ -1,15 +1,24 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { MISSION_ENTRY_POINTS } from './MissionEntryPoints';
-import { buildGridFromTiledLayers, type TiledObjectLayer } from './WorldMapLoader';
+import { buildGridFromTiledLayers } from './WorldMapLoader';
 
-interface MissionMapLayer extends TiledObjectLayer {
+interface MissionMapObject {
+  readonly name?: string;
+  readonly type?: string;
+  readonly x?: number;
+  readonly y?: number;
+  readonly width?: number;
+  readonly height?: number;
+}
+
+interface MissionMapLayer {
   readonly name: string;
   readonly type: string;
   readonly width?: number;
   readonly height?: number;
   readonly data?: readonly number[];
-  readonly objects?: readonly (TiledObjectLayer['objects'] extends readonly (infer T)[] | undefined ? T : never)[];
+  readonly objects?: readonly MissionMapObject[];
 }
 
 interface MissionMapData {
@@ -42,12 +51,10 @@ describe('mission-01 Tiled map', () => {
     }
   });
 
-  it('defines every door, window and garage access with valid Tiled rectangles', () => {
+  it('defines access objects as valid Tiled rectangles inside the map', () => {
     const entranceLayer = missionMap.layers.find((layer) => layer.name === 'Entrances');
     const accesses = (entranceLayer?.objects ?? []).filter((object) =>
-      ['door', 'window', 'garage'].includes(
-        (object as { readonly type?: string }).type ?? '',
-      ),
+      ['door', 'window', 'garage'].includes(object.type ?? ''),
     );
 
     expect(accesses.length).toBeGreaterThan(0);
@@ -58,11 +65,13 @@ describe('mission-01 Tiled map', () => {
       expect(Number.isFinite(object.height)).toBe(true);
       expect(object.width).toBeGreaterThan(0);
       expect(object.height).toBeGreaterThan(0);
+      expect(object.x).toBeGreaterThanOrEqual(0);
+      expect(object.y).toBeGreaterThanOrEqual(0);
+      expect(object.x! + object.width!).toBeLessThanOrEqual(missionMap.width * missionMap.tilewidth);
+      expect(object.y! + object.height!).toBeLessThanOrEqual(missionMap.height * missionMap.tileheight);
     }
 
-    const garageEntry = accesses.find(
-      (object) => (object as { readonly name?: string }).name === 'garage-entry',
-    );
+    const garageEntry = accesses.find((object) => object.name === 'garage-entry');
     expect(garageEntry).toMatchObject({ width: 96, height: 32 });
   });
 
