@@ -33,3 +33,36 @@ describe('save backups', () => {
   expect(readSaveBackups(storage)).toHaveLength(0);
  });
 });
+
+
+class FailOnceStorage extends MemoryStorage {
+  private failingKey: string | null = null;
+
+  failNextWriteTo(key: string): void {
+    this.failingKey = key;
+  }
+
+  override setItem(key: string, value: string): void {
+    if (this.failingKey === key) {
+      this.failingKey = null;
+      throw new Error('Simulated storage quota failure');
+    }
+    super.setItem(key, value);
+  }
+}
+
+describe('save backup recovery failures', () => {
+  it('rolls back live saves when a restore write fails', () => {
+    const storage = new FailOnceStorage();
+    storage.setItem('outbreakzones:campaign', '{"chapter":2}');
+    createSaveBackup(storage, new Date('2026-01-01T00:00:00Z'));
+
+    storage.setItem('outbreakzones:campaign', '{"chapter":9}');
+    storage.setItem('outbreakzones:temporary', 'keep-this-value');
+    storage.failNextWriteTo('outbreakzones:campaign');
+
+    expect(restoreSaveBackup(storage)).toBe(false);
+    expect(storage.getItem('outbreakzones:campaign')).toBe('{"chapter":9}');
+    expect(storage.getItem('outbreakzones:temporary')).toBe('keep-this-value');
+  });
+});
