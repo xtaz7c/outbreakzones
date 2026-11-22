@@ -324,7 +324,7 @@ export class MissionScene extends Phaser.Scene {
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
       .setZoom(1)
       // O foco inicial do Tutorial é a casa principal, não o centro geométrico do mapa.
-      .centerOn(1024, 608);
+      .centerOn(1920, 1440);
   }
 
   private createPoliceSafeZone(x: number, y: number): void {
