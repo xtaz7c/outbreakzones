@@ -72,18 +72,7 @@ struct LauncherUpdate {
     notes: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct SaveEnvelope {
-    schema_version: u32,
-    entries: HashMap<String, String>,
-}
-
-impl Default for SaveEnvelope {
-    fn default() -> Self {
-        Self { schema_version: 1, entries: HashMap::new() }
-    }
-}
+use save_recovery::SaveEnvelope;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct LauncherSettings {
