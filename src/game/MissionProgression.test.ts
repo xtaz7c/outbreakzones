@@ -52,6 +52,7 @@ describe('Mission result messages', () => {
 });
 
 
+
 describe('Mission message formatting', () => {
   it('uses real line breaks for tutorial victory', () => {
     expect(getMissionResultMessage(0, 'victory')).toBe(
