@@ -1121,7 +1121,7 @@ export class MissionScene extends Phaser.Scene {
     }
 
     // A van policial é o ponto fixo de extração (Safe Zone) no minimapa.
-    const safeZonePoint = toMinimap({ x: 1280, y: 1216 });
+    const safeZonePoint = toMinimap({ x: 1936, y: 2032 });
     this.minimapGraphics.lineStyle(1.5, 0x55c878, 0.95);
     this.minimapGraphics.strokeCircle(safeZonePoint.x, safeZonePoint.y, 5);
     this.minimapGraphics.fillStyle(0x55c878, 1);
@@ -1413,10 +1413,10 @@ export class MissionScene extends Phaser.Scene {
     if (entries.length === 0) return;
 
     const spawnPlans = [
-      { x: 128, y: 640, entryId: 'west-window' },
-      { x: 1920, y: 640, entryId: 'east-window' },
-      { x: 1024, y: 64, entryId: 'north-window-west' },
-      { x: 1024, y: 1216, entryId: 'front-door' },
+      { x: 64, y: 1440, entryId: 'west-window' },
+      { x: 3776, y: 1440, entryId: 'east-window' },
+      { x: 1920, y: 64, entryId: 'north-window-west' },
+      { x: 1920, y: 2816, entryId: 'front-door' },
     ] as const;
     const plan = spawnPlans[this.debugInfectedSpawnIndex % spawnPlans.length]!;
     this.debugInfectedSpawnIndex += 1;
