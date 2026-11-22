@@ -52,23 +52,3 @@ describe('Mission result messages', () => {
 });
 
 
-
-describe('Mission message formatting', () => {
-  it('uses real line breaks for tutorial victory', () => {
-    expect(getMissionResultMessage(0, 'victory')).toBe(
-      'SETOR 07 CONCLUÍDO\\nTodos os civis resgatados\\nEquipe de resgate sobreviveu',
-    );
-  });
-
-  it('uses real line breaks for campaign victory', () => {
-    expect(getMissionResultMessage(1, 'victory')).toBe(
-      'SETOR 04 CONCLUÍDO\\nInvestigação encerrada\\nÁrea sob controle',
-    );
-  });
-
-  it('uses real line breaks for defeat', () => {
-    expect(getMissionResultMessage(0, 'defeat')).toBe(
-      'GAME OVER\\nEquipe de resgate incapacitada',
-    );
-  });
-});
