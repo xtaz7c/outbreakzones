@@ -32843,8 +32843,6 @@
           "type": "garage",
           "x": 3232,
           "y": 2432,
-          "w": 96,
-          "h": 32,
           "rotation": 0,
           "visible": true,
           "properties": [
@@ -32853,7 +32851,9 @@
               "type": "int",
               "value": 140
             }
-          ]
+          ],
+          "width": 96,
+          "height": 32
         }
       ],
       "opacity": 1,
