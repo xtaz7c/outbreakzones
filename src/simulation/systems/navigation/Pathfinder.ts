@@ -180,11 +180,6 @@ export function findPath(
 
 
 /**
- * Returns a byte mask of every walkable tile reachable from start.
- * The mask is indexed by row * map.columns + column.
- * Uses the same diagonal and corner-blocking rules as findPath.
- */
-/**
  * Returns linear tile indices (row * map.columns + column) reachable from start.
  * Uses the same diagonal and corner-blocking rules as findPath.
  * When targets are provided, traversal stops as soon as all walkable targets are found.
