@@ -1,3 +1,4 @@
+import { formatMissionLines } from './MissionText';
 import type { WaveDefinition } from '../simulation/systems/WaveSystem';
 
 export type MissionId = 0 | 1;
@@ -51,12 +52,12 @@ export function canStartCampaign(
 
 export function getMissionResultMessage(missionId: MissionId, status: MissionStatus): string {
   if (status === 'defeat') {
-    return ['GAME OVER', 'Equipe de resgate incapacitada'].join('\n');
+    return formatMissionLines(['GAME OVER', 'Equipe de resgate incapacitada']);
   }
 
   if (missionId === 0) {
-    return ['SETOR 07 CONCLUÍDO', 'Todos os civis resgatados', 'Equipe de resgate sobreviveu'].join('\n');
+    return formatMissionLines(['SETOR 07 CONCLUÍDO', 'Todos os civis resgatados', 'Equipe de resgate sobreviveu']);
   }
 
-  return ['SETOR 04 CONCLUÍDO', 'Investigação encerrada', 'Área sob controle'].join('\n');
+  return formatMissionLines(['SETOR 04 CONCLUÍDO', 'Investigação encerrada', 'Área sob controle']);
 }

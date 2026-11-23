@@ -86,3 +86,34 @@ describe('findPath', () => {
     expect(findPath(map, { column: -1, row: 0 }, { column: 2, row: 2 })).toBeNull();
   });
 });
+
+
+describe('findPath on larger maps', () => {
+  it('finds a valid route through a single opening in a full-height barrier', () => {
+    const map = new GridMap(120, 90);
+    for (let row = 0; row < map.rows; row += 1) {
+      if (row !== 60) map.setBlocked({ column: 60, row });
+    }
+
+    const start = { column: 2, row: 45 };
+    const goal = { column: 117, row: 45 };
+    const path = findPath(map, start, goal);
+
+    expect(path).not.toBeNull();
+    expect(path?.at(-1)).toEqual(goal);
+    expect(path?.some((cell) => cell.column === 60 && cell.row === 60)).toBe(true);
+
+    let previous = start;
+    for (const cell of path ?? []) {
+      const dx = Math.abs(cell.column - previous.column);
+      const dy = Math.abs(cell.row - previous.row);
+      expect(Math.max(dx, dy)).toBe(1);
+      expect(map.isWalkable(cell)).toBe(true);
+      if (dx === 1 && dy === 1) {
+        expect(map.isWalkable({ column: cell.column, row: previous.row })).toBe(true);
+        expect(map.isWalkable({ column: previous.column, row: cell.row })).toBe(true);
+      }
+      previous = cell;
+    }
+  });
+});
