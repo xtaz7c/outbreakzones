@@ -171,14 +171,16 @@ export class Civilian {
         column: Math.floor(this.currentPosition.x / tileSize),
         row: Math.floor(this.currentPosition.y / tileSize),
       };
-      const reachable = findReachableTiles(map, start, { allowDiagonal: true });
-      const candidates: TilePosition[] = [];
+      const candidateTiles: TilePosition[] = [];
       for (let row = Math.max(0, start.row - 4); row <= Math.min(map.rows - 1, start.row + 4); row += 1) {
         for (let column = Math.max(0, start.column - 4); column <= Math.min(map.columns - 1, start.column + 4); column += 1) {
           const candidate = { column, row };
-          if (reachable[row * map.columns + column] === 1) candidates.push(candidate);
+          if (map.isWalkable(candidate)) candidateTiles.push(candidate);
         }
       }
+      const reachable = findReachableTiles(map, start, { allowDiagonal: true }, candidateTiles);
+      const candidates = candidateTiles.filter((candidate) =>
+        reachable[candidate.row * map.columns + candidate.column] === 1);
       candidates.sort((a, b) => {
         const distanceA = Math.hypot(
           a.column * tileSize + tileSize / 2 - threat.x,
