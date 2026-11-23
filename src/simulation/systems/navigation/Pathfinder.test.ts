@@ -151,7 +151,7 @@ describe('findReachableTiles', () => {
     expect(findReachableTiles(map, start, { allowDiagonal: false }).has(4)).toBe(false);
   });
 
-  it('returns an empty mask for a blocked or invalid start', () => {
+  it('returns an empty set for a blocked or invalid start', () => {
     const map = new GridMap(3, 3);
     map.setBlocked({ column: 1, row: 1 });
     expect(findReachableTiles(map, { column: 1, row: 1 }).size).toBe(0);
