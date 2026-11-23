@@ -177,3 +177,56 @@ export function findPath(
   path.reverse();
   return path;
 }
+
+
+/**
+ * Returns a byte mask of every walkable tile reachable from start.
+ * The mask is indexed by row * map.columns + column.
+ * Uses the same diagonal and corner-blocking rules as findPath.
+ */
+export function findReachableTiles(
+  map: GridMap,
+  start: TilePosition,
+  options: PathOptions = {},
+): Uint8Array {
+  const reachable = new Uint8Array(map.columns * map.rows);
+  if (!map.isWalkable(start)) return reachable;
+
+  const diagonal = options.allowDiagonal ?? true;
+  const directions: readonly (readonly [number, number])[] = diagonal
+    ? [...CARDINAL_DIRECTIONS, ...DIAGONAL_DIRECTIONS]
+    : CARDINAL_DIRECTIONS;
+  const queue = new Int32Array(reachable.length);
+  const startIndex = toIndex(start, map.columns);
+  let head = 0;
+  let tail = 0;
+
+  reachable[startIndex] = 1;
+  queue[tail++] = startIndex;
+
+  while (head < tail) {
+    const currentIndex = queue[head++]!;
+    const current = toPosition(currentIndex, map.columns);
+
+    for (const [dx, dy] of directions) {
+      const next = { column: current.column + dx, row: current.row + dy };
+      if (!map.isWalkable(next)) continue;
+
+      const isDiagonal = dx !== 0 && dy !== 0;
+      if (isDiagonal && (
+        !map.isWalkable({ column: current.column + dx, row: current.row }) ||
+        !map.isWalkable({ column: current.column, row: current.row + dy })
+      )) {
+        continue;
+      }
+
+      const nextIndex = toIndex(next, map.columns);
+      if (reachable[nextIndex]) continue;
+
+      reachable[nextIndex] = 1;
+      queue[tail++] = nextIndex;
+    }
+  }
+
+  return reachable;
+}
