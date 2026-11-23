@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GridMap } from '../../world/GridMap';
-import { findPath } from './Pathfinder';
+import { findPath, findReachableTiles } from './Pathfinder';
 
 describe('GridMap', () => {
   it('tracks walkable and blocked cells', () => {
