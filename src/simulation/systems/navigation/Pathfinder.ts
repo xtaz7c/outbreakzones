@@ -188,6 +188,7 @@ export function findReachableTiles(
   map: GridMap,
   start: TilePosition,
   options: PathOptions = {},
+  targets?: readonly TilePosition[],
 ): Uint8Array {
   const reachable = new Uint8Array(map.columns * map.rows);
   if (!map.isWalkable(start)) return reachable;
@@ -198,13 +199,17 @@ export function findReachableTiles(
     : CARDINAL_DIRECTIONS;
   const queue = new Int32Array(reachable.length);
   const startIndex = toIndex(start, map.columns);
+  const pendingTargets = targets === undefined
+    ? null
+    : new Set(targets.filter((target) => map.isWalkable(target)).map((target) => toIndex(target, map.columns)));
   let head = 0;
   let tail = 0;
 
   reachable[startIndex] = 1;
   queue[tail++] = startIndex;
+  pendingTargets?.delete(startIndex);
 
-  while (head < tail) {
+  while (head < tail && (pendingTargets === null || pendingTargets.size > 0)) {
     const currentIndex = queue[head++]!;
     const current = toPosition(currentIndex, map.columns);
 
@@ -224,6 +229,7 @@ export function findReachableTiles(
       if (reachable[nextIndex]) continue;
 
       reachable[nextIndex] = 1;
+      pendingTargets?.delete(nextIndex);
       queue[tail++] = nextIndex;
     }
   }
