@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { performance } from 'node:perf_hooks';
-import { GridMap } from '../world/GridMap';
+import { GridMap } from '../../world/GridMap';
 import { findPath } from './Pathfinder';
 
 interface BenchmarkResult {
