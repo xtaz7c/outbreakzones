@@ -180,7 +180,7 @@ export class Civilian {
       }
       const reachable = findReachableTiles(map, start, { allowDiagonal: true }, candidateTiles);
       const candidates = candidateTiles.filter((candidate) =>
-        reachable[candidate.row * map.columns + candidate.column] === 1);
+        reachable.has(candidate.row * map.columns + candidate.column));
       candidates.sort((a, b) => {
         const distanceA = Math.hypot(
           a.column * tileSize + tileSize / 2 - threat.x,
