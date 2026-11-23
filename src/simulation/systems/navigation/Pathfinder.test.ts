@@ -117,3 +117,44 @@ describe('findPath on larger maps', () => {
     }
   });
 });
+
+
+describe('findReachableTiles', () => {
+  it('matches findPath reachability for every tile in deterministic obstacle maps', () => {
+    for (let seed = 1; seed <= 8; seed += 1) {
+      const map = new GridMap(9, 8);
+      for (let row = 0; row < map.rows; row += 1) {
+        for (let column = 0; column < map.columns; column += 1) {
+          const hash = (column * 17 + row * 29 + seed * 13) % 11;
+          if (hash < 3) map.setBlocked({ column, row });
+        }
+      }
+      const start = { column: 4, row: 4 };
+      const reachable = findReachableTiles(map, start);
+      for (let row = 0; row < map.rows; row += 1) {
+        for (let column = 0; column < map.columns; column += 1) {
+          const goal = { column, row };
+          const expected = findPath(map, start, goal) !== null;
+          expect(reachable[row * map.columns + column] === 1).toBe(expected);
+        }
+      }
+    }
+  });
+
+  it('respects blocked corners and cardinal-only movement', () => {
+    const map = new GridMap(3, 3);
+    map.setBlocked({ column: 1, row: 0 });
+    map.setBlocked({ column: 0, row: 1 });
+    const start = { column: 0, row: 0 };
+    expect(findReachableTiles(map, start)[4]).toBe(0);
+    expect(findReachableTiles(map, { column: 1, row: 1 })[0]).toBe(0);
+    expect(findReachableTiles(map, start, { allowDiagonal: false })[4]).toBe(0);
+  });
+
+  it('returns an empty mask for a blocked or invalid start', () => {
+    const map = new GridMap(3, 3);
+    map.setBlocked({ column: 1, row: 1 });
+    expect(findReachableTiles(map, { column: 1, row: 1 }).every((value) => value === 0)).toBe(true);
+    expect(findReachableTiles(map, { column: -1, row: 0 }).every((value) => value === 0)).toBe(true);
+  });
+});
