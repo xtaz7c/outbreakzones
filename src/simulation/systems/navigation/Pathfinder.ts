@@ -184,32 +184,36 @@ export function findPath(
  * The mask is indexed by row * map.columns + column.
  * Uses the same diagonal and corner-blocking rules as findPath.
  */
+/**
+ * Returns linear tile indices (row * map.columns + column) reachable from start.
+ * Uses the same diagonal and corner-blocking rules as findPath.
+ * When targets are provided, traversal stops as soon as all walkable targets are found.
+ */
 export function findReachableTiles(
   map: GridMap,
   start: TilePosition,
   options: PathOptions = {},
   targets?: readonly TilePosition[],
-): Uint8Array {
-  const reachable = new Uint8Array(map.columns * map.rows);
+): ReadonlySet<number> {
+  const reachable = new Set<number>();
   if (!map.isWalkable(start)) return reachable;
 
   const diagonal = options.allowDiagonal ?? true;
   const directions: readonly (readonly [number, number])[] = diagonal
     ? [...CARDINAL_DIRECTIONS, ...DIAGONAL_DIRECTIONS]
     : CARDINAL_DIRECTIONS;
-  const queue = new Int32Array(reachable.length);
+  const queue: number[] = [];
   const startIndex = toIndex(start, map.columns);
   const pendingTargets = targets === undefined
     ? null
     : new Set(targets.filter((target) => map.isWalkable(target)).map((target) => toIndex(target, map.columns)));
   let head = 0;
-  let tail = 0;
 
-  reachable[startIndex] = 1;
-  queue[tail++] = startIndex;
+  reachable.add(startIndex);
+  queue.push(startIndex);
   pendingTargets?.delete(startIndex);
 
-  while (head < tail && (pendingTargets === null || pendingTargets.size > 0)) {
+  while (head < queue.length && (pendingTargets === null || pendingTargets.size > 0)) {
     const currentIndex = queue[head++]!;
     const current = toPosition(currentIndex, map.columns);
 
@@ -226,11 +230,11 @@ export function findReachableTiles(
       }
 
       const nextIndex = toIndex(next, map.columns);
-      if (reachable[nextIndex]) continue;
+      if (reachable.has(nextIndex)) continue;
 
-      reachable[nextIndex] = 1;
+      reachable.add(nextIndex);
       pendingTargets?.delete(nextIndex);
-      queue[tail++] = nextIndex;
+      queue.push(nextIndex);
     }
   }
 
