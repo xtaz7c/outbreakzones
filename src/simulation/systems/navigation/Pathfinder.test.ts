@@ -135,7 +135,7 @@ describe('findReachableTiles', () => {
         for (let column = 0; column < map.columns; column += 1) {
           const goal = { column, row };
           const expected = findPath(map, start, goal) !== null;
-          expect(reachable[row * map.columns + column] === 1).toBe(expected);
+          expect(reachable.has(row * map.columns + column)).toBe(expected);
         }
       }
     }
@@ -146,16 +146,16 @@ describe('findReachableTiles', () => {
     map.setBlocked({ column: 1, row: 0 });
     map.setBlocked({ column: 0, row: 1 });
     const start = { column: 0, row: 0 };
-    expect(findReachableTiles(map, start)[4]).toBe(0);
-    expect(findReachableTiles(map, { column: 1, row: 1 })[0]).toBe(0);
-    expect(findReachableTiles(map, start, { allowDiagonal: false })[4]).toBe(0);
+    expect(findReachableTiles(map, start).has(4)).toBe(false);
+    expect(findReachableTiles(map, { column: 1, row: 1 }).has(0)).toBe(false);
+    expect(findReachableTiles(map, start, { allowDiagonal: false }).has(4)).toBe(false);
   });
 
   it('returns an empty mask for a blocked or invalid start', () => {
     const map = new GridMap(3, 3);
     map.setBlocked({ column: 1, row: 1 });
-    expect(findReachableTiles(map, { column: 1, row: 1 }).every((value) => value === 0)).toBe(true);
-    expect(findReachableTiles(map, { column: -1, row: 0 }).every((value) => value === 0)).toBe(true);
+    expect(findReachableTiles(map, { column: 1, row: 1 }).size).toBe(0);
+    expect(findReachableTiles(map, { column: -1, row: 0 }).size).toBe(0);
   });
 });
 
@@ -172,8 +172,23 @@ describe('findReachableTiles target-limited search', () => {
     ];
     const reachable = findReachableTiles(map, start, { allowDiagonal: true }, targets);
     for (const target of targets) {
-      expect(reachable[target.row * map.columns + target.column]).toBe(1);
+      expect(reachable.has(target.row * map.columns + target.column)).toBe(true);
     }
-    expect(reachable[39 * map.columns + 39]).toBe(0);
+    expect(reachable.has(39 * map.columns + 39)).toBe(false);
+  });
+});
+
+
+describe('findReachableTiles detours', () => {
+  it('finds a local candidate reachable only by routing outside the candidate window', () => {
+    const map = new GridMap(24, 24);
+    for (let row = 0; row < map.rows; row += 1) {
+      if (row !== 1) map.setBlocked({ column: 11, row });
+    }
+    const start = { column: 10, row: 10 };
+    const target = { column: 12, row: 10 };
+    const reachable = findReachableTiles(map, start, { allowDiagonal: true }, [target]);
+    expect(reachable.has(target.row * map.columns + target.column)).toBe(true);
+    expect(findPath(map, start, target)).not.toBeNull();
   });
 });
