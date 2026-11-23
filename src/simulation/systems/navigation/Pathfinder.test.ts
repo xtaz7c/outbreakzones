@@ -158,3 +158,22 @@ describe('findReachableTiles', () => {
     expect(findReachableTiles(map, { column: -1, row: 0 }).every((value) => value === 0)).toBe(true);
   });
 });
+
+
+describe('findReachableTiles target-limited search', () => {
+  it('stops after all requested local candidates are reached', () => {
+    const map = new GridMap(40, 40);
+    const start = { column: 20, row: 20 };
+    const targets = [
+      { column: 18, row: 18 },
+      { column: 22, row: 18 },
+      { column: 18, row: 22 },
+      { column: 22, row: 22 },
+    ];
+    const reachable = findReachableTiles(map, start, { allowDiagonal: true }, targets);
+    for (const target of targets) {
+      expect(reachable[target.row * map.columns + target.column]).toBe(1);
+    }
+    expect(reachable[39 * map.columns + 39]).toBe(0);
+  });
+});
