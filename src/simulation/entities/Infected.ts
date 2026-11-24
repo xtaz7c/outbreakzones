@@ -95,6 +95,8 @@ export class Infected {
   private patrolTarget: TilePosition | null = null;
   private investigationTarget: InfectedPosition | null = null;
   private investigationRemaining = 0;
+  private investigationStimulusId: string | null = null;
+  private investigationStimulusPosition: InfectedPosition | null = null;
 
   constructor(config: InfectedConfig) {
     this.assertFinite(config.x, 'x');
@@ -287,6 +289,8 @@ export class Infected {
     if (nearestHuman) {
       this.investigationTarget = null;
       this.investigationRemaining = 0;
+      this.investigationStimulusId = null;
+      this.investigationStimulusPosition = null;
       this.patrolTarget = null;
       return { kind: 'human', human: nearestHuman, position: nearestHuman.position };
     }
@@ -308,11 +312,31 @@ export class Infected {
       }
     }
     if (strongestStimulus) {
-      const walkablePosition = this.resolveWalkablePosition(strongestStimulus.position, map, tileSize);
-      if (walkablePosition) {
-        this.investigationTarget = walkablePosition;
+      const sameInvestigationStimulus =
+        this.investigationStimulusId === strongestStimulus.id &&
+        this.investigationStimulusPosition?.x === strongestStimulus.position.x &&
+        this.investigationStimulusPosition?.y === strongestStimulus.position.y;
+
+      if (sameInvestigationStimulus && this.hasWalkableInvestigationPath(map, tileSize)) {
+        // The active stimulus and remaining route are unchanged; refresh memory
+        // without repeating the reachability A* search.
         this.investigationRemaining = this.memoryDuration;
-        this.patrolTarget = null;
+      } else {
+        if (sameInvestigationStimulus) {
+          // Navigation grids can change when doors, windows or deployables change.
+          // Discard a stale route before resolving the destination again.
+          this.path = [];
+          this.waypointIndex = 0;
+          this.pathTargetKey = '';
+        }
+        const walkablePosition = this.resolveWalkablePosition(strongestStimulus.position, map, tileSize);
+        if (walkablePosition) {
+          this.investigationTarget = walkablePosition;
+          this.investigationRemaining = this.memoryDuration;
+          this.investigationStimulusId = strongestStimulus.id;
+          this.investigationStimulusPosition = { ...strongestStimulus.position };
+          this.patrolTarget = null;
+        }
       }
     }
 
@@ -341,6 +365,8 @@ export class Infected {
       if (this.investigationRemaining > 0) return { kind: 'entry', tile, position: target };
     }
     this.investigationTarget = null;
+    this.investigationStimulusId = null;
+    this.investigationStimulusPosition = null;
 
     const currentTile = {
       column: Math.floor(this.currentPosition.x / tileSize),
@@ -365,6 +391,36 @@ export class Infected {
         y: patrolTile.row * tileSize + tileSize / 2,
       },
     };
+  }
+
+  private hasWalkableInvestigationPath(map: GridMap, tileSize: number): boolean {
+    if (!this.investigationTarget) return false;
+    const targetTile = {
+      column: Math.floor(this.investigationTarget.x / tileSize),
+      row: Math.floor(this.investigationTarget.y / tileSize),
+    };
+    if (!map.isWalkable(targetTile)) return false;
+
+    const currentTile = {
+      column: Math.floor(this.currentPosition.x / tileSize),
+      row: Math.floor(this.currentPosition.y / tileSize),
+    };
+    if (currentTile.column === targetTile.column && currentTile.row === targetTile.row) return true;
+    if (this.waypointIndex >= this.path.length) return false;
+
+    let previous = currentTile;
+    for (let index = this.waypointIndex; index < this.path.length; index += 1) {
+      const next = this.path[index]!;
+      if (!map.isWalkable(next)) return false;
+      const dx = next.column - previous.column;
+      const dy = next.row - previous.row;
+      if (dx !== 0 && dy !== 0 && (
+        !map.isWalkable({ column: previous.column + dx, row: previous.row }) ||
+        !map.isWalkable({ column: previous.column, row: previous.row + dy })
+      )) return false;
+      previous = next;
+    }
+    return true;
   }
 
   private resolveWalkablePosition(
