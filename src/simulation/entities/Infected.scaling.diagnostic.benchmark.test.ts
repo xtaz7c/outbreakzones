@@ -69,8 +69,31 @@ describe('Infected scaling diagnostic workloads', () => {
       }
     }
 
-    // One route to the target is created on the first tick; stimulus resolution
-    // performs another path search on every tick even though the stimulus is unchanged.
-    expect(findPathMock).toHaveBeenCalledTimes(INFECTED_COUNT * (STIMULUS_TICKS + 1));
+    // Each infected resolves the stimulus once and creates its movement route once.
+    // The unchanged active stimulus must not trigger another reachability search.
+    expect(findPathMock).toHaveBeenCalledTimes(INFECTED_COUNT * 2);
+  });
+
+  it('re-resolves the destination when an active stimulus moves', () => {
+    const map = new GridMap(100, 100);
+    const infected = createInfected(1, 100);
+    const stimulus: InfectedStimulus = {
+      id: 'moving-stimulus',
+      position: { x: 656, y: 336 },
+      radius: 1000,
+      strength: 1,
+    };
+
+    findPathMock.mockClear();
+    infected[0]!.update(1 / 60, TILE_SIZE, map, [], undefined, [stimulus]);
+    const firstPosition = { ...stimulus.position };
+    const movedStimulus: InfectedStimulus = {
+      ...stimulus,
+      position: { x: firstPosition.x + TILE_SIZE, y: firstPosition.y },
+    };
+    infected[0]!.update(1 / 60, TILE_SIZE, map, [], undefined, [movedStimulus]);
+
+    // The changed position triggers one new reachability search and one new route.
+    expect(findPathMock).toHaveBeenCalledTimes(4);
   });
 });
