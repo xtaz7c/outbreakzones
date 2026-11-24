@@ -92,6 +92,32 @@ function toPosition(index: number, columns: number): TilePosition {
   return { column: index % columns, row: Math.floor(index / columns) };
 }
 
+interface PathfindingWorkspace {
+  readonly costs: Float64Array;
+  readonly parents: Int32Array;
+  readonly closed: Uint8Array;
+}
+
+// A* calls are synchronous; one workspace per map avoids reallocating grid-sized
+// buffers for every civilian route while keeping different maps isolated.
+const workspaces = new WeakMap<GridMap, PathfindingWorkspace>();
+
+function getWorkspace(map: GridMap, total: number): PathfindingWorkspace {
+  let workspace = workspaces.get(map);
+  if (!workspace || workspace.costs.length !== total) {
+    workspace = {
+      costs: new Float64Array(total),
+      parents: new Int32Array(total),
+      closed: new Uint8Array(total),
+    };
+    workspaces.set(map, workspace);
+  }
+  workspace.costs.fill(Number.POSITIVE_INFINITY);
+  workspace.parents.fill(-1);
+  workspace.closed.fill(0);
+  return workspace;
+}
+
 /**
  * A* em grade. Retorna células do próximo passo até o destino, sem incluir
  * a origem. Retorna null se origem/destino forem inválidos ou não houver rota.
@@ -110,14 +136,9 @@ export function findPath(
   const total = map.columns * map.rows;
   const startIndex = toIndex(start, map.columns);
   const goalIndex = toIndex(goal, map.columns);
-  const costs = new Float64Array(total);
-  costs.fill(Number.POSITIVE_INFINITY);
+  const workspace = getWorkspace(map, total);
+  const { costs, parents, closed } = workspace;
   costs[startIndex] = 0;
-
-  const parents = new Int32Array(total);
-  parents.fill(-1);
-
-  const closed = new Uint8Array(total);
   const queue = new MinHeap();
   queue.push({ index: startIndex, score: heuristic(start, goal, diagonal) });
 
