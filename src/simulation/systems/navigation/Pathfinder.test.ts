@@ -192,3 +192,37 @@ describe('findReachableTiles detours', () => {
     expect(findPath(map, start, target)).not.toBeNull();
   });
 });
+
+
+describe('findPath workspace reuse safety', () => {
+  it('does not retain stale costs or parents after map topology changes', () => {
+    const map = new GridMap(8, 5);
+    const start = { column: 0, row: 2 };
+    const goal = { column: 7, row: 2 };
+
+    const initial = findPath(map, start, goal);
+    expect(initial).not.toBeNull();
+
+    for (let row = 0; row < map.rows; row += 1) {
+      map.setBlocked({ column: 4, row });
+    }
+    expect(findPath(map, start, goal)).toBeNull();
+
+    map.setBlocked({ column: 4, row: 3 }, false);
+    const reopened = findPath(map, start, goal);
+    expect(reopened).not.toBeNull();
+    expect(reopened?.at(-1)).toEqual(goal);
+    expect(reopened?.some((tile) => tile.column === 4 && tile.row === 2)).toBe(false);
+  });
+
+  it('keeps workspaces isolated between maps with identical dimensions', () => {
+    const first = new GridMap(6, 6);
+    const second = new GridMap(6, 6);
+    for (let row = 0; row < second.rows; row += 1) {
+      second.setBlocked({ column: 3, row });
+    }
+
+    expect(findPath(first, { column: 0, row: 2 }, { column: 5, row: 2 })).not.toBeNull();
+    expect(findPath(second, { column: 0, row: 2 }, { column: 5, row: 2 })).toBeNull();
+  });
+});
