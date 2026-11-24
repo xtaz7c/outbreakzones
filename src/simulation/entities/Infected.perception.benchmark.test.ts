@@ -15,7 +15,8 @@ vi.mock('../systems/CombatSystem', async (importOriginal) => {
 
 const lineOfSightMock = vi.mocked(hasLineOfSight);
 const TILE_SIZE = 32;
-const TARGETS_PER_INFECTED = 15;
+const EXPECTED_SINGLE_INFECTED_CHECKS = 1;
+const EXPECTED_TWELVE_INFECTED_CHECKS = 30;
 
 function createScenario() {
   const map = new GridMap(100, 100);
@@ -69,7 +70,7 @@ describe('Infected perception workload measurements', () => {
       civilians,
     );
 
-    expect(lineOfSightMock).toHaveBeenCalledTimes(TARGETS_PER_INFECTED);
+    expect(lineOfSightMock).toHaveBeenCalledTimes(EXPECTED_SINGLE_INFECTED_CHECKS);
   });
 
   it('measures aggregate line-of-sight checks for 12 infected in one simulation tick', () => {
@@ -90,7 +91,7 @@ describe('Infected perception workload measurements', () => {
     }
 
     expect(lineOfSightMock).toHaveBeenCalledTimes(
-      infectedUnits.length * TARGETS_PER_INFECTED,
+      EXPECTED_TWELVE_INFECTED_CHECKS,
     );
   });
 });
