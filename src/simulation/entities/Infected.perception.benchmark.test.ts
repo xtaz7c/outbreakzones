@@ -1,45 +1,96 @@
 import { describe, expect, it, vi } from 'vitest';
-import * as combatModule from '../systems/CombatSystem';
+import { hasLineOfSight } from '../systems/CombatSystem';
 import { Infected } from './Infected';
 import { PoliceOfficer } from './PoliceOfficer';
 import { Civilian } from './Civilian';
 import { GridMap } from '../world/GridMap';
 
+vi.mock('../systems/CombatSystem', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../systems/CombatSystem')>();
+  return {
+    ...actual,
+    hasLineOfSight: vi.fn(actual.hasLineOfSight),
+  };
+});
+
+const lineOfSightMock = vi.mocked(hasLineOfSight);
+const TILE_SIZE = 32;
+const TARGETS_PER_INFECTED = 15;
+
+function createScenario() {
+  const map = new GridMap(100, 100);
+  const officers = Array.from({ length: 3 }, (_, index) =>
+    new PoliceOfficer({
+      id: index + 1,
+      x: 320 + index * 48,
+      y: 320,
+      visionRange: 500,
+    }));
+  const civilians = Array.from({ length: 12 }, (_, index) =>
+    new Civilian({
+      id: index + 1,
+      x: 360 + (index % 4) * 48,
+      y: 400 + Math.floor(index / 4) * 48,
+    }));
+
+  return { map, officers, civilians };
+}
+
+function createInfected(count: number): Infected[] {
+  return Array.from({ length: count }, (_, index) =>
+    new Infected({
+      id: index + 1,
+      x: 320 + (index % 4) * TILE_SIZE,
+      y: 320 + Math.floor(index / 4) * TILE_SIZE,
+      entryTile: { column: 10, row: 10 },
+      detectionRange: 600,
+      random: () => 0.5,
+    }));
+}
+
 /**
- * Deterministic perception workload counters. These tests count LOS checks,
- * rather than asserting wall-clock timing (which is runner-dependent).
+ * Deterministic workload measurement: counts line-of-sight evaluations
+ * made by infected perception. It intentionally does not claim to measure
+ * CPU time, frame rate, or total game-loop cost.
  */
 describe('Infected perception workload measurements', () => {
-  const map = new GridMap(100, 100);
-  const officers = Array.from({ length: 3 }, (_, i) =>
-    new PoliceOfficer({ id: i + 1, x: 320 + i * 48, y: 320, visionRange: 500 }));
-  const civilians = Array.from({ length: 12 }, (_, i) =>
-    new Civilian({ id: i + 1, x: 360 + (i % 4) * 48, y: 400 + Math.floor(i / 4) * 48 }));
+  it('measures line-of-sight checks for one infected against 3 officers and 12 civilians', () => {
+    const { map, officers, civilians } = createScenario();
+    const [infected] = createInfected(1);
+    lineOfSightMock.mockClear();
 
-  it('records line-of-sight checks for a single infected against representative targets', () => {
-    const spy = vi.spyOn(combatModule, 'hasLineOfSight');
-    const infected = new Infected({
-      id: 1, x: 320, y: 320, entryTile: { column: 10, row: 10 },
-      detectionRange: 600, random: () => 0.5,
-    });
-    infected.update(1 / 60, 32, map, officers, undefined, [], civilians);
-    const count = spy.mock.calls.length;
-    spy.mockRestore();
-    expect(count).toBeGreaterThan(0);
+    infected!.update(
+      1 / 60,
+      TILE_SIZE,
+      map,
+      officers,
+      undefined,
+      [],
+      civilians,
+    );
+
+    expect(lineOfSightMock).toHaveBeenCalledTimes(TARGETS_PER_INFECTED);
   });
 
-  it('records aggregate perception work for twelve infected in one simulation tick', () => {
-    const spy = vi.spyOn(combatModule, 'hasLineOfSight');
-    const infectedUnits = Array.from({ length: 12 }, (_, i) =>
-      new Infected({
-        id: i + 1, x: 320 + (i % 4) * 32, y: 320 + Math.floor(i / 4) * 32,
-        entryTile: { column: 10, row: 10 }, detectionRange: 600, random: () => 0.5,
-      }));
-    for (const unit of infectedUnits) {
-      unit.update(1 / 60, 32, map, officers, undefined, [], civilians);
+  it('measures aggregate line-of-sight checks for 12 infected in one simulation tick', () => {
+    const { map, officers, civilians } = createScenario();
+    const infectedUnits = createInfected(12);
+    lineOfSightMock.mockClear();
+
+    for (const infected of infectedUnits) {
+      infected.update(
+        1 / 60,
+        TILE_SIZE,
+        map,
+        officers,
+        undefined,
+        [],
+        civilians,
+      );
     }
-    const count = spy.mock.calls.length;
-    spy.mockRestore();
-    expect(count).toBeGreaterThan(0);
+
+    expect(lineOfSightMock).toHaveBeenCalledTimes(
+      infectedUnits.length * TARGETS_PER_INFECTED,
+    );
   });
 });
