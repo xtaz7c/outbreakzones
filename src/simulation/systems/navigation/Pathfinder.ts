@@ -177,3 +177,61 @@ export function findPath(
   path.reverse();
   return path;
 }
+
+
+/**
+ * Returns linear tile indices (row * map.columns + column) reachable from start.
+ * Uses the same diagonal and corner-blocking rules as findPath.
+ * When targets are provided, traversal stops as soon as all walkable targets are found.
+ */
+export function findReachableTiles(
+  map: GridMap,
+  start: TilePosition,
+  options: PathOptions = {},
+  targets?: readonly TilePosition[],
+): ReadonlySet<number> {
+  const reachable = new Set<number>();
+  if (!map.isWalkable(start)) return reachable;
+
+  const diagonal = options.allowDiagonal ?? true;
+  const directions: readonly (readonly [number, number])[] = diagonal
+    ? [...CARDINAL_DIRECTIONS, ...DIAGONAL_DIRECTIONS]
+    : CARDINAL_DIRECTIONS;
+  const queue: number[] = [];
+  const startIndex = toIndex(start, map.columns);
+  const pendingTargets = targets === undefined
+    ? null
+    : new Set(targets.filter((target) => map.isWalkable(target)).map((target) => toIndex(target, map.columns)));
+  let head = 0;
+
+  reachable.add(startIndex);
+  queue.push(startIndex);
+  pendingTargets?.delete(startIndex);
+
+  while (head < queue.length && (pendingTargets === null || pendingTargets.size > 0)) {
+    const currentIndex = queue[head++]!;
+    const current = toPosition(currentIndex, map.columns);
+
+    for (const [dx, dy] of directions) {
+      const next = { column: current.column + dx, row: current.row + dy };
+      if (!map.isWalkable(next)) continue;
+
+      const isDiagonal = dx !== 0 && dy !== 0;
+      if (isDiagonal && (
+        !map.isWalkable({ column: current.column + dx, row: current.row }) ||
+        !map.isWalkable({ column: current.column, row: current.row + dy })
+      )) {
+        continue;
+      }
+
+      const nextIndex = toIndex(next, map.columns);
+      if (reachable.has(nextIndex)) continue;
+
+      reachable.add(nextIndex);
+      pendingTargets?.delete(nextIndex);
+      queue.push(nextIndex);
+    }
+  }
+
+  return reachable;
+}

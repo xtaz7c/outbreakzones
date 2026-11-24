@@ -3,7 +3,7 @@ import type { Infected } from './Infected';
 import { hasLineOfSight } from '../systems/CombatSystem';
 import type { TilePosition } from '../world/WorldConfig';
 import { GridMap } from '../world/GridMap';
-import { findPath } from '../systems/navigation/Pathfinder';
+import { findPath, findReachableTiles } from '../systems/navigation/Pathfinder';
 
 export type CivilianState = 'sheltered' | 'following' | 'extracted' | 'incapacitated';
 export type CivilianMood = 'calm' | 'panicked';
@@ -171,15 +171,16 @@ export class Civilian {
         column: Math.floor(this.currentPosition.x / tileSize),
         row: Math.floor(this.currentPosition.y / tileSize),
       };
-      const candidates: TilePosition[] = [];
+      const candidateTiles: TilePosition[] = [];
       for (let row = Math.max(0, start.row - 4); row <= Math.min(map.rows - 1, start.row + 4); row += 1) {
         for (let column = Math.max(0, start.column - 4); column <= Math.min(map.columns - 1, start.column + 4); column += 1) {
           const candidate = { column, row };
-          if (map.isWalkable(candidate) && findPath(map, start, candidate, { allowDiagonal: true }) !== null) {
-            candidates.push(candidate);
-          }
+          if (map.isWalkable(candidate)) candidateTiles.push(candidate);
         }
       }
+      const reachable = findReachableTiles(map, start, { allowDiagonal: true }, candidateTiles);
+      const candidates = candidateTiles.filter((candidate) =>
+        reachable.has(candidate.row * map.columns + candidate.column));
       candidates.sort((a, b) => {
         const distanceA = Math.hypot(
           a.column * tileSize + tileSize / 2 - threat.x,

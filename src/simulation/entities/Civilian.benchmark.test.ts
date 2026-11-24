@@ -6,41 +6,40 @@ vi.mock('../systems/navigation/Pathfinder', async (importOriginal) => {
   return {
     ...actual,
     findPath: vi.fn(actual.findPath),
+    findReachableTiles: vi.fn(actual.findReachableTiles),
   };
 });
 
-import { findPath } from '../systems/navigation/Pathfinder';
+import { findPath, findReachableTiles } from '../systems/navigation/Pathfinder';
 import { Civilian } from './Civilian';
 
 const measuredFindPath = vi.mocked(findPath);
+const measuredReachability = vi.mocked(findReachableTiles);
 
 describe('Civilian panic pathfinding measurements', () => {
   beforeEach(() => {
     measuredFindPath.mockClear();
+    measuredReachability.mockClear();
   });
 
-  it('measures candidate reachability and movement searches for one panicked civilian', () => {
+  it('uses one reachability search and one route search for a panicked civilian', () => {
     const map = new GridMap(30, 30);
     const civilian = new Civilian({ id: 1, x: 480, y: 480 });
-
     civilian.updateAwareness(1 / 60, 32, map, [], [{ x: 528, y: 480 }]);
-
-    // The 9x9 candidate window triggers one A* call per walkable tile.
-    // Moving toward the selected flee tile triggers one additional call.
-    expect(measuredFindPath).toHaveBeenCalledTimes(82);
+    expect(measuredReachability).toHaveBeenCalledTimes(1);
+    expect(measuredFindPath).toHaveBeenCalledTimes(1);
   });
 
-  it('measures the aggregate cost when twelve civilians panic in the same tick', () => {
+  it('keeps the search count linear when twelve civilians panic in the same tick', () => {
     const map = new GridMap(30, 30);
     const civilians = Array.from(
       { length: 12 },
       (_, index) => new Civilian({ id: index + 1, x: 480, y: 480 }),
     );
-
     for (const civilian of civilians) {
       civilian.updateAwareness(1 / 60, 32, map, [], [{ x: 528, y: 480 }]);
     }
-
-    expect(measuredFindPath).toHaveBeenCalledTimes(984);
+    expect(measuredReachability).toHaveBeenCalledTimes(12);
+    expect(measuredFindPath).toHaveBeenCalledTimes(12);
   });
 });
