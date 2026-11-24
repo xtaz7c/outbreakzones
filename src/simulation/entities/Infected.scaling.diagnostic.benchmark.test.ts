@@ -96,4 +96,24 @@ describe('Infected scaling diagnostic workloads', () => {
     // The changed position triggers one new reachability search and one new route.
     expect(findPathMock).toHaveBeenCalledTimes(4);
   });
+
+  it('rebuilds the cached route when a navigation obstacle blocks its next step', () => {
+    const map = new GridMap(100, 100);
+    const infected = createInfected(1, 100);
+    const stimulus: InfectedStimulus = {
+      id: 'persistent-gunshot',
+      position: { x: 656, y: 336 },
+      radius: 1000,
+      strength: 1,
+    };
+
+    findPathMock.mockClear();
+    infected[0]!.update(1 / 60, TILE_SIZE, map, [], undefined, [stimulus]);
+    map.setBlocked({ column: 11, row: 10 });
+    infected[0]!.update(1 / 60, TILE_SIZE, map, [], undefined, [stimulus]);
+
+    // A blocked waypoint invalidates the cached route and triggers a fresh
+    // reachability check plus a replacement movement route.
+    expect(findPathMock).toHaveBeenCalledTimes(4);
+  });
 });
