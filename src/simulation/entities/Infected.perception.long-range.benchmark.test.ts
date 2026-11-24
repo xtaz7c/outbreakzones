@@ -29,8 +29,9 @@ const EXPECTED_TILE_TRAVERSAL_CHECKS = 210;
 
 /**
  * Long-range deterministic workload: one infected at tile (10, 10), with
- * 15 human targets grouped in tile (25, 25). Every ray crosses 14
- * intermediate cells before reaching the target tile.
+ * 15 human targets co-located in tile (25, 25). Keeping their positions
+ * identical makes every target pass the nearest-distance filter, so all 15
+ * visibility rays traverse the same 14 intermediate cells.
  */
 describe('Infected long-range perception workload', () => {
   it('measures grid traversal for distant officers and civilians', () => {
@@ -38,15 +39,15 @@ describe('Infected long-range perception workload', () => {
     const officers = Array.from({ length: 3 }, (_, index) =>
       new PoliceOfficer({
         id: index + 1,
-        x: 800 + index,
+        x: 800,
         y: 800,
         visionRange: 1200,
       }));
     const civilians = Array.from({ length: 12 }, (_, index) =>
       new Civilian({
         id: index + 1,
-        x: 800 + index,
-        y: 801,
+        x: 800,
+        y: 800,
       }));
     const infected = new Infected({
       id: 1,
