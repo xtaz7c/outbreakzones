@@ -25,7 +25,8 @@ vi.mock('../systems/navigation/Pathfinder', async (importOriginal) => {
 const lineOfSightMock = vi.mocked(hasLineOfSight);
 const findPathMock = vi.mocked(findPath);
 const TILE_SIZE = 32;
-const ITERATIONS = 3;
+const WARMUP_ITERATIONS = 10;
+const ITERATIONS = 30;
 
 interface CivilianAwarenessResult {
   readonly map: string;
@@ -35,7 +36,7 @@ interface CivilianAwarenessResult {
   readonly p95Ms: number;
   readonly lineOfSightCallsPerTick: number;
   readonly pathSearchesPerTick: number;
-  readonly minimumPathfinderTypedArrayBytesPerTick: number;
+  readonly pathfinderWorkspaceTypedArrayBytes: number;
 }
 
 function benchmarkAwareness(
@@ -61,6 +62,13 @@ function benchmarkAwareness(
     return civilian;
   });
   const samples: number[] = [];
+
+  // Warm up first so lazy workspace creation and JIT compilation do not skew samples.
+  for (let iteration = 0; iteration < WARMUP_ITERATIONS; iteration += 1) {
+    for (const civilian of civilians) {
+      civilian.updateAwareness(1 / 60, TILE_SIZE, map, [officer], []);
+    }
+  }
 
   lineOfSightMock.mockClear();
   findPathMock.mockClear();
@@ -88,9 +96,9 @@ function benchmarkAwareness(
     p95Ms,
     lineOfSightCallsPerTick: lineOfSightMock.mock.calls.length / ITERATIONS,
     pathSearchesPerTick: findPathMock.mock.calls.length / ITERATIONS,
-    // findPath allocates Float64Array, Int32Array and Uint8Array per search.
-    // This excludes the heap, path objects and other transient allocations.
-    minimumPathfinderTypedArrayBytesPerTick: columns * rows * 13 * civilianCount,
+    // One retained workspace per map: Float64Array + Int32Array + Uint8Array.
+    // This excludes heap nodes, paths and other transient allocations.
+    pathfinderWorkspaceTypedArrayBytes: columns * rows * 13,
   };
 }
 
