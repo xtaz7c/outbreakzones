@@ -95,6 +95,8 @@ export class Infected {
   private patrolTarget: TilePosition | null = null;
   private investigationTarget: InfectedPosition | null = null;
   private investigationRemaining = 0;
+  private investigationStimulusId: string | null = null;
+  private investigationStimulusPosition: InfectedPosition | null = null;
 
   constructor(config: InfectedConfig) {
     this.assertFinite(config.x, 'x');
@@ -287,6 +289,8 @@ export class Infected {
     if (nearestHuman) {
       this.investigationTarget = null;
       this.investigationRemaining = 0;
+      this.investigationStimulusId = null;
+      this.investigationStimulusPosition = null;
       this.patrolTarget = null;
       return { kind: 'human', human: nearestHuman, position: nearestHuman.position };
     }
@@ -308,11 +312,24 @@ export class Infected {
       }
     }
     if (strongestStimulus) {
-      const walkablePosition = this.resolveWalkablePosition(strongestStimulus.position, map, tileSize);
-      if (walkablePosition) {
-        this.investigationTarget = walkablePosition;
+      const sameInvestigationStimulus =
+        this.investigationStimulusId === strongestStimulus.id &&
+        this.investigationStimulusPosition?.x === strongestStimulus.position.x &&
+        this.investigationStimulusPosition?.y === strongestStimulus.position.y;
+
+      if (sameInvestigationStimulus) {
+        // The active stimulus has not moved; keep its resolved destination and
+        // refresh memory without running another reachability A* search.
         this.investigationRemaining = this.memoryDuration;
-        this.patrolTarget = null;
+      } else {
+        const walkablePosition = this.resolveWalkablePosition(strongestStimulus.position, map, tileSize);
+        if (walkablePosition) {
+          this.investigationTarget = walkablePosition;
+          this.investigationRemaining = this.memoryDuration;
+          this.investigationStimulusId = strongestStimulus.id;
+          this.investigationStimulusPosition = { ...strongestStimulus.position };
+          this.patrolTarget = null;
+        }
       }
     }
 
@@ -341,6 +358,8 @@ export class Infected {
       if (this.investigationRemaining > 0) return { kind: 'entry', tile, position: target };
     }
     this.investigationTarget = null;
+    this.investigationStimulusId = null;
+    this.investigationStimulusPosition = null;
 
     const currentTile = {
       column: Math.floor(this.currentPosition.x / tileSize),
