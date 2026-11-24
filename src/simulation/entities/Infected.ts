@@ -317,11 +317,18 @@ export class Infected {
         this.investigationStimulusPosition?.x === strongestStimulus.position.x &&
         this.investigationStimulusPosition?.y === strongestStimulus.position.y;
 
-      if (sameInvestigationStimulus) {
-        // The active stimulus has not moved; keep its resolved destination and
-        // refresh memory without running another reachability A* search.
+      if (sameInvestigationStimulus && this.hasWalkableInvestigationPath(map, tileSize)) {
+        // The active stimulus and remaining route are unchanged; refresh memory
+        // without repeating the reachability A* search.
         this.investigationRemaining = this.memoryDuration;
       } else {
+        if (sameInvestigationStimulus) {
+          // Navigation grids can change when doors, windows or deployables change.
+          // Discard a stale route before resolving the destination again.
+          this.path = [];
+          this.waypointIndex = 0;
+          this.pathTargetKey = '';
+        }
         const walkablePosition = this.resolveWalkablePosition(strongestStimulus.position, map, tileSize);
         if (walkablePosition) {
           this.investigationTarget = walkablePosition;
@@ -384,6 +391,36 @@ export class Infected {
         y: patrolTile.row * tileSize + tileSize / 2,
       },
     };
+  }
+
+  private hasWalkableInvestigationPath(map: GridMap, tileSize: number): boolean {
+    if (!this.investigationTarget) return false;
+    const targetTile = {
+      column: Math.floor(this.investigationTarget.x / tileSize),
+      row: Math.floor(this.investigationTarget.y / tileSize),
+    };
+    if (!map.isWalkable(targetTile)) return false;
+
+    const currentTile = {
+      column: Math.floor(this.currentPosition.x / tileSize),
+      row: Math.floor(this.currentPosition.y / tileSize),
+    };
+    if (currentTile.column === targetTile.column && currentTile.row === targetTile.row) return true;
+    if (this.waypointIndex >= this.path.length) return false;
+
+    let previous = currentTile;
+    for (let index = this.waypointIndex; index < this.path.length; index += 1) {
+      const next = this.path[index]!;
+      if (!map.isWalkable(next)) return false;
+      const dx = next.column - previous.column;
+      const dy = next.row - previous.row;
+      if (dx !== 0 && dy !== 0 && (
+        !map.isWalkable({ column: previous.column + dx, row: previous.row }) ||
+        !map.isWalkable({ column: previous.column, row: previous.row + dy })
+      )) return false;
+      previous = next;
+    }
+    return true;
   }
 
   private resolveWalkablePosition(
