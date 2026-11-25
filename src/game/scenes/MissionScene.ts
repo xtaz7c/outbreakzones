@@ -623,9 +623,10 @@ export class MissionScene extends Phaser.Scene {
       { key: 'infected-walk', start: 13, end: 14 },
     ];
     for (const animation of animations) {
-      if (this.anims.exists(animation.key)) continue;
+      const animationKey = `${animation.key}-${this.graphicsSettings.tileResolution}`;
+      if (this.anims.exists(animationKey)) continue;
       this.anims.create({
-        key: animation.key,
+        key: animationKey,
         frames: this.anims.generateFrameNumbers(this.characterSpritesheetKey, {
           start: animation.start,
           end: animation.end,
@@ -637,8 +638,9 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private playCharacterWalk(sprite: Phaser.GameObjects.Sprite, animation: string): void {
-    if (sprite.anims.currentAnim?.key !== animation) {
-      sprite.play(animation);
+    const animationKey = `${animation}-${this.graphicsSettings.tileResolution}`;
+    if (sprite.anims.currentAnim?.key !== animationKey) {
+      sprite.play(animationKey);
     }
   }
 
