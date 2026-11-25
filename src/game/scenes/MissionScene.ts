@@ -122,6 +122,7 @@ export class MissionScene extends Phaser.Scene {
   private hudRoot!: Phaser.GameObjects.Container;
   private hudScale = DEFAULT_HUD_SCALE;
   private graphicsSettings: GraphicsSettings = DEFAULT_GRAPHICS_SETTINGS;
+  private activeTileResolution: GraphicsSettings['tileResolution'] = DEFAULT_GRAPHICS_SETTINGS.tileResolution;
   private hudScaleDownButton!: Phaser.GameObjects.Text;
   private hudScaleUpButton!: Phaser.GameObjects.Text;
   private graphicsResolutionButton!: Phaser.GameObjects.Text;
@@ -192,6 +193,7 @@ export class MissionScene extends Phaser.Scene {
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
     this.graphicsSettings = parseGraphicsSettings(this.readStorage(GRAPHICS_SETTINGS_STORAGE_KEY));
+    this.activeTileResolution = this.graphicsSettings.tileResolution;
     this.characterSpritesheetKey = this.graphicsSettings.tileResolution === 64
       ? 'character-sprites-64'
       : 'character-sprites';
@@ -1085,7 +1087,8 @@ export class MissionScene extends Phaser.Scene {
     const percentage = Math.round(this.hudScale * 100);
     this.hudScaleDownButton.setText(`HUD ${percentage}%  /  DIMINUIR`);
     this.hudScaleUpButton.setText(`HUD ${percentage}%  /  AUMENTAR`);
-    this.graphicsResolutionButton.setText(`TILES ${this.graphicsSettings.tileResolution}×${this.graphicsSettings.tileResolution}  /  ALTERNAR`);
+    const tileStatus = this.activeTileResolution === this.graphicsSettings.tileResolution ? 'ATIVO' : 'PRÓXIMA MISSÃO';
+    this.graphicsResolutionButton.setText(`TILES ${this.graphicsSettings.tileResolution}×${this.graphicsSettings.tileResolution}  /  ${tileStatus}`);
     const qualityLabel = { low: 'BAIXA', medium: 'MÉDIA', high: 'ALTA' }[this.graphicsSettings.quality];
     this.graphicsQualityButton.setText(`QUALIDADE  /  ${qualityLabel}`);
   }
@@ -1126,7 +1129,10 @@ export class MissionScene extends Phaser.Scene {
     const camera = this.cameras.main;
     const centerX = camera.scrollX + camera.width / (2 * camera.zoom);
     const centerY = camera.scrollY + camera.height / (2 * camera.zoom);
-    const presentation = getGraphicsPresentation(this.graphicsSettings);
+    const presentation = getGraphicsPresentation({
+      ...this.graphicsSettings,
+      tileResolution: this.activeTileResolution,
+    });
     camera.setZoom(presentation.cameraZoom);
     camera.roundPixels = presentation.roundPixels;
     camera.centerOn(centerX, centerY);
@@ -1166,7 +1172,7 @@ export class MissionScene extends Phaser.Scene {
     ];
     mainActions.forEach((object) => object.setVisible(visible && !this.pauseSettingsOpen));
     settingsActions.forEach((object) => object.setVisible(visible && this.pauseSettingsOpen));
-    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'RESOLUÇÃO VISUAL, QUALIDADE E HUD' : 'ESCOLHA UMA AÇÃO');
+    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'RESOLUÇÃO (PRÓXIMA MISSÃO), QUALIDADE E HUD' : 'ESCOLHA UMA AÇÃO');
   }
 
   private setPausedFromKeyboard(): void {
