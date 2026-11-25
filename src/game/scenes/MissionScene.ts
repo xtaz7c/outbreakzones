@@ -92,7 +92,7 @@ export class MissionScene extends Phaser.Scene {
   private worldGrid!: GridMap;
   private worldMap!: Phaser.Tilemaps.Tilemap;
   private tileSize = 32;
-  private characterSpritesheetKey = this.characterSpritesheetKey;
+  private characterSpritesheetKey = 'character-sprites';
   private spriteScaleFactor = 1;
   private cameraWorldWidth = 0;
   private cameraWorldHeight = 0;
@@ -194,7 +194,7 @@ export class MissionScene extends Phaser.Scene {
     this.graphicsSettings = parseGraphicsSettings(this.readStorage(GRAPHICS_SETTINGS_STORAGE_KEY));
     this.characterSpritesheetKey = this.graphicsSettings.tileResolution === 64
       ? 'character-sprites-64'
-      : this.characterSpritesheetKey;
+      : 'character-sprites';
     this.spriteScaleFactor = this.graphicsSettings.tileResolution / 32;
     this.simulation = new Simulation(this.missionId === 1 ? 'sector-04' : 'tutorial');
     this.audio = new AudioManager(this);
