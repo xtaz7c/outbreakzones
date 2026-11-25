@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildGridFromTiledLayers } from './WorldMapLoader';
+import { buildGridFromTiledLayers, scaleTiledObjectLayer } from './WorldMapLoader';
 
 describe('buildGridFromTiledLayers', () => {
   it('converts Tiled rectangles into blocked grid cells', () => {
@@ -46,6 +46,26 @@ describe('buildGridFromTiledLayers', () => {
     ]);
 
     expect(grid.isWalkable({ column: 1, row: 1 })).toBe(true);
+  });
+
+  it('maps collision rectangles correctly on a 64 px tile grid', () => {
+    const grid = buildGridFromTiledLayers(8, 6, 64, [
+      { objects: [{ x: 128, y: 64, width: 128, height: 64 }] },
+    ]);
+
+    expect(grid.isWalkable({ column: 1, row: 1 })).toBe(true);
+    expect(grid.isWalkable({ column: 2, row: 1 })).toBe(false);
+    expect(grid.isWalkable({ column: 3, row: 1 })).toBe(false);
+    expect(grid.isWalkable({ column: 4, row: 1 })).toBe(true);
+  });
+
+  it('normalizes 64px map objects into unchanged 32px simulation coordinates', () => {
+    const source = { objects: [{ x: 128, y: 64, width: 128, height: 64 }] };
+    const normalized = scaleTiledObjectLayer(source, 0.5);
+
+    expect(normalized?.objects).toEqual([{ x: 64, y: 32, width: 64, height: 32 }]);
+    expect(source.objects[0]).toEqual({ x: 128, y: 64, width: 128, height: 64 });
+    expect(() => scaleTiledObjectLayer(source, 0)).toThrow(RangeError);
   });
 
   it('rejects an invalid tile size', () => {

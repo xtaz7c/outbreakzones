@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { MinimapRenderer } from '../world/MinimapRenderer';
 import { AudioManager } from '../audio/AudioManager';
 import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
+import { DEFAULT_GRAPHICS_SETTINGS, GRAPHICS_SETTINGS_STORAGE_KEY, parseGraphicsSettings, serializeGraphicsSettings, type GraphicsSettings } from '../GraphicsSettings';
+import { getGraphicsPresentation } from '../GraphicsPresentation';
 import { CAMPAIGN_PROGRESS_KEY, completeChapter, normalizeCampaignProgress, unlockChapter } from '../CampaignSave';
 import { scheduleGamePersistence } from '../../persistence/GamePersistence';
 import { canStartCampaign, getMissionDefinition, getMissionResultMessage, type MissionId } from '../MissionProgression';
@@ -10,7 +12,7 @@ import { Simulation } from '../../simulation/Simulation';
 import type { CombatEvent } from '../../simulation/systems/CombatSystem';
 import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
-import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
+import { buildGridFromTiledLayers, scaleTiledObjectLayer } from '../../simulation/world/WorldMapLoader';
 import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/world/MissionEntryPoints';
 import { BuildingSystem, type AccessKind } from '../../simulation/systems/buildings/BuildingSystem';
 import type { WaveSpawnPoint } from '../../simulation/systems/WaveSystem';
@@ -90,6 +92,8 @@ export class MissionScene extends Phaser.Scene {
   private worldGrid!: GridMap;
   private worldMap!: Phaser.Tilemaps.Tilemap;
   private tileSize = 32;
+  private characterSpritesheetKey = 'character-sprites';
+  private spriteScaleFactor = 1;
   private cameraWorldWidth = 0;
   private cameraWorldHeight = 0;
   private selectionStart: { x: number; y: number; screenX: number; screenY: number } | null = null;
@@ -117,8 +121,12 @@ export class MissionScene extends Phaser.Scene {
   private lastPersistedDeployableState = '';
   private hudRoot!: Phaser.GameObjects.Container;
   private hudScale = DEFAULT_HUD_SCALE;
+  private graphicsSettings: GraphicsSettings = DEFAULT_GRAPHICS_SETTINGS;
+  private activeTileResolution: GraphicsSettings['tileResolution'] = DEFAULT_GRAPHICS_SETTINGS.tileResolution;
   private hudScaleDownButton!: Phaser.GameObjects.Text;
   private hudScaleUpButton!: Phaser.GameObjects.Text;
+  private graphicsResolutionButton!: Phaser.GameObjects.Text;
+  private graphicsQualityButton!: Phaser.GameObjects.Text;
   private hudPanels!: Phaser.GameObjects.Graphics;
   private minimapGraphics!: Phaser.GameObjects.Graphics;
   private minimapStaticGraphics!: Phaser.GameObjects.Graphics;
@@ -184,6 +192,12 @@ export class MissionScene extends Phaser.Scene {
     this.buildStatus = '';
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
+    this.graphicsSettings = parseGraphicsSettings(this.readStorage(GRAPHICS_SETTINGS_STORAGE_KEY));
+    this.activeTileResolution = this.graphicsSettings.tileResolution;
+    this.characterSpritesheetKey = this.graphicsSettings.tileResolution === 64
+      ? 'character-sprites-64'
+      : 'character-sprites';
+    this.spriteScaleFactor = this.graphicsSettings.tileResolution / 32;
     this.simulation = new Simulation(this.missionId === 1 ? 'sector-04' : 'tutorial');
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
@@ -244,9 +258,15 @@ export class MissionScene extends Phaser.Scene {
 
   private createWorld(): void {
     const isSector04 = this.missionId === 1;
-    const map = this.make.tilemap({ key: isSector04 ? 'sector-04' : 'mission-01' });
+    const use64pxAssets = this.graphicsSettings.tileResolution === 64;
+    const mapScale = use64pxAssets ? 0.5 : 1;
+    const mapKey = isSector04
+      ? (use64pxAssets ? 'sector-04-64' : 'sector-04')
+      : (use64pxAssets ? 'mission-01-64' : 'mission-01');
+    const tilesetKey = use64pxAssets ? 'mission-tiles-64' : 'mission-tiles';
+    const map = this.make.tilemap({ key: mapKey });
     this.worldMap = map;
-    const tileset = map.addTilesetImage('mission-tiles', 'mission-tiles');
+    const tileset = map.addTilesetImage(tilesetKey, tilesetKey, map.tileWidth, map.tileHeight);
 
     if (!tileset) {
       throw new Error('Unable to attach the mission tileset to the Tiled map.');
@@ -257,6 +277,7 @@ export class MissionScene extends Phaser.Scene {
       if (!layer) {
         throw new Error('Required Tiled layer "' + layerName + '" is missing.');
       }
+      layer.setScale(mapScale);
     }
 
     if (!isSector04) {
@@ -264,10 +285,11 @@ export class MissionScene extends Phaser.Scene {
       if (!fenceLayer) {
         throw new Error('Required tutorial Tiled layer "Fence" is missing.');
       }
+      fenceLayer.setScale(mapScale);
     }
 
     if (isSector04) {
-      const buildings = map.getObjectLayer('Buildings');
+      const buildings = scaleTiledObjectLayer(map.getObjectLayer('Buildings'), mapScale);
       const buildingGraphics = this.add.graphics().setDepth(35);
       for (const building of buildings?.objects ?? []) {
         const { x, y, width, height } = building;
@@ -292,16 +314,19 @@ export class MissionScene extends Phaser.Scene {
       }
     }
 
-    this.tileSize = map.tileWidth;
+    this.tileSize = map.tileWidth * mapScale;
     if (!isSector04) this.createRuralUtilityLines();
     this.worldGrid = buildGridFromTiledLayers(
       map.width,
       map.height,
-      map.tileWidth,
-      [map.getObjectLayer('Collision'), map.getObjectLayer('Obstacles')],
+      this.tileSize,
+      [
+        scaleTiledObjectLayer(map.getObjectLayer('Collision'), mapScale),
+        scaleTiledObjectLayer(map.getObjectLayer('Obstacles'), mapScale),
+      ],
     );
 
-    const entrances = map.getObjectLayer('Entrances');
+    const entrances = scaleTiledObjectLayer(map.getObjectLayer('Entrances'), mapScale);
     const definitions = (entrances?.objects ?? []).flatMap((object) => {
       const kind = object.type as AccessKind;
       if (!['door', 'window', 'garage'].includes(kind)) return [];
@@ -386,13 +411,15 @@ export class MissionScene extends Phaser.Scene {
       mission.preparationDuration,
       mission.requiresCivilianExtraction,
     );
-    this.cameraWorldWidth = map.widthInPixels;
-    this.cameraWorldHeight = map.heightInPixels;
+    this.cameraWorldWidth = map.width * this.tileSize;
+    this.cameraWorldHeight = map.height * this.tileSize;
     this.cameras.main
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
-      .setZoom(1)
+      .setZoom(getGraphicsPresentation(this.graphicsSettings).cameraZoom)
+      // A escala visual não altera coordenadas, colisões ou unidades da simulação.
       // Setor 04 começa no centro da malha urbana; o tutorial foca a casa principal.
       .centerOn(isSector04 ? 1600 : 1936, isSector04 ? 1120 : 1504);
+    this.cameras.main.roundPixels = getGraphicsPresentation(this.graphicsSettings).roundPixels;
   }
 
   private createInvestigationObjectives(): void {
@@ -407,8 +434,8 @@ export class MissionScene extends Phaser.Scene {
     });
     this.suspectMarker = this.add.circle(1600, 1280, 24, 0xc33a36, 0.16)
       .setStrokeStyle(2, 0xc33a36, 1).setDepth(93).setVisible(false);
-    this.suspectSprite = this.add.sprite(1600, 1280, 'character-sprites', 6)
-      .setTint(0xd7a84a).setScale(1.2).setDepth(95).setVisible(false);
+    this.suspectSprite = this.add.sprite(1600, 1280, this.characterSpritesheetKey, 6)
+      .setTint(0xd7a84a).setScale(1.2 / this.spriteScaleFactor).setDepth(95).setVisible(false);
     this.suspectLabel = this.add.text(1600, 1240, 'SUSPEITO  [J]', {
       fontFamily: 'monospace', fontSize: '9px', color: '#f0b2a8',
       backgroundColor: '#241716', padding: { x: 4, y: 3 },
@@ -596,10 +623,11 @@ export class MissionScene extends Phaser.Scene {
       { key: 'infected-walk', start: 13, end: 14 },
     ];
     for (const animation of animations) {
-      if (this.anims.exists(animation.key)) continue;
+      const animationKey = `${animation.key}-${this.graphicsSettings.tileResolution}`;
+      if (this.anims.exists(animationKey)) continue;
       this.anims.create({
-        key: animation.key,
-        frames: this.anims.generateFrameNumbers('character-sprites', {
+        key: animationKey,
+        frames: this.anims.generateFrameNumbers(this.characterSpritesheetKey, {
           start: animation.start,
           end: animation.end,
         }),
@@ -610,8 +638,9 @@ export class MissionScene extends Phaser.Scene {
   }
 
   private playCharacterWalk(sprite: Phaser.GameObjects.Sprite, animation: string): void {
-    if (sprite.anims.currentAnim?.key !== animation) {
-      sprite.play(animation);
+    const animationKey = `${animation}-${this.graphicsSettings.tileResolution}`;
+    if (sprite.anims.currentAnim?.key !== animationKey) {
+      sprite.play(animationKey);
     }
   }
 
@@ -627,9 +656,9 @@ export class MissionScene extends Phaser.Scene {
         .setStrokeStyle(1, 0x5c9be6, 0.2)
         .setVisible(false);
       const ring = this.add.circle(0, 0, 15).setStrokeStyle(3, 0xffdf70).setVisible(false);
-      const sprite = this.add.sprite(0, 0, 'character-sprites', 0)
+      const sprite = this.add.sprite(0, 0, this.characterSpritesheetKey, 0)
         .setOrigin(0.5)
-        .setScale(1.15);
+        .setScale(1.15 / this.spriteScaleFactor);
       const label = this.add.text(0, 16, String(officer.id), {
         fontFamily: 'monospace',
         fontSize: '10px',
@@ -645,9 +674,9 @@ export class MissionScene extends Phaser.Scene {
   private createCivilians(): void {
     for (const civilian of this.simulation.getCivilians()) {
       const position = civilian.position;
-      const sprite = this.add.sprite(0, 0, 'character-sprites', 6)
+      const sprite = this.add.sprite(0, 0, this.characterSpritesheetKey, 6)
         .setOrigin(0.5)
-        .setScale(1.15);
+        .setScale(1.15 / this.spriteScaleFactor);
       const label = this.add.text(0, 16, `C${civilian.id}`, {
         fontFamily: 'monospace',
         fontSize: '9px',
@@ -815,20 +844,22 @@ export class MissionScene extends Phaser.Scene {
 
     this.pauseOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x080a0a, 0.72)
       .setScrollFactor(0).setDepth(1900).setVisible(false);
-    this.pausePanel = this.add.rectangle(width / 2, height / 2, 410, 440, HUD_COLORS.panel, 1)
+    this.pausePanel = this.add.rectangle(width / 2, height / 2, 460, 620, HUD_COLORS.panel, 1)
       .setScrollFactor(0).setDepth(1901).setStrokeStyle(1, HUD_COLORS.red, 0.8).setVisible(false);
-    this.pauseTitle = this.add.text(width / 2, height / 2 - 188, 'OPERAÇÃO PAUSADA', {
+    this.pauseTitle = this.add.text(width / 2, height / 2 - 278, 'OPERAÇÃO PAUSADA', {
       fontFamily: 'Barlow Condensed, Impact, sans-serif', fontSize: '32px',
       fontStyle: 'bold', color: '#e8e3d8', letterSpacing: 1.5,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
-    this.pauseSubtitle = this.add.text(width / 2, height / 2 - 148, 'ESCOLHA UMA AÇÃO', {
+    this.pauseSubtitle = this.add.text(width / 2, height / 2 - 238, 'ESCOLHA UMA AÇÃO', {
       fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#858a87', letterSpacing: 1.4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
-    this.hudScaleDownButton = this.createPauseAction(width / 2, height / 2 - 108, '', () => this.adjustHudScale(-0.05));
-    this.hudScaleUpButton = this.createPauseAction(width / 2, height / 2 - 56, '', () => this.adjustHudScale(0.05));
-    this.officerToggle = this.createPauseToggle(width / 2, height / 2 + 2, 'POLICIAIS', 'officers');
-    this.civilianToggle = this.createPauseToggle(width / 2, height / 2 + 52, 'CIVIS', 'civilians');
-    this.infectedToggle = this.createPauseToggle(width / 2, height / 2 + 102, 'INFECTADOS', 'infected');
+    this.hudScaleDownButton = this.createPauseAction(width / 2, height / 2 - 176, '', () => this.adjustHudScale(-0.05));
+    this.hudScaleUpButton = this.createPauseAction(width / 2, height / 2 - 128, '', () => this.adjustHudScale(0.05));
+    this.graphicsResolutionButton = this.createPauseAction(width / 2, height / 2 - 80, '', () => this.toggleGraphicsResolution());
+    this.graphicsQualityButton = this.createPauseAction(width / 2, height / 2 - 32, '', () => this.cycleGraphicsQuality());
+    this.officerToggle = this.createPauseToggle(width / 2, height / 2 + 24, 'POLICIAIS', 'officers');
+    this.civilianToggle = this.createPauseToggle(width / 2, height / 2 + 74, 'CIVIS', 'civilians');
+    this.infectedToggle = this.createPauseToggle(width / 2, height / 2 + 124, 'INFECTADOS', 'infected');
     this.resumeButton = this.createPauseAction(width / 2, height / 2 - 90, 'CONTINUAR', () => this.closePauseMenu());
     this.resetButton = this.createPauseAction(width / 2, height / 2 - 30, 'REINICIAR MISSÃO', () => this.restartMission());
     this.settingsMenuButton = this.createPauseAction(width / 2, height / 2 + 30, 'CONFIGURAÇÕES', () => {
@@ -836,7 +867,7 @@ export class MissionScene extends Phaser.Scene {
       this.setPauseMenuVisible(true);
     });
     this.homeButton = this.createPauseAction(width / 2, height / 2 + 90, 'VOLTAR AO INÍCIO', () => this.returnToHome());
-    this.settingsBackButton = this.createPauseAction(width / 2, height / 2 + 152, 'VOLTAR', () => {
+    this.settingsBackButton = this.createPauseAction(width / 2, height / 2 + 184, 'VOLTAR', () => {
       this.pauseSettingsOpen = false;
       this.setPauseMenuVisible(true);
     });
@@ -1058,6 +1089,10 @@ export class MissionScene extends Phaser.Scene {
     const percentage = Math.round(this.hudScale * 100);
     this.hudScaleDownButton.setText(`HUD ${percentage}%  /  DIMINUIR`);
     this.hudScaleUpButton.setText(`HUD ${percentage}%  /  AUMENTAR`);
+    const tileStatus = this.activeTileResolution === this.graphicsSettings.tileResolution ? 'ATIVO' : 'PRÓXIMA MISSÃO';
+    this.graphicsResolutionButton.setText(`TILES ${this.graphicsSettings.tileResolution}×${this.graphicsSettings.tileResolution}  /  ${tileStatus}`);
+    const qualityLabel = { low: 'BAIXA', medium: 'MÉDIA', high: 'ALTA' }[this.graphicsSettings.quality];
+    this.graphicsQualityButton.setText(`QUALIDADE  /  ${qualityLabel}`);
   }
 
   private applyHudScale(): void {
@@ -1071,6 +1106,39 @@ export class MissionScene extends Phaser.Scene {
     this.hudScale = normalizeHudScale(this.hudScale + delta);
     this.writeStorage(HUD_SCALE_STORAGE_KEY, String(this.hudScale));
     this.applyHudScale();
+    this.refreshPauseMenuLabels();
+  }
+
+  private toggleGraphicsResolution(): void {
+    this.graphicsSettings = {
+      ...this.graphicsSettings,
+      tileResolution: this.graphicsSettings.tileResolution === 32 ? 64 : 32,
+    };
+    this.applyGraphicsSettings();
+  }
+
+  private cycleGraphicsQuality(): void {
+    const nextQuality = { low: 'medium', medium: 'high', high: 'low' } as const;
+    this.graphicsSettings = {
+      ...this.graphicsSettings,
+      quality: nextQuality[this.graphicsSettings.quality],
+    };
+    this.applyGraphicsSettings();
+  }
+
+  private applyGraphicsSettings(): void {
+    this.writeStorage(GRAPHICS_SETTINGS_STORAGE_KEY, serializeGraphicsSettings(this.graphicsSettings));
+    const camera = this.cameras.main;
+    const centerX = camera.scrollX + camera.width / (2 * camera.zoom);
+    const centerY = camera.scrollY + camera.height / (2 * camera.zoom);
+    const presentation = getGraphicsPresentation({
+      ...this.graphicsSettings,
+      tileResolution: this.activeTileResolution,
+    });
+    camera.setZoom(presentation.cameraZoom);
+    camera.roundPixels = presentation.roundPixels;
+    camera.centerOn(centerX, centerY);
+    this.clampCamera();
     this.refreshPauseMenuLabels();
   }
 
@@ -1101,11 +1169,12 @@ export class MissionScene extends Phaser.Scene {
     const mainActions = [this.resumeButton, this.resetButton, this.settingsMenuButton, this.homeButton];
     const settingsActions = [
       this.hudScaleDownButton, this.hudScaleUpButton,
+      this.graphicsResolutionButton, this.graphicsQualityButton,
       this.officerToggle, this.civilianToggle, this.infectedToggle, this.settingsBackButton,
     ];
     mainActions.forEach((object) => object.setVisible(visible && !this.pauseSettingsOpen));
     settingsActions.forEach((object) => object.setVisible(visible && this.pauseSettingsOpen));
-    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'ESCALA DO HUD E VISIBILIDADE DO MINIMAPA' : 'ESCOLHA UMA AÇÃO');
+    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'RESOLUÇÃO (PRÓXIMA MISSÃO), QUALIDADE E HUD' : 'ESCOLHA UMA AÇÃO');
   }
 
   private setPausedFromKeyboard(): void {
@@ -1489,9 +1558,9 @@ export class MissionScene extends Phaser.Scene {
       let visual = this.infectedVisuals.get(infected.id);
       if (!visual) {
         this.audio.playInfectedGroan();
-        const sprite = this.add.sprite(0, 0, 'character-sprites', 12)
+        const sprite = this.add.sprite(0, 0, this.characterSpritesheetKey, 12)
           .setOrigin(0.5)
-          .setScale(1.2);
+          .setScale(1.2 / this.spriteScaleFactor);
         const container = this.add.container(infected.position.x, infected.position.y, [sprite])
           .setDepth(110);
         visual = { id: infected.id, container, sprite };
@@ -1518,11 +1587,13 @@ export class MissionScene extends Phaser.Scene {
 
   private updateCombatFeedback(): void {
     this.combatGraphics.clear();
+    const presentation = getGraphicsPresentation(this.graphicsSettings);
     for (const event of this.simulation.getCombatEvents()) {
       if (!this.playedCombatEvents.has(event)) {
         this.playedCombatEvents.add(event);
         this.audio.playGunshot();
       }
+      if (!presentation.showCombatTracers) continue;
       this.combatGraphics.lineStyle(event.hit ? 2 : 1, event.hit ? 0xffd166 : 0x9aa0a6, 0.9);
       this.combatGraphics.beginPath();
       this.combatGraphics.moveTo(event.from.x, event.from.y);
@@ -1540,6 +1611,10 @@ export class MissionScene extends Phaser.Scene {
       if (event.hit) {
         this.combatGraphics.fillStyle(0xffe08a, 0.95);
         this.combatGraphics.fillCircle(event.to.x, event.to.y, 3);
+        if (presentation.showImpactRings) {
+          this.combatGraphics.lineStyle(1, 0xffe08a, 0.75);
+          this.combatGraphics.strokeCircle(event.to.x, event.to.y, 10);
+        }
       }
     }
   }
