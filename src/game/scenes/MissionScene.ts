@@ -672,7 +672,7 @@ export class MissionScene extends Phaser.Scene {
       const position = civilian.position;
       const sprite = this.add.sprite(0, 0, this.characterSpritesheetKey, 6)
         .setOrigin(0.5)
-        .setScale(1.15);
+        .setScale(1.15 / this.spriteScaleFactor);
       const label = this.add.text(0, 16, `C${civilian.id}`, {
         fontFamily: 'monospace',
         fontSize: '9px',
@@ -1552,7 +1552,7 @@ export class MissionScene extends Phaser.Scene {
         this.audio.playInfectedGroan();
         const sprite = this.add.sprite(0, 0, this.characterSpritesheetKey, 12)
           .setOrigin(0.5)
-          .setScale(1.2);
+          .setScale(1.2 / this.spriteScaleFactor);
         const container = this.add.container(infected.position.x, infected.position.y, [sprite])
           .setDepth(110);
         visual = { id: infected.id, container, sprite };
