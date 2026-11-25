@@ -48,6 +48,17 @@ describe('buildGridFromTiledLayers', () => {
     expect(grid.isWalkable({ column: 1, row: 1 })).toBe(true);
   });
 
+  it('maps collision rectangles correctly on a 64 px tile grid', () => {
+    const grid = buildGridFromTiledLayers(8, 6, 64, [
+      { objects: [{ x: 128, y: 64, width: 128, height: 64 }] },
+    ]);
+
+    expect(grid.isWalkable({ column: 1, row: 1 })).toBe(true);
+    expect(grid.isWalkable({ column: 2, row: 1 })).toBe(false);
+    expect(grid.isWalkable({ column: 3, row: 1 })).toBe(false);
+    expect(grid.isWalkable({ column: 4, row: 1 })).toBe(true);
+  });
+
   it('rejects an invalid tile size', () => {
     expect(() => buildGridFromTiledLayers(4, 4, 0, [])).toThrow(RangeError);
   });
