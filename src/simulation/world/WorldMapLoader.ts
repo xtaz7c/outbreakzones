@@ -7,8 +7,8 @@ export interface TiledRectangleObject {
   readonly height?: number;
 }
 
-export interface TiledObjectLayer {
-  readonly objects?: readonly TiledRectangleObject[];
+export interface TiledObjectLayer<T extends TiledRectangleObject = TiledRectangleObject> {
+  readonly objects?: readonly T[];
 }
 
 /**
@@ -16,10 +16,10 @@ export interface TiledObjectLayer {
  * This is used by high-resolution map variants whose authored coordinates are
  * scaled while the simulation intentionally keeps its original 32px units.
  */
-export function scaleTiledObjectLayer(
-  layer: TiledObjectLayer | null | undefined,
+export function scaleTiledObjectLayer<T extends TiledRectangleObject>(
+  layer: TiledObjectLayer<T> | null | undefined,
   factor: number,
-): TiledObjectLayer | null | undefined {
+): TiledObjectLayer<T> | null | undefined {
   if (!Number.isFinite(factor) || factor <= 0) {
     throw new RangeError('Object layer scale must be a positive finite number.');
   }
@@ -31,7 +31,7 @@ export function scaleTiledObjectLayer(
       ...(typeof object.y === 'number' ? { y: object.y * factor } : {}),
       ...(typeof object.width === 'number' ? { width: object.width * factor } : {}),
       ...(typeof object.height === 'number' ? { height: object.height * factor } : {}),
-    })),
+    } as T)),
   };
 }
 
