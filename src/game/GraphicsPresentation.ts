@@ -1,7 +1,7 @@
 import type { GraphicsSettings } from './GraphicsSettings';
 
 export interface GraphicsPresentation {
-  /** Visual camera scale; simulation coordinates remain in 32px world units. */
+  /** Camera remains at 1:1; 64px assets are normalized by the map/sprite scale. */
   readonly cameraZoom: number;
   readonly roundPixels: boolean;
   readonly showCombatTracers: boolean;
@@ -10,11 +10,11 @@ export interface GraphicsPresentation {
 
 /**
  * Maps user-facing graphics preferences to rendering-only behavior.
- * Tile resolution is a presentation scale, not a change to Tiled/world units.
+ * Tile resolution changes source asset detail, not the logical world or camera zoom.
  */
 export function getGraphicsPresentation(settings: GraphicsSettings): GraphicsPresentation {
   return {
-    cameraZoom: settings.tileResolution / 32,
+    cameraZoom: 1,
     roundPixels: settings.quality !== 'high',
     showCombatTracers: settings.quality !== 'low',
     showImpactRings: settings.quality === 'high',
