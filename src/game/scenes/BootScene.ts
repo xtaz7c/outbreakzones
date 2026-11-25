@@ -137,11 +137,18 @@ export class BootScene extends Phaser.Scene {
 
     this.load.tilemapTiledJSON('mission-01', '/maps/mission-01.tmj');
     this.load.tilemapTiledJSON('sector-04', '/maps/sector-04.tmj');
+    this.load.tilemapTiledJSON('mission-01-64', '/maps/mission-01-64.tmj');
+    this.load.tilemapTiledJSON('sector-04-64', '/maps/sector-04-64.tmj');
     this.load.spritesheet('character-sprites', '/assets/sprites/characters.svg', {
       frameWidth: 32,
       frameHeight: 32,
     });
+    this.load.spritesheet('character-sprites-64', '/assets/sprites/characters-64.svg', {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
     this.load.image('mission-tiles', '/assets/tiles/terrain/mission-tiles.svg');
+    this.load.image('mission-tiles-64', '/assets/tiles/terrain/mission-tiles-64.svg');
 
     // Pick one ambient track per mission; avoid downloading unused full-length variants.
     const ambientVariant = Phaser.Math.Between(1, 4);
