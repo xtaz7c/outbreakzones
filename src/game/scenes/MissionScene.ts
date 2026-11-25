@@ -12,7 +12,7 @@ import { Simulation } from '../../simulation/Simulation';
 import type { CombatEvent } from '../../simulation/systems/CombatSystem';
 import { GridMap } from '../../simulation/world/GridMap';
 import type { TilePosition } from '../../simulation/world/WorldConfig';
-import { buildGridFromTiledLayers } from '../../simulation/world/WorldMapLoader';
+import { buildGridFromTiledLayers, scaleTiledObjectLayer } from '../../simulation/world/WorldMapLoader';
 import { getAvailableEntryPoints, MISSION_ENTRY_POINTS } from '../../simulation/world/MissionEntryPoints';
 import { BuildingSystem, type AccessKind } from '../../simulation/systems/buildings/BuildingSystem';
 import type { WaveSpawnPoint } from '../../simulation/systems/WaveSystem';
@@ -92,6 +92,8 @@ export class MissionScene extends Phaser.Scene {
   private worldGrid!: GridMap;
   private worldMap!: Phaser.Tilemaps.Tilemap;
   private tileSize = 32;
+  private characterSpritesheetKey = this.characterSpritesheetKey;
+  private spriteScaleFactor = 1;
   private cameraWorldWidth = 0;
   private cameraWorldHeight = 0;
   private selectionStart: { x: number; y: number; screenX: number; screenY: number } | null = null;
@@ -190,6 +192,10 @@ export class MissionScene extends Phaser.Scene {
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
     this.graphicsSettings = parseGraphicsSettings(this.readStorage(GRAPHICS_SETTINGS_STORAGE_KEY));
+    this.characterSpritesheetKey = this.graphicsSettings.tileResolution === 64
+      ? 'character-sprites-64'
+      : this.characterSpritesheetKey;
+    this.spriteScaleFactor = this.graphicsSettings.tileResolution / 32;
     this.simulation = new Simulation(this.missionId === 1 ? 'sector-04' : 'tutorial');
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
@@ -250,9 +256,15 @@ export class MissionScene extends Phaser.Scene {
 
   private createWorld(): void {
     const isSector04 = this.missionId === 1;
-    const map = this.make.tilemap({ key: isSector04 ? 'sector-04' : 'mission-01' });
+    const use64pxAssets = this.graphicsSettings.tileResolution === 64;
+    const mapScale = use64pxAssets ? 0.5 : 1;
+    const mapKey = isSector04
+      ? (use64pxAssets ? 'sector-04-64' : 'sector-04')
+      : (use64pxAssets ? 'mission-01-64' : 'mission-01');
+    const tilesetKey = use64pxAssets ? 'mission-tiles-64' : 'mission-tiles';
+    const map = this.make.tilemap({ key: mapKey });
     this.worldMap = map;
-    const tileset = map.addTilesetImage('mission-tiles', 'mission-tiles');
+    const tileset = map.addTilesetImage(tilesetKey, tilesetKey, map.tileWidth, map.tileHeight);
 
     if (!tileset) {
       throw new Error('Unable to attach the mission tileset to the Tiled map.');
@@ -263,6 +275,7 @@ export class MissionScene extends Phaser.Scene {
       if (!layer) {
         throw new Error('Required Tiled layer "' + layerName + '" is missing.');
       }
+      layer.setScale(mapScale);
     }
 
     if (!isSector04) {
@@ -270,10 +283,11 @@ export class MissionScene extends Phaser.Scene {
       if (!fenceLayer) {
         throw new Error('Required tutorial Tiled layer "Fence" is missing.');
       }
+      fenceLayer.setScale(mapScale);
     }
 
     if (isSector04) {
-      const buildings = map.getObjectLayer('Buildings');
+      const buildings = scaleTiledObjectLayer(map.getObjectLayer('Buildings'), mapScale);
       const buildingGraphics = this.add.graphics().setDepth(35);
       for (const building of buildings?.objects ?? []) {
         const { x, y, width, height } = building;
@@ -298,16 +312,19 @@ export class MissionScene extends Phaser.Scene {
       }
     }
 
-    this.tileSize = map.tileWidth;
+    this.tileSize = map.tileWidth * mapScale;
     if (!isSector04) this.createRuralUtilityLines();
     this.worldGrid = buildGridFromTiledLayers(
       map.width,
       map.height,
-      map.tileWidth,
-      [map.getObjectLayer('Collision'), map.getObjectLayer('Obstacles')],
+      this.tileSize,
+      [
+        scaleTiledObjectLayer(map.getObjectLayer('Collision'), mapScale),
+        scaleTiledObjectLayer(map.getObjectLayer('Obstacles'), mapScale),
+      ],
     );
 
-    const entrances = map.getObjectLayer('Entrances');
+    const entrances = scaleTiledObjectLayer(map.getObjectLayer('Entrances'), mapScale);
     const definitions = (entrances?.objects ?? []).flatMap((object) => {
       const kind = object.type as AccessKind;
       if (!['door', 'window', 'garage'].includes(kind)) return [];
@@ -392,8 +409,8 @@ export class MissionScene extends Phaser.Scene {
       mission.preparationDuration,
       mission.requiresCivilianExtraction,
     );
-    this.cameraWorldWidth = map.widthInPixels;
-    this.cameraWorldHeight = map.heightInPixels;
+    this.cameraWorldWidth = map.width * this.tileSize;
+    this.cameraWorldHeight = map.height * this.tileSize;
     this.cameras.main
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
       .setZoom(getGraphicsPresentation(this.graphicsSettings).cameraZoom)
@@ -415,8 +432,8 @@ export class MissionScene extends Phaser.Scene {
     });
     this.suspectMarker = this.add.circle(1600, 1280, 24, 0xc33a36, 0.16)
       .setStrokeStyle(2, 0xc33a36, 1).setDepth(93).setVisible(false);
-    this.suspectSprite = this.add.sprite(1600, 1280, 'character-sprites', 6)
-      .setTint(0xd7a84a).setScale(1.2).setDepth(95).setVisible(false);
+    this.suspectSprite = this.add.sprite(1600, 1280, this.characterSpritesheetKey, 6)
+      .setTint(0xd7a84a).setScale(1.2 / this.spriteScaleFactor).setDepth(95).setVisible(false);
     this.suspectLabel = this.add.text(1600, 1240, 'SUSPEITO  [J]', {
       fontFamily: 'monospace', fontSize: '9px', color: '#f0b2a8',
       backgroundColor: '#241716', padding: { x: 4, y: 3 },
@@ -607,7 +624,7 @@ export class MissionScene extends Phaser.Scene {
       if (this.anims.exists(animation.key)) continue;
       this.anims.create({
         key: animation.key,
-        frames: this.anims.generateFrameNumbers('character-sprites', {
+        frames: this.anims.generateFrameNumbers(this.characterSpritesheetKey, {
           start: animation.start,
           end: animation.end,
         }),
@@ -635,9 +652,9 @@ export class MissionScene extends Phaser.Scene {
         .setStrokeStyle(1, 0x5c9be6, 0.2)
         .setVisible(false);
       const ring = this.add.circle(0, 0, 15).setStrokeStyle(3, 0xffdf70).setVisible(false);
-      const sprite = this.add.sprite(0, 0, 'character-sprites', 0)
+      const sprite = this.add.sprite(0, 0, this.characterSpritesheetKey, 0)
         .setOrigin(0.5)
-        .setScale(1.15);
+        .setScale(1.15 / this.spriteScaleFactor);
       const label = this.add.text(0, 16, String(officer.id), {
         fontFamily: 'monospace',
         fontSize: '10px',
@@ -653,7 +670,7 @@ export class MissionScene extends Phaser.Scene {
   private createCivilians(): void {
     for (const civilian of this.simulation.getCivilians()) {
       const position = civilian.position;
-      const sprite = this.add.sprite(0, 0, 'character-sprites', 6)
+      const sprite = this.add.sprite(0, 0, this.characterSpritesheetKey, 6)
         .setOrigin(0.5)
         .setScale(1.15);
       const label = this.add.text(0, 16, `C${civilian.id}`, {
@@ -1533,7 +1550,7 @@ export class MissionScene extends Phaser.Scene {
       let visual = this.infectedVisuals.get(infected.id);
       if (!visual) {
         this.audio.playInfectedGroan();
-        const sprite = this.add.sprite(0, 0, 'character-sprites', 12)
+        const sprite = this.add.sprite(0, 0, this.characterSpritesheetKey, 12)
           .setOrigin(0.5)
           .setScale(1.2);
         const container = this.add.container(infected.position.x, infected.position.y, [sprite])
