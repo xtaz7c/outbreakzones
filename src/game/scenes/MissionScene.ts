@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { MinimapRenderer } from '../world/MinimapRenderer';
 import { AudioManager } from '../audio/AudioManager';
 import { DEFAULT_HUD_SCALE, normalizeHudScale } from '../HudScale';
+import { DEFAULT_GRAPHICS_SETTINGS, GRAPHICS_SETTINGS_STORAGE_KEY, parseGraphicsSettings, serializeGraphicsSettings, type GraphicsSettings } from '../GraphicsSettings';
+import { getGraphicsPresentation } from '../GraphicsPresentation';
 import { CAMPAIGN_PROGRESS_KEY, completeChapter, normalizeCampaignProgress, unlockChapter } from '../CampaignSave';
 import { scheduleGamePersistence } from '../../persistence/GamePersistence';
 import { canStartCampaign, getMissionDefinition, getMissionResultMessage, type MissionId } from '../MissionProgression';
@@ -117,8 +119,11 @@ export class MissionScene extends Phaser.Scene {
   private lastPersistedDeployableState = '';
   private hudRoot!: Phaser.GameObjects.Container;
   private hudScale = DEFAULT_HUD_SCALE;
+  private graphicsSettings: GraphicsSettings = DEFAULT_GRAPHICS_SETTINGS;
   private hudScaleDownButton!: Phaser.GameObjects.Text;
   private hudScaleUpButton!: Phaser.GameObjects.Text;
+  private graphicsResolutionButton!: Phaser.GameObjects.Text;
+  private graphicsQualityButton!: Phaser.GameObjects.Text;
   private hudPanels!: Phaser.GameObjects.Graphics;
   private minimapGraphics!: Phaser.GameObjects.Graphics;
   private minimapStaticGraphics!: Phaser.GameObjects.Graphics;
@@ -184,6 +189,7 @@ export class MissionScene extends Phaser.Scene {
     this.buildStatus = '';
     this.missionId = this.registry.get('missionId') === 1 ? 1 : 0;
     this.hudScale = normalizeHudScale(this.readStorage(HUD_SCALE_STORAGE_KEY));
+    this.graphicsSettings = parseGraphicsSettings(this.readStorage(GRAPHICS_SETTINGS_STORAGE_KEY));
     this.simulation = new Simulation(this.missionId === 1 ? 'sector-04' : 'tutorial');
     this.audio = new AudioManager(this);
     this.audio.startAmbient();
@@ -390,9 +396,11 @@ export class MissionScene extends Phaser.Scene {
     this.cameraWorldHeight = map.heightInPixels;
     this.cameras.main
       .setBounds(0, 0, this.cameraWorldWidth, this.cameraWorldHeight)
-      .setZoom(1)
+      .setZoom(getGraphicsPresentation(this.graphicsSettings).cameraZoom)
+      // A escala visual não altera coordenadas, colisões ou unidades da simulação.
       // Setor 04 começa no centro da malha urbana; o tutorial foca a casa principal.
       .centerOn(isSector04 ? 1600 : 1936, isSector04 ? 1120 : 1504);
+    this.cameras.main.roundPixels = getGraphicsPresentation(this.graphicsSettings).roundPixels;
   }
 
   private createInvestigationObjectives(): void {
@@ -815,20 +823,22 @@ export class MissionScene extends Phaser.Scene {
 
     this.pauseOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x080a0a, 0.72)
       .setScrollFactor(0).setDepth(1900).setVisible(false);
-    this.pausePanel = this.add.rectangle(width / 2, height / 2, 410, 440, HUD_COLORS.panel, 1)
+    this.pausePanel = this.add.rectangle(width / 2, height / 2, 460, 620, HUD_COLORS.panel, 1)
       .setScrollFactor(0).setDepth(1901).setStrokeStyle(1, HUD_COLORS.red, 0.8).setVisible(false);
-    this.pauseTitle = this.add.text(width / 2, height / 2 - 188, 'OPERAÇÃO PAUSADA', {
+    this.pauseTitle = this.add.text(width / 2, height / 2 - 278, 'OPERAÇÃO PAUSADA', {
       fontFamily: 'Barlow Condensed, Impact, sans-serif', fontSize: '32px',
       fontStyle: 'bold', color: '#e8e3d8', letterSpacing: 1.5,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
-    this.pauseSubtitle = this.add.text(width / 2, height / 2 - 148, 'ESCOLHA UMA AÇÃO', {
+    this.pauseSubtitle = this.add.text(width / 2, height / 2 - 238, 'ESCOLHA UMA AÇÃO', {
       fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#858a87', letterSpacing: 1.4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(1902).setVisible(false);
-    this.hudScaleDownButton = this.createPauseAction(width / 2, height / 2 - 108, '', () => this.adjustHudScale(-0.05));
-    this.hudScaleUpButton = this.createPauseAction(width / 2, height / 2 - 56, '', () => this.adjustHudScale(0.05));
-    this.officerToggle = this.createPauseToggle(width / 2, height / 2 + 2, 'POLICIAIS', 'officers');
-    this.civilianToggle = this.createPauseToggle(width / 2, height / 2 + 52, 'CIVIS', 'civilians');
-    this.infectedToggle = this.createPauseToggle(width / 2, height / 2 + 102, 'INFECTADOS', 'infected');
+    this.hudScaleDownButton = this.createPauseAction(width / 2, height / 2 - 176, '', () => this.adjustHudScale(-0.05));
+    this.hudScaleUpButton = this.createPauseAction(width / 2, height / 2 - 128, '', () => this.adjustHudScale(0.05));
+    this.graphicsResolutionButton = this.createPauseAction(width / 2, height / 2 - 80, '', () => this.toggleGraphicsResolution());
+    this.graphicsQualityButton = this.createPauseAction(width / 2, height / 2 - 32, '', () => this.cycleGraphicsQuality());
+    this.officerToggle = this.createPauseToggle(width / 2, height / 2 + 24, 'POLICIAIS', 'officers');
+    this.civilianToggle = this.createPauseToggle(width / 2, height / 2 + 74, 'CIVIS', 'civilians');
+    this.infectedToggle = this.createPauseToggle(width / 2, height / 2 + 124, 'INFECTADOS', 'infected');
     this.resumeButton = this.createPauseAction(width / 2, height / 2 - 90, 'CONTINUAR', () => this.closePauseMenu());
     this.resetButton = this.createPauseAction(width / 2, height / 2 - 30, 'REINICIAR MISSÃO', () => this.restartMission());
     this.settingsMenuButton = this.createPauseAction(width / 2, height / 2 + 30, 'CONFIGURAÇÕES', () => {
@@ -836,7 +846,7 @@ export class MissionScene extends Phaser.Scene {
       this.setPauseMenuVisible(true);
     });
     this.homeButton = this.createPauseAction(width / 2, height / 2 + 90, 'VOLTAR AO INÍCIO', () => this.returnToHome());
-    this.settingsBackButton = this.createPauseAction(width / 2, height / 2 + 152, 'VOLTAR', () => {
+    this.settingsBackButton = this.createPauseAction(width / 2, height / 2 + 184, 'VOLTAR', () => {
       this.pauseSettingsOpen = false;
       this.setPauseMenuVisible(true);
     });
@@ -1058,6 +1068,9 @@ export class MissionScene extends Phaser.Scene {
     const percentage = Math.round(this.hudScale * 100);
     this.hudScaleDownButton.setText(`HUD ${percentage}%  /  DIMINUIR`);
     this.hudScaleUpButton.setText(`HUD ${percentage}%  /  AUMENTAR`);
+    this.graphicsResolutionButton.setText(`TILES ${this.graphicsSettings.tileResolution}×${this.graphicsSettings.tileResolution}  /  ALTERNAR`);
+    const qualityLabel = { low: 'BAIXA', medium: 'MÉDIA', high: 'ALTA' }[this.graphicsSettings.quality];
+    this.graphicsQualityButton.setText(`QUALIDADE  /  ${qualityLabel}`);
   }
 
   private applyHudScale(): void {
@@ -1071,6 +1084,36 @@ export class MissionScene extends Phaser.Scene {
     this.hudScale = normalizeHudScale(this.hudScale + delta);
     this.writeStorage(HUD_SCALE_STORAGE_KEY, String(this.hudScale));
     this.applyHudScale();
+    this.refreshPauseMenuLabels();
+  }
+
+  private toggleGraphicsResolution(): void {
+    this.graphicsSettings = {
+      ...this.graphicsSettings,
+      tileResolution: this.graphicsSettings.tileResolution === 32 ? 64 : 32,
+    };
+    this.applyGraphicsSettings();
+  }
+
+  private cycleGraphicsQuality(): void {
+    const nextQuality = { low: 'medium', medium: 'high', high: 'low' } as const;
+    this.graphicsSettings = {
+      ...this.graphicsSettings,
+      quality: nextQuality[this.graphicsSettings.quality],
+    };
+    this.applyGraphicsSettings();
+  }
+
+  private applyGraphicsSettings(): void {
+    this.writeStorage(GRAPHICS_SETTINGS_STORAGE_KEY, serializeGraphicsSettings(this.graphicsSettings));
+    const camera = this.cameras.main;
+    const centerX = camera.scrollX + camera.width / (2 * camera.zoom);
+    const centerY = camera.scrollY + camera.height / (2 * camera.zoom);
+    const presentation = getGraphicsPresentation(this.graphicsSettings);
+    camera.setZoom(presentation.cameraZoom);
+    camera.roundPixels = presentation.roundPixels;
+    camera.centerOn(centerX, centerY);
+    this.clampCamera();
     this.refreshPauseMenuLabels();
   }
 
@@ -1101,11 +1144,12 @@ export class MissionScene extends Phaser.Scene {
     const mainActions = [this.resumeButton, this.resetButton, this.settingsMenuButton, this.homeButton];
     const settingsActions = [
       this.hudScaleDownButton, this.hudScaleUpButton,
+      this.graphicsResolutionButton, this.graphicsQualityButton,
       this.officerToggle, this.civilianToggle, this.infectedToggle, this.settingsBackButton,
     ];
     mainActions.forEach((object) => object.setVisible(visible && !this.pauseSettingsOpen));
     settingsActions.forEach((object) => object.setVisible(visible && this.pauseSettingsOpen));
-    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'ESCALA DO HUD E VISIBILIDADE DO MINIMAPA' : 'ESCOLHA UMA AÇÃO');
+    this.pauseSubtitle.setText(this.pauseSettingsOpen ? 'RESOLUÇÃO VISUAL, QUALIDADE E HUD' : 'ESCOLHA UMA AÇÃO');
   }
 
   private setPausedFromKeyboard(): void {
@@ -1518,11 +1562,13 @@ export class MissionScene extends Phaser.Scene {
 
   private updateCombatFeedback(): void {
     this.combatGraphics.clear();
+    const presentation = getGraphicsPresentation(this.graphicsSettings);
     for (const event of this.simulation.getCombatEvents()) {
       if (!this.playedCombatEvents.has(event)) {
         this.playedCombatEvents.add(event);
         this.audio.playGunshot();
       }
+      if (!presentation.showCombatTracers) continue;
       this.combatGraphics.lineStyle(event.hit ? 2 : 1, event.hit ? 0xffd166 : 0x9aa0a6, 0.9);
       this.combatGraphics.beginPath();
       this.combatGraphics.moveTo(event.from.x, event.from.y);
@@ -1540,6 +1586,10 @@ export class MissionScene extends Phaser.Scene {
       if (event.hit) {
         this.combatGraphics.fillStyle(0xffe08a, 0.95);
         this.combatGraphics.fillCircle(event.to.x, event.to.y, 3);
+        if (presentation.showImpactRings) {
+          this.combatGraphics.lineStyle(1, 0xffe08a, 0.75);
+          this.combatGraphics.strokeCircle(event.to.x, event.to.y, 10);
+        }
       }
     }
   }
